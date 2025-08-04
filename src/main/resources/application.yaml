@@ -1,0 +1,24 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: stock-batch
+  config:
+    import: optional:config-server:http://admin:1234@localhost:9000
+
+  batch:
+    job:
+      enabled: false
+
+  datasource-meta:
+    driver-class-name:
+    jdbc-url:
+    username:
+    password:
+
+  datasource-data:
+    driver-class-name:
+    jdbc-url:
+    username:
+    password:
