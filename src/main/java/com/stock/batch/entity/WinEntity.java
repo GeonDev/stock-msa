@@ -8,11 +8,13 @@ import lombok.Data;
 
 @Entity
 @Data
-public class AfterEntity {
+public class WinEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String username;
+    private Long win;
+    private Boolean reward;
 }

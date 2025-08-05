@@ -3,9 +3,11 @@ package com.stock.batch;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @EnableDiscoveryClient
+@EnableScheduling
 public class StockBatchApplication {
 
 	public static void main(String[] args) {
@@ -18,9 +20,8 @@ public class StockBatchApplication {
 		System.setProperty("spring.cloud.config.password",password);
 
 		// Eureka URL
-		String eurekaUrl = String.format("http://%s:%s@localhost:9000/eureka", username, password);
-
-		System.setProperty("eureka.client.service-url.defaultZone", eurekaUrl);
+		//String eurekaUrl = String.format("http://%s:%s@localhost:9000/eureka", username, password);
+		//System.setProperty("eureka.client.service-url.defaultZone", eurekaUrl);
 
 		SpringApplication.run(StockBatchApplication.class, args);
 	}
