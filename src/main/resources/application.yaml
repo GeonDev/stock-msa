@@ -27,3 +27,10 @@ spring:
     jdbc-url: ${datasource-stock.url}
     username: ${datasource-stock.username}
     password: ${datasource-stock.password}
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry : true
+    service-url:
+      defaultZone-url: http://localhost:9000/eureka
