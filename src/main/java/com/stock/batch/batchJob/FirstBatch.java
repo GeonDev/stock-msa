@@ -4,6 +4,7 @@ import com.stock.batch.entity.AfterEntity;
 import com.stock.batch.entity.BeforeEntity;
 import com.stock.batch.repository.AfterRepository;
 import com.stock.batch.repository.BeforeRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.job.builder.JobBuilder;
@@ -21,7 +22,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import java.util.Map;
 
-
+@Slf4j
 @Configuration
 public class FirstBatch {
 
@@ -42,8 +43,7 @@ public class FirstBatch {
     @Bean
     public Job firstJob() {
 
-        System.out.println("first job");
-
+        log.debug("fourth job");
         return new JobBuilder("firstJob", jobRepository)
                 .start(firstStep())
                 .build();

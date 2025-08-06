@@ -34,4 +34,17 @@ public class MainController {
 
         return "ok";
     }
+
+    @GetMapping("/fourth")
+    public String fourthApi(@RequestParam("value") String value) throws Exception {
+        //파라메터를 통하여 배치가 중복되었는지 확인할수 있다.
+        JobParameters jobParameters = new JobParametersBuilder()
+                .addString("date", value)
+                .toJobParameters();
+
+        jobLauncher.run(jobRegistry.getJob("fourthJob"), jobParameters);
+
+        return "ok";
+    }
+
 }

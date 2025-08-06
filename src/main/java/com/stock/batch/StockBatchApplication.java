@@ -19,9 +19,6 @@ public class StockBatchApplication {
 		System.setProperty("spring.cloud.config.username",username);
 		System.setProperty("spring.cloud.config.password",password);
 
-		// Eureka URL
-		//String eurekaUrl = String.format("http://%s:%s@localhost:9000/eureka", username, password);
-		//System.setProperty("eureka.client.service-url.defaultZone", eurekaUrl);
 
 		SpringApplication.run(StockBatchApplication.class, args);
 	}
