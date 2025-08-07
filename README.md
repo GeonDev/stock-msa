@@ -10,8 +10,9 @@ docker build -t stock-batch .
 ~~~
 docker run -d \
 -p 8085:8085 \
--e SPRING_PROFILES_ACTIVE=prod \
--e CONFIG_SERVER_USER=admin \
--e CONFIG_SERVER_PASSWORD=1234 \
+-e SPRING_PROFILES_ACTIVE=dev \
+-e CONFIG_SERVER_USER=아이디 \
+-e CONFIG_SERVER_PASSWORD=비밀번호 \
+--name stock-batch \
 stock-batch
 ~~~

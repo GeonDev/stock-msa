@@ -16,6 +16,4 @@ WORKDIR /app
 COPY --from=builder /app/build/libs/*.jar app.jar
 
 ENTRYPOINT ["sh", "-c", "java -Dspring.profiles.active=$SPRING_PROFILES_ACTIVE \
-  -Dspring.cloud.config.username=$CONFIG_SERVER_USER \
-  -Dspring.cloud.config.password=$CONFIG_SERVER_PASSWORD \
   -jar /app/app.jar"]
