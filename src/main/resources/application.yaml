@@ -5,7 +5,9 @@ spring:
   application:
     name: stock-batch
   config:
-    import: "optional:configserver:http://localhost:9000"
+    activate:
+      on-profile: dev
+    import: optional:configserver:http://localhost:9000
   cloud:
     config:
       username: username
@@ -34,3 +36,6 @@ eureka:
     fetch-registry : true
     service-url:
       defaultZone-url: http://localhost:9000/eureka
+
+data-go:
+  service-key: ${data-go.service-key}

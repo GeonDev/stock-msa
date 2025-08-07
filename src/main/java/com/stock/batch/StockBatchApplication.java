@@ -19,6 +19,10 @@ public class StockBatchApplication {
 		System.setProperty("spring.cloud.config.username",username);
 		System.setProperty("spring.cloud.config.password",password);
 
+		// configServer URL
+		String configServerUrl = System.getenv().getOrDefault("CONFIG_SERVER_URL", "http://localhost:9000");
+		System.setProperty("spring.config.import", String.format("optional:configserver:%s", configServerUrl));
+
 		// Eureka URL
 		String eurekaUrl = String.format("http://%s:%s@localhost:8761/eureka", username, password);
 		System.setProperty("eureka.client.service-url.defaultZone", eurekaUrl);
