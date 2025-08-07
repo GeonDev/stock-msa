@@ -2,7 +2,7 @@ package com.stock.batch.batchJob;
 
 import com.stock.batch.entity.AfterEntity;
 import com.stock.batch.repository.AfterRepository;
-import com.stock.batch.batchJob.utill.ExcelRowReader;
+import com.stock.batch.batchJob.ItemReader.ExcelRowReader;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Row;
 import org.springframework.batch.core.Job;

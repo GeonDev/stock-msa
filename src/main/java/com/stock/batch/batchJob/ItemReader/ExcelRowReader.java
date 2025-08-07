@@ -1,4 +1,4 @@
-package com.stock.batch.batchJob.utill;
+package com.stock.batch.batchJob.ItemReader;
 
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
