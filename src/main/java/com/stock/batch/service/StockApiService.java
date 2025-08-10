@@ -1,6 +1,7 @@
 package com.stock.batch.service;
 
 import com.stock.batch.consts.ApplicationConstants;
+import com.stock.batch.entity.StockPrice;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -8,19 +9,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
-import org.tinylog.Logger;
 
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.Reader;
 import java.net.URI;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Locale;
 
-import static com.stock.batch.utils.CommonUtils.parseLocdatesFromXml;
+import static com.stock.batch.utils.ParseUtils.*;
 import static com.stock.batch.utils.DateUtils.toLocalDateString;
 
 @Service
@@ -33,7 +28,28 @@ public class StockApiService {
     private final WebClient webClient;
 
 
+    public void getStockPrice(List<StockPrice> priceList, String marketType, String basDt, int pageNum, int currentCount) throws IOException {
 
+        UriComponents uri = UriComponentsBuilder
+                .newInstance()
+                .scheme("http")
+                .host(ApplicationConstants.API_GO_URL)
+                .path(ApplicationConstants.KRX_STOCK_VALUE_URI)
+                .queryParam("serviceKey", serviceKey)
+                .queryParam("numOfRows", ApplicationConstants.PAGE_SIZE)
+                .queryParam("pageNo", pageNum)
+                .queryParam("mrktCls", marketType)
+                .queryParam("basDt", basDt)
+                .build();
+
+        String responseBody = webClient.get()
+                .uri(uri.toString())
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+
+
+    }
 
 
 

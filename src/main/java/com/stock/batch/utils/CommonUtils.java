@@ -1,18 +1,11 @@
 package com.stock.batch.utils;
 
 
-import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.util.StringUtils;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -95,44 +88,6 @@ public class CommonUtils {
         return ip;
     }
 
-    public static List<String> parseLocdatesFromXml(String xml) throws Exception {
-        List<String> locdates = new ArrayList<>();
 
-        if(StringUtils.hasText(xml)){
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            ByteArrayInputStream input = new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8));
-            Document doc = builder.parse(input);
-            doc.getDocumentElement().normalize();
-
-            //오류 응답 확인
-            NodeList errorHeaders = doc.getElementsByTagName("cmmMsgHeader");
-            if (errorHeaders.getLength() > 0) {
-                Element error = (Element) errorHeaders.item(0);
-                String errMsg = getTagValue("errMsg", error);
-                String returnAuthMsg = getTagValue("returnAuthMsg", error);
-                throw new RuntimeException("API 오류: " + errMsg + " - " + returnAuthMsg);
-            }
-
-            //item 리스트 추출 (없을 수도 있음)
-            NodeList itemList = doc.getElementsByTagName("item");
-            for (int i = 0; i < itemList.getLength(); i++) {
-                Element item = (Element) itemList.item(i);
-                String locdate = getTagValue("locdate", item);
-                if (!locdate.isEmpty()) {
-                    locdates.add(locdate);
-                }
-            }
-        }
-        return locdates;
-    }
-
-    private static String getTagValue(String tag, Element element) {
-        NodeList nodeList = element.getElementsByTagName(tag);
-        if (nodeList.getLength() > 0 && nodeList.item(0).getFirstChild() != null) {
-            return nodeList.item(0).getFirstChild().getNodeValue();
-        }
-        return "";
-    }
 
 }
