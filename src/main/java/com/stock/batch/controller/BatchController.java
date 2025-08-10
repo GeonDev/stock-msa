@@ -2,6 +2,7 @@ package com.stock.batch.controller;
 
 
 import com.stock.batch.consts.ApplicationConstants;
+import com.stock.batch.service.StockApiService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.configuration.JobRegistry;
@@ -30,53 +31,20 @@ import static com.stock.batch.utils.DateUtils.toStringLocalDate;
 @RequestMapping("/batch")
 public class BatchController {
 
-    @Value("${data-go.service-key}")
-    String serviceKey;
-
     private final JobLauncher jobLauncher;
     private final JobRegistry jobRegistry;
-    private final WebClient webClient;
 
+    private final StockApiService stockApiService;
 
-    @GetMapping("/price")
+    @PostMapping("/price")
     public ResponseEntity StockPriceApi(@RequestParam(value = "date" , required = false) String date) throws Exception {
 
-        if(StringUtils.hasText(date) ? checkIsDayOff(toStringLocalDate(date)) : checkIsDayOff(LocalDate.now())){
+        if(StringUtils.hasText(date) ? stockApiService.checkIsDayOff(toStringLocalDate(date)) : stockApiService.checkIsDayOff(LocalDate.now())){
 
         }
 
         return ResponseEntity.ok("SET PRICE");
     }
 
-    // 대한민국 공휴일 체크 - 불필요한 배치 수행 안함
-    private boolean checkIsDayOff(LocalDate targetDate) {
-        //URI 생성
-        String solMonth =  String.format("%02d", targetDate.getMonthValue());
 
-        URI uri = UriComponentsBuilder.newInstance()
-                .scheme("http")
-                .host(ApplicationConstants.API_GO_URL)
-                .path(ApplicationConstants.KAI_REST_DATE_URL)
-                .queryParam("solYear", targetDate.getYear())
-                .queryParam("solMonth", solMonth)
-                .queryParam("ServiceKey", serviceKey)
-                .queryParam("numOfRows", 10)
-                .build()
-                .toUri();
-
-        //API 호출 (WebClient)
-        String responseXml = webClient.get()
-                .uri(uri)
-                .accept(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();  // 동기 호출
-
-        try {
-            List<String> dateList = parseLocdatesFromXml(responseXml);
-            return dateList.contains(toLocalDateString(targetDate));
-        }catch (Exception e){
-            return false;
-        }
-    }
 }

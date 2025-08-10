@@ -18,7 +18,7 @@ public class StockPrice {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long priceId;
+    Long Id;
 
     String stockCode;
 
@@ -52,7 +52,7 @@ public class StockPrice {
     //상장 주식수
     Long stockTotalCnt;
 
-    // 종가 * 상장 주식수
+    // 종가 * 상장 주식수 (시가총액)
     Long marketTotalAmt;
 
 }
