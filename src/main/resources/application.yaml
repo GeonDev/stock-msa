@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: stock-batch
+  codec:
+    max-in-memory-size: 20MB
   config:
     activate:
       on-profile: dev
@@ -30,12 +32,12 @@ spring:
     username: ${datasource-stock.username}
     password: ${datasource-stock.password}
 
-eureka:
-  client:
-    register-with-eureka: true
-    fetch-registry : true
-    service-url:
-      defaultZone-url: http://localhost:9000/eureka
+#eureka:
+#  client:
+#    register-with-eureka: true
+#    fetch-registry : true
+#    service-url:
+#      defaultZone-url: http://localhost:9000/eureka
 
 data-go:
   service-key: ${data-go.service-key}

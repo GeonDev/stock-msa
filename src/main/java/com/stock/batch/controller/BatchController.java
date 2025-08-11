@@ -1,10 +1,13 @@
 package com.stock.batch.controller;
 
 
-import com.stock.batch.consts.ApplicationConstants;
+import com.stock.batch.entity.StockPrice;
+import com.stock.batch.enums.StockType;
 import com.stock.batch.service.StockApiService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.http.ResponseEntity;
@@ -12,7 +15,9 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
+import static com.stock.batch.utils.DateUtils.toLocalDateString;
 import static com.stock.batch.utils.ParseUtils.*;
 import static com.stock.batch.utils.DateUtils.toStringLocalDate;
 
@@ -29,11 +34,21 @@ public class BatchController {
     private final StockApiService stockApiService;
 
     @PostMapping("/price")
-    public ResponseEntity StockPriceApi(@RequestParam(value = "date" , required = false) String date) throws Exception {
+    public ResponseEntity StockPriceApi(@RequestParam(value = "market") StockType marketType, @RequestParam(value = "date" , required = false) String date) throws Exception {
 
-        if(StringUtils.hasText(date) ? stockApiService.checkIsDayOff(toStringLocalDate(date)) : stockApiService.checkIsDayOff(LocalDate.now())){
-
+        if(!StringUtils.hasText(date)){
+            date = toLocalDateString(LocalDate.now());
         }
+
+        List<StockPrice> p =  stockApiService.getStockPrice(marketType, date );
+
+//        if(stockApiService.checkIsDayOff(toStringLocalDate(date))){
+//            JobParameters jobParameters = new JobParametersBuilder()
+//                    .addString("date", date)
+//                    .addString("market", marketType.name())
+//                    .toJobParameters();
+//        }
+
 
         return ResponseEntity.ok("SET PRICE");
     }

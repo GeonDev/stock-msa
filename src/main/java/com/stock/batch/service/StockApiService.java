@@ -2,7 +2,11 @@ package com.stock.batch.service;
 
 import com.stock.batch.consts.ApplicationConstants;
 import com.stock.batch.entity.StockPrice;
+import com.stock.batch.enums.StockType;
+import com.stock.batch.utils.ParseUtils;
+import com.stock.batch.utils.model.ApiBody;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -10,14 +14,15 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.io.IOException;
 import java.net.URI;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.stock.batch.utils.ParseUtils.*;
 import static com.stock.batch.utils.DateUtils.toLocalDateString;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class StockApiService {
@@ -28,27 +33,44 @@ public class StockApiService {
     private final WebClient webClient;
 
 
-    public void getStockPrice(List<StockPrice> priceList, String marketType, String basDt, int pageNum, int currentCount) throws IOException {
+    public List<StockPrice> getStockPrice(StockType marketType, String basDt) throws Exception {
+        List<StockPrice> priceList = new ArrayList<>();
+        int pageNum = 1;
+        int totalPage = 1;
 
-        UriComponents uri = UriComponentsBuilder
-                .newInstance()
-                .scheme("http")
-                .host(ApplicationConstants.API_GO_URL)
-                .path(ApplicationConstants.KRX_STOCK_VALUE_URI)
-                .queryParam("serviceKey", serviceKey)
-                .queryParam("numOfRows", ApplicationConstants.PAGE_SIZE)
-                .queryParam("pageNo", pageNum)
-                .queryParam("mrktCls", marketType)
-                .queryParam("basDt", basDt)
-                .build();
+        while (totalPage >= pageNum){
 
-        String responseBody = webClient.get()
-                .uri(uri.toString())
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
+            UriComponents uri = UriComponentsBuilder
+                    .newInstance()
+                    .scheme("http")
+                    .host(ApplicationConstants.API_GO_URL)
+                    .path(ApplicationConstants.KRX_STOCK_VALUE_URI)
+                    .queryParam("serviceKey", serviceKey)
+                    .queryParam("numOfRows", ApplicationConstants.PAGE_SIZE)
+                    .queryParam("pageNo", pageNum)
+                    .queryParam("mrktCls", marketType.name())
+                    .queryParam("basDt", basDt)
+                    .build();
+
+            String responseBody = webClient.get()
+                    .uri(uri.toString())
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+
+            ApiBody<StockPrice> result = ParseUtils.parseStockPriceFromXml(responseBody);
+
+            log.debug("pageNum : {} totalPage : {}" , pageNum, totalPage);
+            if(pageNum == 1){
+                totalPage = (int) Math.ceil((double) result.getTotalCount() / ApplicationConstants.PAGE_SIZE);
+            }
+            priceList.addAll(result.getItemList());
+
+            pageNum++;
+        }
 
 
+        return priceList;
     }
 
 

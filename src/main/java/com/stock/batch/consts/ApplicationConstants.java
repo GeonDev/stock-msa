@@ -12,7 +12,7 @@ public class ApplicationConstants {
     public static final int LIMIT_YEAR = 2015;
 
     //공공 데이터 포탈의 최대 열 개수(최대 1000 ~ 1500)
-    public static final int PAGE_SIZE = 1000;
+    public static final int PAGE_SIZE = 500;
 
     public static final String API_GO_URL = "apis.data.go.kr";
 
