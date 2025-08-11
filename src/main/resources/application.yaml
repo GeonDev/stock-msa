@@ -4,8 +4,6 @@ server:
 spring:
   application:
     name: stock-batch
-  codec:
-    max-in-memory-size: 20MB
   config:
     activate:
       on-profile: dev

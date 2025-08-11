@@ -34,21 +34,22 @@ public class BatchController {
     private final StockApiService stockApiService;
 
     @PostMapping("/price")
-    public ResponseEntity StockPriceApi(@RequestParam(value = "market") StockType marketType, @RequestParam(value = "date" , required = false) String date) throws Exception {
+    public ResponseEntity StockPriceApi(@RequestParam(value = "market") StockType marketType, @RequestParam(value = "date", required = false) String date) throws Exception {
 
-        if(!StringUtils.hasText(date)){
+        if (!StringUtils.hasText(date)) {
             date = toLocalDateString(LocalDate.now());
         }
 
-        List<StockPrice> p =  stockApiService.getStockPrice(marketType, date );
+        //공휴일 제외 값
+        if (stockApiService.checkIsDayOff(toStringLocalDate(date))) {
+            JobParameters jobParameters = new JobParametersBuilder()
+                    .addString("date", date)
+                    .addString("market", marketType.name())
+                    .addLong("time", System.currentTimeMillis())
+                    .toJobParameters();
 
-//        if(stockApiService.checkIsDayOff(toStringLocalDate(date))){
-//            JobParameters jobParameters = new JobParametersBuilder()
-//                    .addString("date", date)
-//                    .addString("market", marketType.name())
-//                    .toJobParameters();
-//        }
-
+            jobLauncher.run(jobRegistry.getJob("stockDataJob"), jobParameters);
+        }
 
         return ResponseEntity.ok("SET PRICE");
     }

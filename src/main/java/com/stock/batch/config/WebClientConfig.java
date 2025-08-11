@@ -30,6 +30,8 @@ public class WebClientConfig {
                             new Jackson2JsonEncoder(objectMapper, MediaType.APPLICATION_JSON));
                     configurer.defaultCodecs().jackson2JsonDecoder(
                             new Jackson2JsonDecoder(objectMapper, MediaType.APPLICATION_JSON));
+
+                    configurer.defaultCodecs().maxInMemorySize(1024 * 1024 * 20); // 20MB
                 })
                 .build();
 
