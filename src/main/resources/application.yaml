@@ -4,6 +4,9 @@ server:
 spring:
   application:
     name: stock-batch
+---
+
+spring:
   config:
     activate:
       on-profile: dev
