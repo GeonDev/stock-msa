@@ -2,6 +2,7 @@ package com.stock.batch.batchJob;
 
 import com.stock.batch.batchJob.ItemReader.StockApiItemReader;
 import com.stock.batch.entity.AfterEntity;
+import com.stock.batch.entity.BeforeEntity;
 import com.stock.batch.entity.StockPrice;
 import com.stock.batch.entity.WinEntity;
 import com.stock.batch.repository.StockPriceRepository;

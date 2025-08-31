@@ -3,7 +3,6 @@ package com.stock.batch.batchJob.ItemReader;
 import com.stock.batch.entity.StockPrice;
 import com.stock.batch.enums.StockType;
 import com.stock.batch.service.StockApiService;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.NonTransientResourceException;
