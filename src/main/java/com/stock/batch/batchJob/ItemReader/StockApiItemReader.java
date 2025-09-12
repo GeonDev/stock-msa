@@ -28,7 +28,7 @@ public class StockApiItemReader implements ItemReader<StockPrice> {
     private String jobMarket;
 
     @Override
-    public StockPrice read() throws Exception, UnexpectedInputException, ParseException, NonTransientResourceException {
+    public StockPrice read() throws Exception {
         if (!dataFetched) {
             List<StockPrice> list = stockApiService.getStockPrice(StockType.valueOf(jobMarket), jobDate);
             if (list != null && !list.isEmpty()) {
