@@ -1,6 +1,7 @@
 package com.stock.batch.service;
 
 import com.stock.batch.consts.ApplicationConstants;
+import com.stock.batch.entity.CorpInfo;
 import com.stock.batch.entity.StockPrice;
 import com.stock.batch.enums.StockType;
 import com.stock.batch.utils.ParseUtils;
@@ -31,6 +32,38 @@ public class StockApiService {
     String serviceKey;
 
     private final WebClient webClient;
+
+    public List<CorpInfo> getCorpInfo(String basDt) throws Exception {
+        List<CorpInfo> corpList = new ArrayList<>();
+        int pageNum = 1;
+        int totalPage = 1;
+
+        while (totalPage >= pageNum) {
+            UriComponents uri = UriComponentsBuilder
+                    .newInstance()
+                    .scheme("http")
+                    .host(ApplicationConstants.API_GO_URL)
+                    .path(ApplicationConstants.KRX_CORP_LIST_URI)
+                    .queryParam("serviceKey", serviceKey)
+                    .queryParam("numOfRows", ApplicationConstants.PAGE_SIZE)
+                    .queryParam("pageNo", pageNum)
+                    .queryParam("basDt", basDt)
+                    .build();
+
+            String responseBody = webClient.get()
+                    .uri(uri.toString())
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+
+            ApiBody<CorpInfo> result = ParseUtils.parseCorpInfoFromXml(responseBody);
+
+        }
+
+
+            return corpList;
+    }
+
 
 
     public List<StockPrice> getStockPrice(StockType marketType, String basDt) throws Exception {

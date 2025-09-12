@@ -1,5 +1,6 @@
 package com.stock.batch.utils;
 
+import com.stock.batch.entity.CorpInfo;
 import com.stock.batch.entity.StockPrice;
 import com.stock.batch.utils.model.ApiBody;
 import org.springframework.util.StringUtils;
@@ -18,7 +19,6 @@ public class ParseUtils {
 
     public static ApiBody<StockPrice> parseStockPriceFromXml(String xml) throws Exception {
         ApiBody<StockPrice> result = new ApiBody<>();
-
 
         List<StockPrice> priceList = new ArrayList<>();
 
@@ -70,6 +70,56 @@ public class ParseUtils {
 
         return result;
     }
+
+
+    public static ApiBody<CorpInfo> parseCorpInfoFromXml(String xml) throws Exception {
+        ApiBody<CorpInfo> result = new ApiBody<>();
+
+        List<CorpInfo> priceList = new ArrayList<>();
+
+        if(StringUtils.hasText(xml)){
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            ByteArrayInputStream input = new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8));
+            Document doc = builder.parse(input);
+            doc.getDocumentElement().normalize();
+
+            //오류 응답 확인
+            NodeList errorHeaders = doc.getElementsByTagName("cmmMsgHeader");
+            if (errorHeaders.getLength() > 0) {
+                Element error = (Element) errorHeaders.item(0);
+                String errMsg = getTagValue("errMsg", error);
+                String returnAuthMsg = getTagValue("returnAuthMsg", error);
+                throw new RuntimeException("API 오류: " + errMsg + " - " + returnAuthMsg);
+            }
+
+            //API 호출 값 확인
+            result.setNumOfRows(Integer.parseInt(getTagValue("numOfRows", doc.getDocumentElement())));
+            result.setPageNo(Integer.parseInt(getTagValue("pageNo", doc.getDocumentElement())));
+            result.setTotalCount(Integer.parseInt(getTagValue("totalCount", doc.getDocumentElement())));
+
+            //item 리스트 추출 (없을 수도 있음)
+            NodeList itemList = doc.getElementsByTagName("item");
+            for (int i = 0; i < itemList.getLength(); i++) {
+                Element item = (Element) itemList.item(i);
+
+                priceList.add(CorpInfo.builder()
+                                .corpName(getTagValue("itmsNm", item))
+                                .stockCode(getTagValue("srtnCd", item))
+                                .corpCode(getTagValue("crno", item))
+                        .build() );
+            }
+        }
+
+        result.setItemList(priceList);
+
+        return result;
+    }
+
+
+
+
+
 
 
     public static List<String> parseLocdatesFromXml(String xml) throws Exception {

@@ -18,13 +18,13 @@ public class ApplicationConstants {
 
     public static final String DART_API_URL = "opendart.fss.or.kr";
 
-    public static final String REQUEST_MSG = "NORMAL SERVICE.";
-
     public static final String KAI_REST_DATE_URL = "/B090041/openapi/service/SpcdeInfoService/getRestDeInfo";
 
     public static final String KRX_STOCK_LIST_URI = "/1160100/service/GetKrxListedInfoService/getItemInfo";
 
     public static final String KRX_STOCK_FINANCE_URI = "/1160100/service/GetFinaStatInfoService";
+
+    public static final String KRX_CORP_LIST_URI = "1160100/service/GetKrxListedInfoService/getItemInfo";
 
     public static final String KRX_STOCK_VALUE_URI = "/1160100/service/GetStockSecuritiesInfoService/getStockPriceInfo";
 
@@ -32,7 +32,6 @@ public class ApplicationConstants {
 
     public static final String DART_STOCK_FINANCE_MULTI_URI = "/api/fnlttMultiAcnt.json";
 
-    public static final String DART_CORP_CODE_URI = "/api/corpCode.xml";
 
 
 }
