@@ -3,7 +3,7 @@ package com.stock.batch.service;
 import com.stock.batch.consts.ApplicationConstants;
 import com.stock.batch.entity.CorpInfo;
 import com.stock.batch.entity.StockPrice;
-import com.stock.batch.enums.StockType;
+import com.stock.batch.enums.StockMarket;
 import com.stock.batch.utils.ParseUtils;
 import com.stock.batch.utils.model.ApiBody;
 import lombok.RequiredArgsConstructor;
@@ -66,7 +66,7 @@ public class StockApiService {
 
 
 
-    public List<StockPrice> getStockPrice(StockType marketType, String basDt) throws Exception {
+    public List<StockPrice> getStockPrice(StockMarket marketType, String basDt) throws Exception {
         List<StockPrice> priceList = new ArrayList<>();
         int pageNum = 1;
         int totalPage = 1;

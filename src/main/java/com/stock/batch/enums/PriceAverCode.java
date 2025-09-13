@@ -5,7 +5,7 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public enum PriceType {
+public enum PriceAverCode {
     DAY5(5),
     DAY20(20),
     DAY60(60),

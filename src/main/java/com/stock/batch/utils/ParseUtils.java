@@ -12,6 +12,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -106,7 +107,9 @@ public class ParseUtils {
                 priceList.add(CorpInfo.builder()
                                 .corpName(getTagValue("itmsNm", item))
                                 .stockCode(getTagValue("srtnCd", item))
+                                .isinCode(getTagValue("isinCd", item))
                                 .corpCode(getTagValue("crno", item))
+                                .checkDt(LocalDate.now())
                         .build() );
             }
         }
@@ -115,11 +118,6 @@ public class ParseUtils {
 
         return result;
     }
-
-
-
-
-
 
 
     public static List<String> parseLocdatesFromXml(String xml) throws Exception {

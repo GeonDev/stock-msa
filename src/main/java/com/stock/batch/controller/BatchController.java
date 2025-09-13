@@ -1,8 +1,7 @@
 package com.stock.batch.controller;
 
 
-import com.stock.batch.entity.StockPrice;
-import com.stock.batch.enums.StockType;
+import com.stock.batch.enums.StockMarket;
 import com.stock.batch.service.StockApiService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,10 +14,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.List;
 
 import static com.stock.batch.utils.DateUtils.toLocalDateString;
-import static com.stock.batch.utils.ParseUtils.*;
 import static com.stock.batch.utils.DateUtils.toStringLocalDate;
 
 
@@ -34,7 +31,7 @@ public class BatchController {
     private final StockApiService stockApiService;
 
     @PostMapping("/price")
-    public ResponseEntity StockPriceApi(@RequestParam(value = "market") StockType marketType, @RequestParam(value = "date", required = false) String date) throws Exception {
+    public ResponseEntity StockPriceApi(@RequestParam(value = "market") StockMarket marketType, @RequestParam(value = "date", required = false) String date) throws Exception {
 
         if (!StringUtils.hasText(date)) {
             date = toLocalDateString(LocalDate.now());

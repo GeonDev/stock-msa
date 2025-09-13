@@ -1,13 +1,10 @@
 package com.stock.batch.batchJob.ItemReader;
 
 import com.stock.batch.entity.StockPrice;
-import com.stock.batch.enums.StockType;
+import com.stock.batch.enums.StockMarket;
 import com.stock.batch.service.StockApiService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.item.ItemReader;
-import org.springframework.batch.item.NonTransientResourceException;
-import org.springframework.batch.item.ParseException;
-import org.springframework.batch.item.UnexpectedInputException;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.util.Iterator;
@@ -30,7 +27,7 @@ public class StockApiItemReader implements ItemReader<StockPrice> {
     @Override
     public StockPrice read() throws Exception {
         if (!dataFetched) {
-            List<StockPrice> list = stockApiService.getStockPrice(StockType.valueOf(jobMarket), jobDate);
+            List<StockPrice> list = stockApiService.getStockPrice(StockMarket.valueOf(jobMarket), jobDate);
             if (list != null && !list.isEmpty()) {
                 stockIterator = list.iterator();
             }

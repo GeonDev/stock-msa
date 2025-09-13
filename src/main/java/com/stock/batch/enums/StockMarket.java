@@ -5,7 +5,8 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public enum StockType {
+public enum StockMarket {
     KOSPI,
-    KOSDAQ
+    KOSDAQ,
+    KONEX
 }
