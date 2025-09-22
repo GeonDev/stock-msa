@@ -11,7 +11,7 @@ import java.util.Iterator;
 import java.util.List;
 
 @RequiredArgsConstructor
-public class StockApiItemReader implements ItemReader<StockPrice> {
+public class StockPriceItemReader implements ItemReader<StockPrice> {
 
     private final StockApiService stockApiService;
     private Iterator<StockPrice> stockIterator;

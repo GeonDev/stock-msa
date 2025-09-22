@@ -1,6 +1,6 @@
 package com.stock.batch.batchJob;
 
-import com.stock.batch.batchJob.ItemReader.StockApiItemReader;
+import com.stock.batch.batchJob.ItemReader.StockPriceItemReader;
 import com.stock.batch.entity.StockPrice;
 import com.stock.batch.repository.StockPriceRepository;
 import com.stock.batch.service.StockApiService;
@@ -29,8 +29,8 @@ public class StockPriceBatch {
 
     @Bean
     @StepScope
-    public StockApiItemReader stockApiItemReader() {
-        return new StockApiItemReader(stockApiService);
+    public StockPriceItemReader stockApiItemReader() {
+        return new StockPriceItemReader(stockApiService);
     }
 
 

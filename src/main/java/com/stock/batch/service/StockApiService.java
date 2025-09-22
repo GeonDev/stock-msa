@@ -58,8 +58,15 @@ public class StockApiService {
 
             ApiBody<CorpInfo> result = ParseUtils.parseCorpInfoFromXml(responseBody);
 
-        }
+            log.debug("pageNum : {} totalPage : {}" , pageNum, totalPage);
+            if(pageNum == 1){
+                totalPage = (int) Math.ceil((double) result.getTotalCount() / ApplicationConstants.PAGE_SIZE);
+            }
+            corpList.addAll(result.getItemList());
 
+            pageNum++;
+
+        }
 
             return corpList;
     }

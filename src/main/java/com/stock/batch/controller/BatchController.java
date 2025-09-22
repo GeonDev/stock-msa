@@ -51,5 +51,24 @@ public class BatchController {
         return ResponseEntity.ok("SET PRICE");
     }
 
+    @PostMapping("/corp-info")
+    public ResponseEntity corpInfoApi( @RequestParam(value = "date", required = false) String date) throws Exception {
+
+        if (!StringUtils.hasText(date)) {
+            date = toLocalDateString(LocalDate.now());
+        }
+
+
+        JobParameters jobParameters = new JobParametersBuilder()
+                .addString("date", date)
+                .addLong("time", System.currentTimeMillis())
+                .toJobParameters();
+
+        jobLauncher.run(jobRegistry.getJob("corpDataJob"), jobParameters);
+
+
+        return ResponseEntity.ok("SET CORP CODE");
+    }
+
 
 }
