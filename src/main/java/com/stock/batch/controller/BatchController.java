@@ -31,7 +31,7 @@ public class BatchController {
     private final StockApiService stockApiService;
 
     @PostMapping("/price")
-    public ResponseEntity StockPriceApi(@RequestParam(value = "market") StockMarket marketType, @RequestParam(value = "date", required = false) String date) throws Exception {
+    public ResponseEntity<String> stockPriceApi(@RequestParam(value = "market") StockMarket marketType, @RequestParam(value = "date", required = false) String date) throws Exception {
 
         if (!StringUtils.hasText(date)) {
             date = toLocalDateString(LocalDate.now());
@@ -52,12 +52,11 @@ public class BatchController {
     }
 
     @PostMapping("/corp-info")
-    public ResponseEntity corpInfoApi( @RequestParam(value = "date", required = false) String date) throws Exception {
+    public ResponseEntity<String> corpInfoApi( @RequestParam(value = "date", required = false) String date) throws Exception {
 
         if (!StringUtils.hasText(date)) {
             date = toLocalDateString(LocalDate.now());
         }
-
 
         JobParameters jobParameters = new JobParametersBuilder()
                 .addString("date", date)
