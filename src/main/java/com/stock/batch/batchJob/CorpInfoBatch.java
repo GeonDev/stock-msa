@@ -1,10 +1,8 @@
 package com.stock.batch.batchJob;
 
 import com.stock.batch.batchJob.ItemReader.CorpInfoItemReader;
-import com.stock.batch.entity.AfterEntity;
-import com.stock.batch.entity.BeforeEntity;
+
 import com.stock.batch.entity.CorpInfo;
-import com.stock.batch.entity.StockPrice;
 import com.stock.batch.repository.CorpInfoRepository;
 import com.stock.batch.service.StockApiService;
 import lombok.AllArgsConstructor;
