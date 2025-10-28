@@ -1,6 +1,7 @@
 package com.stock.batch.service;
 
 import com.stock.batch.consts.ApplicationConstants;
+import com.stock.batch.entity.CorpFinance;
 import com.stock.batch.entity.CorpInfo;
 import com.stock.batch.entity.StockPrice;
 import com.stock.batch.enums.StockMarket;
@@ -60,9 +61,7 @@ public class StockApiService {
             corpList.addAll(result.getItemList());
 
             pageNum++;
-
         }
-
             return corpList;
     }
 
@@ -100,12 +99,45 @@ public class StockApiService {
                 totalPage = (int) Math.ceil((double) result.getTotalCount() / ApplicationConstants.PAGE_SIZE);
             }
             priceList.addAll(result.getItemList());
+            pageNum++;
+        }
+        return priceList;
+    }
+
+    public List<CorpFinance> getCorpFinance(String bizYear) throws Exception {
+        List<CorpFinance> corpList = new ArrayList<>();
+        int pageNum = 1;
+        int totalPage = 1;
+
+        while (totalPage >= pageNum) {
+            UriComponents uri = UriComponentsBuilder
+                    .newInstance()
+                    .scheme("https")
+                    .host(ApplicationConstants.API_GO_URL)
+                    .path(ApplicationConstants.KRX_STOCK_FINANCE_URI)
+                    .queryParam("serviceKey", serviceKey)
+                    .queryParam("numOfRows", ApplicationConstants.PAGE_SIZE)
+                    .queryParam("pageNo", pageNum)
+                    .queryParam("bizYear", bizYear)
+                    .build();
+
+            String responseBody = webClient.get()
+                    .uri(uri.toString())
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+
+            ApiBody<CorpFinance> result = ParseUtils.parseCorpFinanceFromXml(responseBody);
+
+            log.debug("pageNum : {} totalPage : {}" , pageNum, totalPage);
+            if(pageNum == 1){
+                totalPage = (int) Math.ceil((double) result.getTotalCount() / ApplicationConstants.PAGE_SIZE);
+            }
+            corpList.addAll(result.getItemList());
 
             pageNum++;
         }
-
-
-        return priceList;
+        return corpList;
     }
 
 

@@ -22,7 +22,7 @@ public class ApplicationConstants {
 
     public static final String KRX_STOCK_LIST_URI = "/1160100/service/GetKrxListedInfoService/getItemInfo";
 
-    public static final String KRX_STOCK_FINANCE_URI = "/1160100/service/GetFinaStatInfoService";
+    public static final String KRX_STOCK_FINANCE_URI = "1160100/service/GetFinaStatInfoService_V2/getSummFinaStat_V2";
 
     public static final String KRX_CORP_LIST_URI = "1160100/service/GetKrxListedInfoService/getItemInfo";
 

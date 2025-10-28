@@ -1,19 +1,23 @@
 package com.stock.batch.batchJob.ItemReader;
 
+import com.stock.batch.entity.CorpFinance;
 import com.stock.batch.entity.CorpInfo;
 import com.stock.batch.service.StockApiService;
+import com.stock.batch.utils.DateUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.beans.factory.annotation.Value;
 
+import java.time.LocalDate;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
 @RequiredArgsConstructor
-public class CorpFinanceItemReader implements ItemReader<CorpInfo> {
+public class CorpFinanceItemReader implements ItemReader<CorpFinance> {
 
     private final StockApiService stockApiService;
-    private Iterator<CorpInfo> corpIterator;
+    private Iterator<CorpFinance> corpIterator;
     private boolean dataFetched = false;
 
     // @Value를 사용하여 JobParameter 받기
@@ -21,9 +25,11 @@ public class CorpFinanceItemReader implements ItemReader<CorpInfo> {
     private String jobDate;
 
     @Override
-    public CorpInfo read() throws Exception {
+    public CorpFinance read() throws Exception {
         if (!dataFetched) {
-            List<CorpInfo> list = stockApiService.getCorpInfo(jobDate);
+            //연도값만 추출
+            LocalDate date = DateUtils.toStringLocalDate(jobDate);
+            List<CorpFinance> list = stockApiService.getCorpFinance(String.valueOf(date.getYear()));
             if (list != null && !list.isEmpty()) {
                 corpIterator = list.iterator();
             }
