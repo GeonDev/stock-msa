@@ -76,7 +76,7 @@ public class BatchController {
     }
 
     @PostMapping("/corp-fin")
-    public ResponseEntity<String> corpFinApi( @RequestParam(value = "date", required = false) String date) throws Exception {
+    public ResponseEntity<String> corpFinanceApi( @RequestParam(value = "date", required = false) String date) throws Exception {
         if (!StringUtils.hasText(date)) {
             //금융위원회 데이터는 당일 데이터 조회 불가
             date = toLocalDateString(LocalDate.now().minusDays(1));

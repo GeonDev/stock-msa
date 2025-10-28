@@ -32,12 +32,6 @@ public class CorpInfo implements Serializable {
     //국제 채권식별번호
     String isinCode;
 
-    @Enumerated(EnumType.STRING)
-    CorpState state;
-
-    @Enumerated(EnumType.STRING)
-    CorpCurrency corpType;
-
     //검사일 -> 상장 폐지인지 확인
     @LastModifiedDate
     LocalDate checkDt;

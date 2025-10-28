@@ -1,7 +1,9 @@
 package com.stock.batch.entity;
 
 
+import com.stock.batch.enums.CorpCurrency;
 import com.stock.batch.enums.CorpNational;
+import com.stock.batch.enums.CorpState;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,6 +26,12 @@ public class CorpDetail implements Serializable {
 
     @Enumerated(EnumType.STRING)
     CorpNational national;
+
+    @Enumerated(EnumType.STRING)
+    CorpState state;
+
+    @Enumerated(EnumType.STRING)
+    CorpCurrency corpType;
 
     //종가 - (n일 종가)의 +/- 값
     Integer momentum;
