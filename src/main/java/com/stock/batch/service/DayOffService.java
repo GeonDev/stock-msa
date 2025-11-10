@@ -28,6 +28,13 @@ public class DayOffService {
 
     // 대한민국 공휴일 체크 - 불필요한 배치 수행 안함
     public boolean checkIsDayOff(LocalDate targetDate) {
+
+        // 6,7 (토요일, 일요일)
+         if(targetDate.getDayOfWeek().getValue() > 5 ){
+             return false;
+         }
+
+
         //URI 생성
         String solMonth =  String.format("%02d", targetDate.getMonthValue());
 

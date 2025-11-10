@@ -39,7 +39,7 @@ public class BatchController {
             date = toLocalDateString(LocalDate.now().minusDays(1));
         }
 
-        //공휴일 제외 값
+        //공휴일 제외 값, 주말 제외
         if (dayOffService.checkIsDayOff(toStringLocalDate(date))) {
             JobParameters jobParameters = new JobParametersBuilder()
                     .addString("date", date)
@@ -61,7 +61,7 @@ public class BatchController {
             date = toLocalDateString(LocalDate.now().minusDays(1));
         }
 
-        //공휴일 제외 값,
+        //공휴일 제외 값, 주말 제외
         if (dayOffService.checkIsDayOff(toStringLocalDate(date))) {
             JobParameters jobParameters = new JobParametersBuilder()
                     .addString("date", date)
@@ -82,7 +82,7 @@ public class BatchController {
             date = toLocalDateString(LocalDate.now().minusDays(1));
         }
 
-        //공휴일 제외 값,
+        //공휴일 제외 값, 주말 제외
         if (dayOffService.checkIsDayOff(toStringLocalDate(date))) {
             JobParameters jobParameters = new JobParametersBuilder()
                     .addString("date", date)
