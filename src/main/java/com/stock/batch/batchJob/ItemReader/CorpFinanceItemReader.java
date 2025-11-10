@@ -1,7 +1,6 @@
 package com.stock.batch.batchJob.ItemReader;
 
 import com.stock.batch.entity.CorpFinance;
-import com.stock.batch.entity.CorpInfo;
 import com.stock.batch.service.StockApiService;
 import com.stock.batch.utils.DateUtils;
 import lombok.RequiredArgsConstructor;
@@ -9,7 +8,6 @@ import org.springframework.batch.item.ItemReader;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.time.LocalDate;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 

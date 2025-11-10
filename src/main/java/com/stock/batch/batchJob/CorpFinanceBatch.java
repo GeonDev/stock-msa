@@ -1,9 +1,10 @@
 package com.stock.batch.batchJob;
 
-import com.stock.batch.batchJob.ItemReader.CorpInfoItemReader;
-
+import com.stock.batch.batchJob.ItemReader.CorpFinanceItemReader;
+import com.stock.batch.entity.CorpFinance;
 import com.stock.batch.entity.CorpInfo;
-import com.stock.batch.repository.CorpInfoRepository;
+import com.stock.batch.repository.CorpFinanceRepository;
+
 import com.stock.batch.service.StockApiService;
 import lombok.AllArgsConstructor;
 import org.springframework.batch.core.Job;
@@ -21,45 +22,45 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration
 @AllArgsConstructor
-public class CorpInfoBatch {
+public class CorpFinanceBatch {
 
     private final JobRepository jobRepository;
-    private final CorpInfoRepository corpInfoRepository;
+    private final CorpFinanceRepository  corpFinanceRepository;
     private final PlatformTransactionManager platformTransactionManager;
     private final StockApiService stockApiService;
 
 
     @Bean
     @StepScope
-    public CorpInfoItemReader corpInfoItemReader() {
-        return new CorpInfoItemReader(stockApiService);
+    public CorpFinanceItemReader corpFinanceItemReader() {
+        return new CorpFinanceItemReader(stockApiService);
     }
 
 
     @Bean
-    public Job corpDataJob() {
-        return new JobBuilder("corpDataJob", jobRepository)
-                .start(corpDataStep())
+    public Job corpFinanceJob() {
+        return new JobBuilder("corpFinanceJob", jobRepository)
+                .start(corpFinanceStep())
                 .build();
     }
 
     @Bean
-    public Step corpDataStep() {
-        return new StepBuilder("corpDataStep", jobRepository)
-                .<CorpInfo, CorpInfo>chunk(100, platformTransactionManager)
-                .reader(corpInfoItemReader())
-                .processor(corpDataProcessor())
-                .writer(corpItemWriter())
+    public Step corpFinanceStep() {
+        return new StepBuilder("corpFinanceStep", jobRepository)
+                .<CorpFinance, CorpFinance>chunk(1000, platformTransactionManager)
+                .reader(corpFinanceItemReader())
+                .processor(corpFinanceProcessor())
+                .writer(corpFinanceWriter())
                 .build();
     }
 
 
     @Bean
-    public ItemProcessor<CorpInfo, CorpInfo> corpDataProcessor() {
+    public ItemProcessor<CorpFinance, CorpFinance> corpFinanceProcessor() {
 
-        return new ItemProcessor<CorpInfo, CorpInfo>() {
+        return new ItemProcessor<CorpFinance, CorpFinance>() {
             @Override
-            public CorpInfo process(CorpInfo item) throws Exception {
+            public CorpFinance process(CorpFinance item) throws Exception {
 
                 return item;
             }
@@ -69,10 +70,10 @@ public class CorpInfoBatch {
 
 
     @Bean
-    public RepositoryItemWriter<CorpInfo> corpItemWriter() {
+    public RepositoryItemWriter<CorpFinance> corpFinanceWriter() {
 
-        return new RepositoryItemWriterBuilder<CorpInfo>()
-                .repository(corpInfoRepository)
+        return new RepositoryItemWriterBuilder<CorpFinance>()
+                .repository(corpFinanceRepository)
                 .methodName("saveAll")
                 .build();
     }

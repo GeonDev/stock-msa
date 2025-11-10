@@ -3,7 +3,7 @@ package com.stock.batch.utils;
 import com.stock.batch.entity.CorpFinance;
 import com.stock.batch.entity.CorpInfo;
 import com.stock.batch.entity.StockPrice;
-import com.stock.batch.utils.model.ApiBody;
+import com.stock.batch.service.model.ApiBody;
 import org.springframework.util.StringUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;

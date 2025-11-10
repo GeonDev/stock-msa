@@ -1,4 +1,4 @@
-package com.stock.batch.utils.model;
+package com.stock.batch.service.model;
 
 
 import lombok.Data;
