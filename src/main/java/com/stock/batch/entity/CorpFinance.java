@@ -63,4 +63,7 @@ public class CorpFinance implements Serializable {
 
     //법인세차감전순이익 (iclsPalClcAmt)
     Integer incomeBeforeTax;
+
+    @OneToOne(mappedBy = "corpFinance", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private CorpFinanceIndicator corpFinanceIndicator;
 }

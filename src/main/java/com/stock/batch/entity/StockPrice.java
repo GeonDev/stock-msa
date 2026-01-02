@@ -59,12 +59,6 @@ public class StockPrice {
     // 종가 * 상장 주식수 (시가총액)
     Long marketTotalAmt;
 
-    Double ma50;
-    Double ma100;
-    Double ma150;
-    Double ma200;
-
-    Double momentum1m;
-    Double momentum3m;
-    Double momentum6m;
+    @OneToOne(mappedBy = "stockPrice", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private StockIndicator stockIndicator;
 }

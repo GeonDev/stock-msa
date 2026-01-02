@@ -45,6 +45,31 @@ CREATE TABLE TB_STOCK_PRICE (
     daily_range DOUBLE,
     daily_ratio DOUBLE,
     stock_total_cnt BIGINT,
-    market_total_amt BIGINT,
-    momentum INT
+    market_total_amt BIGINT
+);
+
+CREATE TABLE TB_STOCK_INDICATOR (
+    stock_price_id BIGINT PRIMARY KEY,
+    ma5 DOUBLE,
+    ma20 DOUBLE,
+    ma60 DOUBLE,
+    ma120 DOUBLE,
+    ma200 DOUBLE,
+    ma250 DOUBLE,
+    momentum1m DOUBLE,
+    momentum3m DOUBLE,
+    momentum6m DOUBLE
+);
+
+CREATE TABLE TB_CORP_FINANCE_INDICATOR (
+    corp_code VARCHAR(255) PRIMARY KEY,
+    per DOUBLE,
+    pbr DOUBLE,
+    psr DOUBLE,
+    revenue_growth DOUBLE,
+    net_income_growth DOUBLE,
+    op_income_growth DOUBLE,
+    roe DOUBLE,
+    roa DOUBLE,
+    debt_ratio DOUBLE
 );

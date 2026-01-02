@@ -1,6 +1,7 @@
 package com.stock.batch.batchJob;
 
 import com.stock.batch.batchJob.ItemReader.StockPriceItemReader;
+import com.stock.batch.entity.StockIndicator;
 import com.stock.batch.entity.StockPrice;
 import com.stock.batch.repository.StockPriceRepository;
 import com.stock.batch.service.StockApiService;
@@ -57,18 +58,23 @@ public class StockPriceBatch {
     @Bean
     public ItemProcessor<StockPrice, StockPrice> stockItemProcessor() {
         return item -> {
-
             List<StockPrice> historicalPrices = stockPriceRepository.findTop200ByStockCodeAndBasDtBeforeOrderByBasDtDesc(item.getStockCode(), item.getBasDt());
 
             if (historicalPrices != null && !historicalPrices.isEmpty()) {
-                item.setMa50(calculateMovingAverage(historicalPrices, 50));
-                item.setMa100(calculateMovingAverage(historicalPrices, 100));
-                item.setMa150(calculateMovingAverage(historicalPrices, 150));
-                item.setMa200(calculateMovingAverage(historicalPrices, 200));
+                StockIndicator indicator = new StockIndicator();
+                indicator.setMa5(calculateMovingAverage(historicalPrices, 5));
+                indicator.setMa20(calculateMovingAverage(historicalPrices, 20));
+                indicator.setMa60(calculateMovingAverage(historicalPrices, 60));
+                indicator.setMa120(calculateMovingAverage(historicalPrices, 120));
+                indicator.setMa200(calculateMovingAverage(historicalPrices, 200));
+                indicator.setMa250(calculateMovingAverage(historicalPrices, 250));
 
-                item.setMomentum1m(calculateMomentum(item.getEndPrice(), historicalPrices, 1));
-                item.setMomentum3m(calculateMomentum(item.getEndPrice(), historicalPrices, 3));
-                item.setMomentum6m(calculateMomentum(item.getEndPrice(), historicalPrices, 6));
+                indicator.setMomentum1m(calculateMomentum(item.getEndPrice(), historicalPrices, 1));
+                indicator.setMomentum3m(calculateMomentum(item.getEndPrice(), historicalPrices, 3));
+                indicator.setMomentum6m(calculateMomentum(item.getEndPrice(), historicalPrices, 6));
+
+                item.setStockIndicator(indicator);
+                indicator.setStockPrice(item);
             }
             return item;
         };
