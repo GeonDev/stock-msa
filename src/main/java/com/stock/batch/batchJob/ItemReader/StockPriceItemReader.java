@@ -4,6 +4,7 @@ import com.stock.batch.entity.StockPrice;
 import com.stock.batch.enums.StockMarket;
 import com.stock.batch.service.StockApiService;
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.batch.item.ItemReader;
 import org.springframework.beans.factory.annotation.Value;
 

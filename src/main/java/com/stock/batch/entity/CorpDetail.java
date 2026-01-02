@@ -33,12 +33,4 @@ public class CorpDetail implements Serializable {
     @Enumerated(EnumType.STRING)
     CorpCurrency corpType;
 
-    //종가 - (n일 종가)의 +/- 값
-    Integer momentum;
-
-    @PrePersist
-    public void prePersist() {
-        this.momentum = (this.momentum == null ? 0 : this.momentum);
-    }
-
 }

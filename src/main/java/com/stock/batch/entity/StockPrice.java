@@ -22,28 +22,49 @@ public class StockPrice {
 
     // 단축코드
     String stockCode;
+
     //주식시장 구분
     String marketCode;
+
     //기준일
     LocalDate basDt;
+
     //체결수량의 누적 합계
     Integer volume;
+
     //거래건 별 체결가격 * 체결수량의 누적 합계
     Long volumePrice;
+
     //시초가
     Integer startPrice;
+
     //종가
     Integer endPrice;
+
     //일간 최고가
     Integer highPrice;
+
     //일간 최저가
     Integer lowPrice;
+
     //전일 대비 등락값
     Double dailyRange;
+
     //전일 대비등락율
     Double dailyRatio;
+
     //상장 주식수
     Long stockTotalCnt;
+
     // 종가 * 상장 주식수 (시가총액)
     Long marketTotalAmt;
+
+    Double ma50;
+    Double ma100;
+    Double ma150;
+    Double ma200;
+
+    Double momentum1m;
+    Double momentum3m;
+    Double momentum6m;
 }

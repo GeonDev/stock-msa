@@ -1,32 +1,36 @@
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '3.4.8'
-	id 'io.spring.dependency-management' version '1.1.7'
+    id 'java'
+    id 'org.springframework.boot' version '3.4.8'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group = 'com.stock'
 version = '0.0.1-SNAPSHOT'
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(17)
-	}
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
 }
 
 configurations {
-	compileOnly {
-		extendsFrom annotationProcessor
-	}
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
 }
 
 ext {
-	set('springCloudVersion', "2024.0.2")
+    set('springCloudVersion', "2024.0.2")
 }
 
+// 프로파일 설정 (기본값: local)
+def profile = project.findProperty('profile') ?: 'local'
+
+println "Current profile: ${profile}"
 
 // 모든 의존성에서 Tomcat 일괄 제외
 configurations {
@@ -35,34 +39,41 @@ configurations {
     }
 }
 
-
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-batch'
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    implementation 'org.springframework.boot:spring-boot-starter-batch'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-undertow'
     implementation 'org.springframework.cloud:spring-cloud-starter-config'
-	implementation 'org.springframework.boot:spring-boot-starter-webflux'
-	//implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
-	implementation 'org.tinylog:tinylog-api:2.6.2'
-	implementation 'org.tinylog:tinylog-impl:2.6.2'
-	implementation 'org.apache.poi:poi-ooxml:5.3.0'
-	compileOnly 'org.projectlombok:lombok'
-	runtimeOnly 'com.h2database:h2:2.3.232'
-	annotationProcessor 'org.projectlombok:lombok'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testImplementation 'org.springframework.batch:spring-batch-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+    // local이 아닐 때만 eureka-client 추가
+    if (profile != 'local') {
+        implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+    }
+
+    implementation 'org.tinylog:tinylog-api:2.6.2'
+    implementation 'org.tinylog:tinylog-impl:2.6.2'
+
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-mysql'
+
+    compileOnly 'org.projectlombok:lombok'
+    runtimeOnly 'com.h2database:h2:2.3.232'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.batch:spring-batch-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
 }
 
 dependencyManagement {
-	imports {
-		mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
-	}
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+    useJUnitPlatform()
 }
