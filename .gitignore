@@ -25,3 +25,7 @@ replay_pid*
 /.idea/
 /build/
 /.gradle/
+/target/
+
+# Gemini Analysis Report
+GEMINI_REPORT.md

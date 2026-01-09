@@ -1,0 +1,141 @@
+#!/bin/zsh
+
+# 1. 환경 변수 및 절대 경로 설정
+export PATH="$PATH:/usr/local/bin:/opt/homebrew/bin"
+source ~/.zshrc 2>/dev/null
+
+# 프로젝트 루트 경로 확보 (실패 시 현재 경로 사용)
+PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+REPORT_FILE="$PROJECT_ROOT/GEMINI_REPORT.md"
+TMP_MSG_FILE="$PROJECT_ROOT/.git/GEMINI_MSG_TMP"
+
+# 디버깅: 경로 확인 (터미널 출력용)
+echo "📂 프로젝트 루트: $PROJECT_ROOT"
+echo "📄 리포트 저장 경로: $REPORT_FILE"
+
+# 2. 리포트 파일 초기화 (권한 확보)
+# 분석 전에 파일을 미리 생성하여 쓰기 권한을 확인합니다.
+rm -f "$REPORT_FILE"
+touch "$REPORT_FILE"
+chmod 666 "$REPORT_FILE"
+
+if [ ! -w "$REPORT_FILE" ]; then
+    echo "❌ [오류] 리포트 파일에 쓸 수 없습니다. 권한을 확인하세요."
+    exit 1
+fi
+
+# 3. 시스템 파일 정리 (.DS_Store)
+git diff --cached --name-only | grep ".DS_Store" | xargs git reset HEAD > /dev/null 2>&1
+
+# 4. 분석 대상 추출 (삭제된 파일 제외)
+EXTENSIONS="java|sql|xml|html|ftl|properties|yml|yaml"
+# ACMR: Added, Copied, Modified, Renamed (Deleted 제외)
+FILES=($(git diff --cached --name-only --diff-filter=ACMR | grep -E "\.($EXTENSIONS)$"))
+
+if [ ${#FILES[@]} -eq 0 ]; then exit 0; fi
+
+echo "🤖 시니어 아키텍트 제미나이가 정밀 분석을 시작합니다..."
+
+# 5. 데이터 구조화 (환각 원천 차단 로직 적용)
+CLEAN_INPUT="당신은 시니어 아키텍트입니다. 아래 코드 블록들을 독립적으로 검토하세요.
+[필독: 파일 경로 정보는 모두 제거되었습니다. 코드 내부만 분석하세요.]\n\n"
+
+MAPPING_INFO=""
+COUNTER=1
+
+for file in "${FILES[@]}"; do
+    # [핵심] 파일이 실제로 존재하는지 확인 (Deleted 파일 건너뛰기 -> Fatal 에러 해결)
+    if [ -f "$PROJECT_ROOT/$file" ]; then
+        FILENAME=$(basename "$file")
+        
+        # [핵심] 환각 방지: '+++' 로 시작하는 헤더 라인을 grep -v 로 제거
+        # grep "^+" : 추가된 라인만 선택
+        # grep -v "^+++" : 파일 경로 헤더(+++ b/src/...) 제거
+        # sed 's/^+//' : 코드 앞의 + 기호 제거
+        CODE=$(git diff --cached --unified=0 -- "$file" | grep "^+" | grep -v "^+++" | sed 's/^+//')
+        
+        if [ -n "$CODE" ]; then
+            ID="F$COUNTER"
+            CLEAN_INPUT+="[$ID: $FILENAME]\nCODE_START\n\"\"\"\n$CODE\n\"\"\"\nCODE_END\n\n"
+            MAPPING_INFO+="- **$ID** : $file ($FILENAME)\n"
+            ((COUNTER++))
+        fi
+    fi
+done
+
+# 6. 제미나이에게 분석 요청
+RESPONSE=$(echo "$CLEAN_INPUT" | gemini "너는 자바 스프링 및 시스템 아키텍처 전문가이다.
+
+[응답 가이드]
+1. 결함 발견 시: 반드시 '[BLOCK] [클래스명]: 이유' 형식으로 작성.
+2. 정상일 때: 아래 태그를 사용하여 상세 분석 (마크다운 ** 사용 금지).
+   [PASS]
+   [PROJECT_IMPACT]: 시스템 영향 분석
+   [SIDE_EFFECTS]: 부작용 및 리스크
+   [CLEAN_CODE]: 클린 코드 및 리팩토링 제안
+   [PERFORMANCE]: 성능 최적화 (DB 인덱스, N+1 등)
+   [COMPLEXITY]: 복잡도 점수(1~10) 및 이유
+   [TEST_GUIDE]: 테스트 시나리오
+   [COMMIT_MSG]: 커밋 메시지 (JIRA ID 제외, 한글)")
+
+# 7. 데이터 파싱 및 리포트 작성
+# 태그 파싱 함수 (AI 응답에서 텍스트 추출)
+parse_section() { 
+    echo "$RESPONSE" | sed -n "/$1/,/\[/p" | grep -v "\[" | sed 's/^\* //g; s/\*\*//g' | xargs 
+}
+
+# 리포트 공통 헤더 작성
+{
+    echo "# 🤖 Gemini 시니어 코드 리뷰 리포트"
+    echo "\n> **분석 일시:** $(date '+%Y-%m-%d %H:%M:%S')"
+    echo "\n## 📂 분석 대상 파일\n$MAPPING_INFO"
+    echo "\n---"
+} > "$REPORT_FILE"
+
+if [[ "$RESPONSE" == *"[BLOCK]"* ]]; then
+    echo "\n❌ [커밋 거부] 코드 결함이 발견되었습니다. 리포트($REPORT_FILE)를 확인하세요."
+    
+    # 에러 리포트 작성
+    {
+        echo "\n### 🚨 커밋 거부 사유"
+        echo "제미나이가 다음 결함을 발견했습니다:\n"
+        echo "$RESPONSE" | grep -v "Loaded cached credentials"
+    } >> "$REPORT_FILE"
+    
+    exit 1
+else
+    # 섹션 데이터 파싱
+    IMPACT=$(parse_section "\[PROJECT_IMPACT\]")
+    SIDES=$(parse_section "\[SIDE_EFFECTS\]")
+    CLEAN=$(parse_section "\[CLEAN_CODE\]")
+    PERF=$(parse_section "\[PERFORMANCE\]")
+    COMP=$(parse_section "\[COMPLEXITY\]")
+    TESTS=$(parse_section "\[TEST_GUIDE\]")
+    NEW_MSG=$(parse_section "\[COMMIT_MSG\]")
+
+    # 정상 리포트 작성
+    {
+        echo "\n### 🔍 1. 프로젝트 영향도 분석\n${IMPACT:-내용 없음}"
+        echo "\n### ⚠️ 2. 예상되는 사이드 이펙트\n${SIDES:-특이사항 없음}"
+        echo "\n### ✨ 3. 클린 코드 관점 리뷰\n${CLEAN:-제안 사항 없음}"
+        echo "\n### ⚡ 4. 성능 최적화(Performance)\n${PERF:-최적화 완료}"
+        echo "\n### 📊 5. 코드 복잡도(Complexity)\n**점수: ${COMP:-0}**"
+        echo "\n### 🧪 6. 추천 테스트 시나리오\n${TESTS:-기본 테스트 수행}"
+        echo "\n---\n"
+        echo "✅ **모든 검토를 통과하여 커밋이 승인되었습니다.**"
+    } >> "$REPORT_FILE"
+
+    # JIRA ID 추출 및 메시지 결합
+    CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+    JIRA_ID=$(echo "$CURRENT_BRANCH" | grep -oE '[A-Z]+-[0-9]+' | head -1)
+    
+    [ -z "$NEW_MSG" ] && NEW_MSG="feat: 소스 코드 업데이트"
+    [ -n "$JIRA_ID" ] && FINAL_MSG="[$JIRA_ID] $NEW_MSG" || FINAL_MSG="$NEW_MSG"
+
+    echo "$FINAL_MSG" > "$TMP_MSG_FILE"
+    chmod 666 "$TMP_MSG_FILE"
+    
+    echo "\n✅ [분석 완료] 리포트 저장 완료: $REPORT_FILE"
+    echo "💡 커밋 메시지: $FINAL_MSG"
+    exit 0
+fi

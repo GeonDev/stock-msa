@@ -97,6 +97,29 @@ public class BatchController {
         return ResponseEntity.ok("SET CORP FINANCE");
     }
 
+    @PostMapping("/price-weekly")
+    public ResponseEntity<String> weeklyStockPrice() throws Exception {
+        JobParameters jobParameters = new JobParametersBuilder()
+                .addLong("time", System.currentTimeMillis())
+                .toJobParameters();
+
+        jobLauncher.run(jobRegistry.getJob("weeklyStockDataJob"), jobParameters);
+
+        return ResponseEntity.ok("SET WEEKLY PRICE");
+    }
+
+    @PostMapping("/price-monthly")
+    public ResponseEntity<String> monthlyStockPrice() throws Exception {
+        JobParameters jobParameters = new JobParametersBuilder()
+                .addLong("time", System.currentTimeMillis())
+                .toJobParameters();
+
+        jobLauncher.run(jobRegistry.getJob("monthlyStockDataJob"), jobParameters);
+
+        return ResponseEntity.ok("SET MONTHLY PRICE");
+    }
+
+
 
 
 
