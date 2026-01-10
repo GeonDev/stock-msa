@@ -46,7 +46,7 @@ class StockPriceBatchTest {
                 .build();
 
         List<StockPrice> historicalPrices = new ArrayList<>();
-        for (int i = 0; i < 200; i++) {
+        for (int i = 0; i < 300; i++) {
             historicalPrices.add(StockPrice.builder().endPrice(60000 + i * 10).build());
         }
         when(stockPriceRepository.findTop200ByStockCodeAndBasDtBeforeOrderByBasDtDesc(anyString(), any(LocalDate.class)))
@@ -82,9 +82,7 @@ class StockPriceBatchTest {
                 .build();
 
         List<StockPrice> historicalPrices = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
-            historicalPrices.add(StockPrice.builder().endPrice(60000 + i * 10).build());
-        }
+        // No historical data
         when(stockPriceRepository.findTop200ByStockCodeAndBasDtBeforeOrderByBasDtDesc(anyString(), any(LocalDate.class)))
                 .thenReturn(historicalPrices);
 

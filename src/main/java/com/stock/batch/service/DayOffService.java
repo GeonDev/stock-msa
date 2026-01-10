@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
@@ -24,7 +24,7 @@ public class DayOffService {
     @Value("${data-go.service-key}")
     String serviceKey;
 
-    private final WebClient webClient;
+    private final RestClient restClient;
 
     // 대한민국 공휴일 체크 - 불필요한 배치 수행 안함
     public boolean checkIsDayOff(LocalDate targetDate) {
@@ -49,13 +49,12 @@ public class DayOffService {
                 .build()
                 .toUri();
 
-        //API 호출 (WebClient)
-        String responseXml = webClient.get()
+        //API 호출 (RestClient)
+        String responseXml = restClient.get()
                 .uri(uri)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
-                .bodyToMono(String.class)
-                .block();  // 동기 호출
+                .body(String.class);
 
         try {
             List<String> dateList = parseLocdatesFromXml(responseXml);

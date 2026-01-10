@@ -60,5 +60,7 @@ public class StockPrice {
     Long marketTotalAmt;
 
     @OneToOne(mappedBy = "stockPrice", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
+    @lombok.EqualsAndHashCode.Exclude
     private StockIndicator stockIndicator;
 }

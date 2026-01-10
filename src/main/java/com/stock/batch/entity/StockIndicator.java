@@ -23,6 +23,8 @@ public class StockIndicator implements Serializable  {
     @OneToOne(fetch = FetchType.LAZY)
     @MapsId
     @JoinColumn(name = "STOCK_PRICE_ID")
+    @lombok.ToString.Exclude
+    @lombok.EqualsAndHashCode.Exclude
     private StockPrice stockPrice;
 
     private Double ma5;

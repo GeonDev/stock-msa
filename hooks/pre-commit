@@ -83,7 +83,8 @@ echo ""
 # 5. 순수 코드 추출 (Git 메타데이터 제거 - 환각 방지 핵심)
 # ============================================================================
 
-CLEAN_INPUT="당신은 시니어 자바 스프링 및 시스템 아키텍처 전문가입니다.
+CLEAN_INPUT="당신은 시니어 백엔드 개발자이자 코드 리뷰 전문가입니다.
+Java/Spring 프레임워크, 시스템 아키텍처, 성능 최적화에 깊은 전문성을 가지고 있습니다.
 
 [중요 지침]
 - 아래는 Git diff에서 추출한 순수 코드 변경 사항입니다
@@ -172,14 +173,14 @@ AI_PROMPT="${CLEAN_INPUT}
 - 마크다운 ** 기호는 절대 사용하지 말 것
 - 태그는 반드시 대괄호 [] 안에 작성"
 
-# AI 요청 실행 (타임아웃 90초, 에러 핸들링 적용)
-echo "${CYAN}[AI] Gemini 분석 중... (최대 90초)${NC}"
+# AI 요청 실행 (에러 핸들링 적용)
+echo "${CYAN}[AI] Gemini 분석 중...${NC}"
 
 AI_RESPONSE=""
 AI_ERROR=0
 
-# timeout과 함께 실행, 실패 시 에러 플래그 설정
-if ! AI_RESPONSE=$(echo "$AI_PROMPT" | timeout 90 gemini 2>&1); then
+# Gemini API 호출 (일반적으로 10-30초 내 응답)
+if ! AI_RESPONSE=$(echo "$AI_PROMPT" | gemini 2>&1); then
     AI_ERROR=1
 fi
 

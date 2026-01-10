@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -26,7 +26,7 @@ public class StockApiService {
     @Value("${data-go.service-key}")
     String serviceKey;
 
-    private final WebClient webClient;
+    private final RestClient restClient;
 
     public List<CorpInfo> getCorpInfo(String basDt) throws Exception {
         List<CorpInfo> corpList = new ArrayList<>();
@@ -45,11 +45,10 @@ public class StockApiService {
                     .queryParam("basDt", basDt)
                     .build();
 
-            String responseBody = webClient.get()
-                    .uri(uri.toString())
+            String responseBody = restClient.get()
+                    .uri(uri.toUri())
                     .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
+                    .body(String.class);
 
             ApiBody<CorpInfo> result = ParseUtils.parseCorpInfoFromXml(responseBody);
 
@@ -85,11 +84,10 @@ public class StockApiService {
                     .queryParam("basDt", basDt)
                     .build();
 
-            String responseBody = webClient.get()
-                    .uri(uri.toString())
+            String responseBody = restClient.get()
+                    .uri(uri.toUri())
                     .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
+                    .body(String.class);
 
             ApiBody<StockPrice> result = ParseUtils.parseStockPriceFromXml(responseBody);
 
@@ -120,11 +118,10 @@ public class StockApiService {
                     .queryParam("bizYear", bizYear)
                     .build();
 
-            String responseBody = webClient.get()
-                    .uri(uri.toString())
+            String responseBody = restClient.get()
+                    .uri(uri.toUri())
                     .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
+                    .body(String.class);
 
             ApiBody<CorpFinance> result = ParseUtils.parseCorpFinanceFromXml(responseBody);
 
@@ -138,10 +135,5 @@ public class StockApiService {
         }
         return corpList;
     }
-
-
-
-
-
 
 }
