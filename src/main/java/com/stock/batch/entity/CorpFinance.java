@@ -1,6 +1,7 @@
 package com.stock.batch.entity;
 
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,54 +17,68 @@ import java.time.LocalDate;
 @Builder
 @AllArgsConstructor
 @RequiredArgsConstructor
+@IdClass(CorpFinanceId.class)
 @Table(name = "TB_CORP_FINANCE")
+@Schema(description = "기업 재무 정보")
 public class CorpFinance implements Serializable {
 
     @Id
+    @Schema(description = "법인번호", example = "1101110000000")
     String corpCode;
 
-    //거래 기준 일자(년월일)
+    @Id
+    @Schema(description = "거래 기준 일자", example = "2024-01-01")
     LocalDate basDt;
 
-    //법인세의 과세기간
+    @Schema(description = "법인세의 과세기간 (사업연도)", example = "2023")
     String bizYear;
 
-    //통화 코드
+    @Schema(description = "통화 코드", example = "KRW")
     String currency;
 
-    //영업이익(enpBzopPft)
-    Integer opIncome;
+    @Schema(description = "당기 영업이익")
+    Long opIncome;
 
-    //투자금 (enpCptlAmt)
-    Integer investment;
+    @Schema(description = "전기 영업이익")
+    Long prevOpIncome;
 
-    //당기 순이익(enpCrtmNpf)
-    Integer netIncome;
+    @Schema(description = "투자금 (자본금)")
+    Long investment;
 
-    //매출액 (enpSaleAmt)
-    Integer revenue;
+    @Schema(description = "당기 순이익")
+    Long netIncome;
 
-    //기업 총 자산 (enpTastAmt)
-    Integer totalAsset;
+    @Schema(description = "전기 순이익")
+    Long prevNetIncome;
 
-    //기업 총 부채 (enpTdbtAmt)
-    Integer totalDebt;
+    @Schema(description = "당기 매출액")
+    Long revenue;
 
-    //기업 총 자본 (enpTcptAmt)
-    Integer totalCapital;
+    @Schema(description = "전기 매출액")
+    Long prevRevenue;
 
-    // 회계 보고서 코드 (fnclDcd)
+    @Schema(description = "기업 총 자산")
+    Long totalAsset;
+
+    @Schema(description = "기업 총 부채")
+    Long totalDebt;
+
+    @Schema(description = "기업 총 자본")
+    Long totalCapital;
+
+    @Schema(description = "회계 보고서 코드 (11013: 1분기, 11012: 반기, 11014: 3분기, 11011: 사업보고서)")
     String docCode;
 
-    //회계 보고서 명칭 (fnclDcdNm)
+    @Schema(description = "회계 보고서 명칭")
     String docName;
 
-    //회계 보고서 상 부채 비율 (fnclDebtRto)
+    @Schema(description = "회계 보고서 상 부채 비율")
     Double docDebtRatio;
 
-    //법인세차감전순이익 (iclsPalClcAmt)
-    Integer incomeBeforeTax;
+    @Schema(description = "법인세차감전순이익")
+    Long incomeBeforeTax;
 
     @OneToOne(mappedBy = "corpFinance", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @Schema(description = "재무 지표 정보")
     private CorpFinanceIndicator corpFinanceIndicator;
 }

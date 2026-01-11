@@ -116,7 +116,7 @@ public class CorpFinanceBatch {
         return builder.build();
     }
 
-    private Double calculateGrowthRate(Integer currentValue, Integer previousValue) {
+    private Double calculateGrowthRate(Long currentValue, Long previousValue) {
         if (currentValue == null || previousValue == null || previousValue == 0) {
             return null;
         }

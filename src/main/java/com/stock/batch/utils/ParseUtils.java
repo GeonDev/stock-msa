@@ -42,9 +42,9 @@ public class ParseUtils {
             }
 
             //API 호출 값 확인
-            result.setNumOfRows(Integer.parseInt(getTagValue("numOfRows", doc.getDocumentElement())));
-            result.setPageNo(Integer.parseInt(getTagValue("pageNo", doc.getDocumentElement())));
-            result.setTotalCount(Integer.parseInt(getTagValue("totalCount", doc.getDocumentElement())));
+            result.setNumOfRows(safeParseInt(getTagValue("numOfRows", doc.getDocumentElement())));
+            result.setPageNo(safeParseInt(getTagValue("pageNo", doc.getDocumentElement())));
+            result.setTotalCount(safeParseInt(getTagValue("totalCount", doc.getDocumentElement())));
 
             //item 리스트 추출 (없을 수도 있음)
             NodeList itemList = doc.getElementsByTagName("item");
@@ -56,17 +56,20 @@ public class ParseUtils {
                         .bizYear(getTagValue("bizYear", item))
                         .corpCode(getTagValue("crno", item))
                         .currency(getTagValue("curCd", item))
-                        .opIncome(Integer.parseInt(getTagValue("enpBzopPft", item)))
-                        .investment(Integer.parseInt(getTagValue("enpCptlAmt", item)))
-                        .netIncome(Integer.parseInt(getTagValue("enpCrtmNpf", item)))
-                        .incomeBeforeTax(Integer.parseInt(getTagValue("iclsPalClcAmt", item)))
-                        .revenue(Integer.parseInt(getTagValue("enpSaleAmt", item)))
-                        .totalAsset(Integer.parseInt(getTagValue("enpTastAmt", item)))
-                        .totalDebt(Integer.parseInt(getTagValue("enpTdbtAmt", item)))
-                        .totalCapital(Integer.parseInt(getTagValue("enpTcptAmt", item)))
+                        .opIncome(safeParseLong(getTagValue("enpBzopPft", item)))
+                        .prevOpIncome(safeParseLong(getTagValue("frmtrmBzopPft", item))) // 전기 영업이익
+                        .investment(safeParseLong(getTagValue("enpCptlAmt", item)))
+                        .netIncome(safeParseLong(getTagValue("enpCrtmNpf", item)))
+                        .prevNetIncome(safeParseLong(getTagValue("frmtrmCrtmNpf", item))) // 전기 순이익
+                        .incomeBeforeTax(safeParseLong(getTagValue("iclsPalClcAmt", item)))
+                        .revenue(safeParseLong(getTagValue("enpSaleAmt", item)))
+                        .prevRevenue(safeParseLong(getTagValue("frmtrmSaleAmt", item))) // 전기 매출액
+                        .totalAsset(safeParseLong(getTagValue("enpTastAmt", item)))
+                        .totalDebt(safeParseLong(getTagValue("enpTdbtAmt", item)))
+                        .totalCapital(safeParseLong(getTagValue("enpTcptAmt", item)))
                         .docCode(getTagValue("fnclDcd", item))
                         .docName(getTagValue("fnclDcdNm", item))
-                        .docDebtRatio(Double.parseDouble(getTagValue("fnclDebtRto", item)))
+                        .docDebtRatio(safeParseDouble(getTagValue("fnclDebtRto", item)))
                         .build());
             }
         }
@@ -74,6 +77,39 @@ public class ParseUtils {
         result.setItemList(financeList);
 
         return result;
+    }
+
+    private static Integer safeParseInt(String value) {
+        if (!StringUtils.hasText(value)) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private static Long safeParseLong(String value) {
+        if (!StringUtils.hasText(value)) {
+            return 0L;
+        }
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException e) {
+            return 0L;
+        }
+    }
+
+    private static Double safeParseDouble(String value) {
+        if (!StringUtils.hasText(value)) {
+            return 0.0;
+        }
+        try {
+            return Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            return 0.0;
+        }
     }
 
 
