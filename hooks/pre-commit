@@ -165,7 +165,7 @@ AI_PROMPT="${CLEAN_INPUT}
    [PERFORMANCE]: 성능 최적화 가능성 (DB 쿼리, N+1 문제, 인덱스, 캐싱 등)
    [COMPLEXITY]: 코드 복잡도 점수 (1~10점) 및 이유
    [TEST_GUIDE]: 필수 테스트 시나리오 제안 (단위 테스트, 통합 테스트)
-   [COMMIT_MSG]: 커밋 메시지 제안 (한글, JIRA ID 제외, 간결하게)
+   [COMMIT_MSG]: 커밋 메시지 제안 (순수 한글로만, feat/fix/refactor 같은 영문 접두사 제외, JIRA ID 제외, 간결하게)
 
 [응답 규칙]
 - 모든 응답은 한글로 작성
@@ -366,11 +366,11 @@ else
 
     # JIRA ID 결합한 최종 커밋 메시지 생성
     if [[ -z "$COMMIT_MSG" ]] || [[ "$COMMIT_MSG" == "정보 없음" ]]; then
-        COMMIT_MSG="코드 개선 및 리팩토링"
+        COMMIT_MSG="코드 개선"
     fi
 
     if [[ -n "$JIRA_ID" ]]; then
-        FINAL_MSG="[$JIRA_ID] $COMMIT_MSG"
+        FINAL_MSG="$JIRA_ID $COMMIT_MSG"
     else
         FINAL_MSG="$COMMIT_MSG"
     fi
