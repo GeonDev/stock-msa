@@ -1,0 +1,45 @@
+# Dev profile continues to use Spring Cloud Config
+spring:
+  config:
+    import: optional:configserver:http://localhost:9000
+
+  cloud:
+    discovery:
+      enabled: true
+    config:
+      username: username
+      password: password
+  devtools:
+    livereload:
+      enabled: true
+    restart:
+      enabled: true
+  batch:
+    job:
+      enabled: false
+    jdbc:
+      initialize-schema: embedded
+  datasource-meta:
+    driver-class-name: org.mariadb.jdbc.Driver
+    jdbc-url: ${datasource-meta.url}
+    username: ${datasource-meta.username}
+    password: ${datasource-meta.password}
+
+  datasource-data:
+    driver-class-name: org.mariadb.jdbc.Driver
+    jdbc-url: ${datasource-stock.url}
+    username: ${datasource-stock.username}
+    password: ${datasource-stock.password}
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry : true
+    service-url:
+      defaultZone-url: http://localhost:9000/eureka
+
+data-go:
+  service-key: ${data-go.service-key}
+
+dart:
+  api-key: ${dart.api-key}

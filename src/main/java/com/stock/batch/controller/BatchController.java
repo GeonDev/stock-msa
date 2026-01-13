@@ -3,6 +3,7 @@ package com.stock.batch.controller;
 
 import com.stock.batch.enums.StockMarket;
 import com.stock.batch.service.DayOffService;
+import com.stock.batch.service.RecoveryService;
 import com.stock.batch.service.StockApiService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -32,6 +33,7 @@ public class BatchController {
 
     private final JobLauncher jobLauncher;
     private final JobRegistry jobRegistry;
+    private final RecoveryService recoveryService;
 
     private final DayOffService dayOffService;
 
@@ -132,11 +134,22 @@ public class BatchController {
         return ResponseEntity.ok("SET MONTHLY PRICE");
     }
 
+    @PostMapping("/price/recovery")
+    @Operation(summary = "주식 시세 정보 재수집", description = "특정 기간의 일별, 주별, 월별 시세 데이터를 재수집합니다.")
+    public ResponseEntity<String> recoveryStockPriceApi(
+            @Parameter(description = "시작일 (yyyyMMdd)", example = "20240101") @RequestParam(value = "startDate") String startDate,
+            @Parameter(description = "종료일 (yyyyMMdd)", example = "20240331") @RequestParam(value = "endDate") String endDate) {
+
+        recoveryService.recoverStockPrices(toStringLocalDate(startDate), toStringLocalDate(endDate));
+
+        return ResponseEntity.ok("Price recovery process started for " + startDate + " - " + endDate);
+    }
+
     @PostMapping("/corp-fin/recovery")
-    @Operation(summary = "기업 재무 정보 재수집 (복구용)", description = "특정 기간의 재무 데이터를 재수집하여 오버플로우로 인해 손상된 데이터를 복구합니다.")
+    @Operation(summary = "기업 재무 정보 재수집", description = "특정 기간의 재무 데이터를 재수집 합니다.")
     public ResponseEntity<String> recoveryCorpFinanceApi(
             @Parameter(description = "시작 연도 (yyyy)", example = "2020") @RequestParam(value = "startYear") int startYear,
-            @Parameter(description = "종료 연도 (yyyy)", example = "2023") @RequestParam(value = "endYear") int endYear) throws Exception {
+            @Parameter(description = "종료 연도 (yyyy)", example = "2025") @RequestParam(value = "endYear") int endYear) throws Exception {
 
         for (int year = startYear; year <= endYear; year++) {
             // 각 연도별로 배치 실행 (날짜는 해당 연도의 1월 1일로 설정하여 Reader에서 연도 추출)
@@ -155,9 +168,4 @@ public class BatchController {
 
         return ResponseEntity.ok("RECOVERY STARTED for " + startYear + " - " + endYear);
     }
-
-
-
-
-
 }

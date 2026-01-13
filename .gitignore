@@ -29,3 +29,6 @@ replay_pid*
 
 # Gemini Analysis Report
 GEMINI_REPORT.md
+
+# Environment variables
+.env
