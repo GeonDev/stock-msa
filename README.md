@@ -19,6 +19,8 @@ stock-batch
 
 ## 로컬 개발 환경에서 실행
 
+***주의: `application.yaml` 파일에 여러 프로파일 설정을 함께 정의할 경우, Gemini 분석 시 오류가 발생할 수 있습니다. 각 프로파일은 `application-{profile}.yaml`과 같이 별도의 파일로 분리하여 관리하는 것을 권장합니다.***
+
 ### 사전 준비
 - Java 17
 - Docker (H2 데이터베이스 서버 실행용)
