@@ -183,7 +183,7 @@ application.yaml, application.yml, *.properties 파일에 대해서는:
    [PASS]
    [PROJECT_IMPACT]: 이 변경이 전체 시스템에 미치는 영향 분석 (DB 스키마, API 호환성 등)
    [SIDE_EFFECTS]: 예상되는 부작용 및 리스크 (트랜잭션, 동시성, 메모리 등)
-   [CLEAN_CODE]: 클린 코드 및 리팩토링 제안 (네이밍, 중복 코드, SOLID 원칙, YAML 경고 등)
+   [CLEAN_CODE]: 클린 코드 및 리팩토링 제안 (Google Java Style Guide(https://google.github.io/styleguide/javaguide.html)를 참고하여 네이밍, 중복 코드, SOLID 원칙, YAML 경고 등)
    [PERFORMANCE]: 성능 최적화 가능성 (DB 쿼리, N+1 문제, 인덱스, 캐싱 등)
    [COMPLEXITY]: 코드 복잡도 점수 (1~10점) 및 이유
    [TEST_GUIDE]: 필수 테스트 시나리오 제안 (단위 테스트, 통합 테스트)
