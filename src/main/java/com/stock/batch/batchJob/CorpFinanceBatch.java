@@ -79,7 +79,9 @@ public class CorpFinanceBatch {
     }
 
     private CorpFinanceIndicator calculateIndicators(CorpFinance currentFinance, Long marketCap) {
-        CorpFinanceIndicator.CorpFinanceIndicatorBuilder builder = CorpFinanceIndicator.builder();
+        CorpFinanceIndicator.CorpFinanceIndicatorBuilder builder = CorpFinanceIndicator.builder()
+                .corpCode(currentFinance.getCorpCode())
+                .basDt(currentFinance.getBasDt());
 
         // Calculate ROE, ROA, Debt Ratio from current data
         if (currentFinance.getTotalCapital() != null && currentFinance.getTotalCapital() != 0) {
@@ -127,7 +129,7 @@ public class CorpFinanceBatch {
     public RepositoryItemWriter<CorpFinance> corpFinanceWriter() {
         return new RepositoryItemWriterBuilder<CorpFinance>()
                 .repository(corpFinanceRepository)
-                .methodName("saveAll")
+                .methodName("save")
                 .build();
     }
 }

@@ -22,7 +22,7 @@ public class StockIndicator implements Serializable  {
 
     @OneToOne(fetch = FetchType.LAZY)
     @MapsId
-    @JoinColumn(name = "STOCK_PRICE_ID")
+    @JoinColumn(name = "STOCK_PRICE_ID", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     @lombok.ToString.Exclude
     @lombok.EqualsAndHashCode.Exclude
     private StockPrice stockPrice;

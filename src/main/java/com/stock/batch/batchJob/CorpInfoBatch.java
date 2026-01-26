@@ -73,7 +73,7 @@ public class CorpInfoBatch {
 
         return new RepositoryItemWriterBuilder<CorpInfo>()
                 .repository(corpInfoRepository)
-                .methodName("saveAll")
+                .methodName("save")
                 .build();
     }
 

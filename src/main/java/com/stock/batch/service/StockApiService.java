@@ -15,6 +15,8 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,13 +35,15 @@ public class StockApiService {
         int pageNum = 1;
         int totalPage = 1;
 
+        String decodedServiceKey = URLDecoder.decode(serviceKey, StandardCharsets.UTF_8);
+
         while (totalPage >= pageNum) {
             UriComponents uri = UriComponentsBuilder
                     .newInstance()
                     .scheme("http")
                     .host(ApplicationConstants.API_GO_URL)
                     .path(ApplicationConstants.KRX_CORP_LIST_URI)
-                    .queryParam("serviceKey", serviceKey)
+                    .queryParam("serviceKey", decodedServiceKey)
                     .queryParam("numOfRows", ApplicationConstants.PAGE_SIZE)
                     .queryParam("pageNo", pageNum)
                     .queryParam("basDt", basDt)
@@ -50,15 +54,18 @@ public class StockApiService {
                     .retrieve()
                     .body(String.class);
 
-            ApiBody<CorpInfo> result = ParseUtils.parseCorpInfoFromXml(responseBody);
-
-            log.debug("pageNum : {} totalPage : {}" , pageNum, totalPage);
-            if(pageNum == 1){
-                totalPage = (int) Math.ceil((double) result.getTotalCount() / ApplicationConstants.PAGE_SIZE);
+            try {
+                ApiBody<CorpInfo> result = ParseUtils.parseCorpInfoFromXml(responseBody);
+                log.debug("pageNum : {} totalPage : {}" , pageNum, totalPage);
+                if(pageNum == 1){
+                    totalPage = (int) Math.ceil((double) result.getTotalCount() / ApplicationConstants.PAGE_SIZE);
+                }
+                corpList.addAll(result.getItemList());
+                pageNum++;
+            } catch (Exception e) {
+                log.error("Failed to parse XML response: {}", responseBody);
+                throw e;
             }
-            corpList.addAll(result.getItemList());
-
-            pageNum++;
         }
             return corpList;
     }
@@ -70,6 +77,8 @@ public class StockApiService {
         int pageNum = 1;
         int totalPage = 1;
 
+        String decodedServiceKey = URLDecoder.decode(serviceKey, StandardCharsets.UTF_8);
+
         while (totalPage >= pageNum){
 
             UriComponents uri = UriComponentsBuilder
@@ -77,26 +86,32 @@ public class StockApiService {
                     .scheme("http")
                     .host(ApplicationConstants.API_GO_URL)
                     .path(ApplicationConstants.KRX_STOCK_VALUE_URI)
-                    .queryParam("serviceKey", serviceKey)
+                    .queryParam("serviceKey", decodedServiceKey)
                     .queryParam("numOfRows", ApplicationConstants.PAGE_SIZE)
                     .queryParam("pageNo", pageNum)
                     .queryParam("mrktCls", marketType.name())
                     .queryParam("basDt", basDt)
                     .build();
 
+            log.debug("Request URI: {}", uri.toUri());
+
             String responseBody = restClient.get()
                     .uri(uri.toUri())
                     .retrieve()
                     .body(String.class);
 
-            ApiBody<StockPrice> result = ParseUtils.parseStockPriceFromXml(responseBody);
-
-            log.debug("pageNum : {} totalPage : {}" , pageNum, totalPage);
-            if(pageNum == 1){
-                totalPage = (int) Math.ceil((double) result.getTotalCount() / ApplicationConstants.PAGE_SIZE);
+            try {
+                ApiBody<StockPrice> result = ParseUtils.parseStockPriceFromXml(responseBody);
+                log.debug("pageNum : {} totalPage : {}" , pageNum, totalPage);
+                if(pageNum == 1){
+                    totalPage = (int) Math.ceil((double) result.getTotalCount() / ApplicationConstants.PAGE_SIZE);
+                }
+                priceList.addAll(result.getItemList());
+                pageNum++;
+            } catch (Exception e) {
+                log.error("Failed to parse XML response for date {}: {}", basDt, responseBody);
+                throw e;
             }
-            priceList.addAll(result.getItemList());
-            pageNum++;
         }
         return priceList;
     }
@@ -106,13 +121,15 @@ public class StockApiService {
         int pageNum = 1;
         int totalPage = 1;
 
+        String decodedServiceKey = URLDecoder.decode(serviceKey, StandardCharsets.UTF_8);
+
         while (totalPage >= pageNum) {
             UriComponents uri = UriComponentsBuilder
                     .newInstance()
                     .scheme("https")
                     .host(ApplicationConstants.API_GO_URL)
                     .path(ApplicationConstants.KRX_STOCK_FINANCE_URI)
-                    .queryParam("serviceKey", serviceKey)
+                    .queryParam("serviceKey", decodedServiceKey)
                     .queryParam("numOfRows", ApplicationConstants.PAGE_SIZE)
                     .queryParam("pageNo", pageNum)
                     .queryParam("bizYear", bizYear)
@@ -123,15 +140,18 @@ public class StockApiService {
                     .retrieve()
                     .body(String.class);
 
-            ApiBody<CorpFinance> result = ParseUtils.parseCorpFinanceFromXml(responseBody);
-
-            log.debug("pageNum : {} totalPage : {}" , pageNum, totalPage);
-            if(pageNum == 1){
-                totalPage = (int) Math.ceil((double) result.getTotalCount() / ApplicationConstants.PAGE_SIZE);
+            try {
+                ApiBody<CorpFinance> result = ParseUtils.parseCorpFinanceFromXml(responseBody);
+                log.debug("pageNum : {} totalPage : {}" , pageNum, totalPage);
+                if(pageNum == 1){
+                    totalPage = (int) Math.ceil((double) result.getTotalCount() / ApplicationConstants.PAGE_SIZE);
+                }
+                corpList.addAll(result.getItemList());
+                pageNum++;
+            } catch (Exception e) {
+                log.error("Failed to parse XML response: {}", responseBody);
+                throw e;
             }
-            corpList.addAll(result.getItemList());
-
-            pageNum++;
         }
         return corpList;
     }

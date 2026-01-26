@@ -11,4 +11,5 @@ import java.util.List;
 public interface StockWeeklyPriceRepository extends JpaRepository<StockWeeklyPrice, Long> {
     void deleteByEndDateBetween(LocalDate startDate, LocalDate endDate);
     void deleteByStockCodeInAndEndDateBetween(List<String> stockCodes, LocalDate startDate, LocalDate endDate);
+    List<StockWeeklyPrice> findByStockCodeInAndEndDateBetween(List<String> stockCodes, LocalDate startDate, LocalDate endDate);
 }

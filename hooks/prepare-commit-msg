@@ -4,7 +4,9 @@
 export PATH="$PATH:/usr/local/bin:/opt/homebrew/bin"
 
 COMMIT_MSG_FILE=$1
-TMP_MSG_FILE=".git/GEMINI_MSG_TMP"
+# 프로젝트 루트 기반의 절대 경로 확인
+PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+TMP_MSG_FILE="$PROJECT_ROOT/.git/GEMINI_MSG_TMP"
 
 # 임시 파일이 있고 내용이 비어있지 않은지 확인
 if [ -f "$TMP_MSG_FILE" ] && [ -s "$TMP_MSG_FILE" ]; then
