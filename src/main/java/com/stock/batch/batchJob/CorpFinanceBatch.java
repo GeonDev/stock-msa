@@ -39,7 +39,7 @@ public class CorpFinanceBatch {
     @Bean
     @StepScope
     public CorpFinanceItemReader corpFinanceItemReader() {
-        return new CorpFinanceItemReader(stockApiService);
+        return new CorpFinanceItemReader(stockApiService, corpInfoRepository);
     }
 
     @Bean

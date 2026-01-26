@@ -153,7 +153,7 @@ public class StockApiService {
                 throw e;
             }
         }
+
         return corpList;
     }
-
 }

@@ -81,7 +81,6 @@ The project follows a standard Maven/Gradle layout:
 2. **Start H2 Database in Docker:**
    ```bash
    docker run -d --name h2-db-server \
-     -p 8082:81 \
      -p 1521:1521 \
      -v h2-data:/opt/h2-data \
      oscarfonts/h2
