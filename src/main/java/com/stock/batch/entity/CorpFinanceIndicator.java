@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@IdClass(CorpFinanceId.class)
 @Table(name = "TB_CORP_FINANCE_INDICATOR")
 public class CorpFinanceIndicator {
 
@@ -18,9 +19,16 @@ public class CorpFinanceIndicator {
     @Column(name = "CORP_CODE")
     private String corpCode;
 
+    @Id
+    @Column(name = "BAS_DT")
+    private java.time.LocalDate basDt;
+
     @OneToOne(fetch = FetchType.LAZY)
     @MapsId
-    @JoinColumn(name = "CORP_CODE")
+    @JoinColumns(value = {
+            @JoinColumn(name = "CORP_CODE", referencedColumnName = "corpCode"),
+            @JoinColumn(name = "BAS_DT", referencedColumnName = "basDt")
+    }, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private CorpFinance corpFinance;
 
     /**

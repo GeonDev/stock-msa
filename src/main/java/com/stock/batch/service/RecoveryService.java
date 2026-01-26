@@ -33,11 +33,7 @@ public class RecoveryService {
 
     @Transactional
     public void recoverStockPrices(LocalDate startDate, LocalDate endDate) {
-        // Phase 1: Re-populate Daily Prices (Memory-Efficient)
-        log.info("[Recovery] Deleting existing daily price data from {} to {}", startDate, endDate);
-        stockPriceRepository.deleteByBasDtBetween(startDate, endDate);
-        log.info("[Recovery] Deletion complete.");
-
+        // Phase 1: Re-populate Daily Prices (Upsert)
         log.info("[Recovery] Re-fetching daily prices from {} to {}", startDate, endDate);
         for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
             if (dayOffService.checkIsDayOff(date)) {
@@ -50,12 +46,26 @@ public class RecoveryService {
                 List<StockPrice> kospiPrices = stockApiService.getStockPrice(StockMarket.KOSPI, dateStr);
                 List<StockPrice> kosdaqPrices = stockApiService.getStockPrice(StockMarket.KOSDAQ, dateStr);
 
-                List<StockPrice> dailyPrices = new ArrayList<>();
-                dailyPrices.addAll(kospiPrices);
-                dailyPrices.addAll(kosdaqPrices);
+                List<StockPrice> fetchedPrices = new ArrayList<>();
+                fetchedPrices.addAll(kospiPrices);
+                fetchedPrices.addAll(kosdaqPrices);
 
-                if (!dailyPrices.isEmpty()) {
-                    stockPriceRepository.saveAll(dailyPrices);
+                if (!fetchedPrices.isEmpty()) {
+                    List<StockPrice> existingPrices = stockPriceRepository.findByBasDt(date);
+                    Map<String, StockPrice> existingMap = existingPrices.stream()
+                            .collect(Collectors.toMap(StockPrice::getStockCode, p -> p, (p1, p2) -> p1));
+
+                    List<StockPrice> toSave = new ArrayList<>();
+                    for (StockPrice newPrice : fetchedPrices) {
+                        if (existingMap.containsKey(newPrice.getStockCode())) {
+                            StockPrice existing = existingMap.get(newPrice.getStockCode());
+                            updateStockPrice(existing, newPrice);
+                            toSave.add(existing);
+                        } else {
+                            toSave.add(newPrice);
+                        }
+                    }
+                    stockPriceRepository.saveAll(toSave);
                 }
             } catch (Exception e) {
                 log.error("[Recovery] Failed to fetch price data for date: {}", date, e);
@@ -63,7 +73,7 @@ public class RecoveryService {
         }
         log.info("[Recovery] Daily price re-fetching and saving complete.");
 
-        // Phase 2: Recalculate Aggregates (Correctly and Efficiently)
+        // Phase 2: Recalculate Aggregates (Upsert)
         log.info("[Recovery] Starting recalculation of weekly and monthly prices.");
 
         List<String> affectedStockCodes = stockPriceRepository.findDistinctStockCodeByBasDtBetween(startDate, endDate);
@@ -78,12 +88,6 @@ public class RecoveryService {
         LocalDate recalcMonthlyStart = startDate.withDayOfMonth(1);
         LocalDate recalcMonthlyEnd = endDate.with(java.time.temporal.TemporalAdjusters.lastDayOfMonth());
 
-        // Delete old aggregates for affected stocks in the wider range
-        log.info("[Recovery] Deleting old weekly aggregates from {} to {} for {} stocks.", recalcWeeklyStart, recalcWeeklyEnd, affectedStockCodes.size());
-        stockWeeklyPriceRepository.deleteByStockCodeInAndEndDateBetween(affectedStockCodes, recalcWeeklyStart, recalcWeeklyEnd);
-        log.info("[Recovery] Deleting old monthly aggregates from {} to {} for {} stocks.", recalcMonthlyStart, recalcMonthlyEnd, affectedStockCodes.size());
-        stockMonthlyPriceRepository.deleteByStockCodeInAndEndDateBetween(affectedStockCodes, recalcMonthlyStart, recalcMonthlyEnd);
-
         // Fetch all necessary daily prices from DB for the recalculation
         LocalDate overallRecalcStart = recalcWeeklyStart.isBefore(recalcMonthlyStart) ? recalcWeeklyStart : recalcMonthlyStart;
         LocalDate overallRecalcEnd = recalcWeeklyEnd.isAfter(recalcMonthlyEnd) ? recalcWeeklyEnd : recalcMonthlyEnd;
@@ -94,22 +98,100 @@ public class RecoveryService {
         Map<String, List<StockPrice>> pricesByStock = pricesForRecalc.stream()
                 .collect(Collectors.groupingBy(StockPrice::getStockCode));
 
-        List<StockWeeklyPrice> allWeeklyPrices = new ArrayList<>();
-        List<StockMonthlyPrice> allMonthlyPrices = new ArrayList<>();
+        List<StockWeeklyPrice> calculatedWeeklyPrices = new ArrayList<>();
+        List<StockMonthlyPrice> calculatedMonthlyPrices = new ArrayList<>();
 
-        // Recalculate and collect new aggregates
+        // Recalculate aggregates
         for (List<StockPrice> dailyPrices : pricesByStock.values()) {
-            allWeeklyPrices.addAll(priceCalculationService.calculateWeeklyPrices(dailyPrices));
-            allMonthlyPrices.addAll(priceCalculationService.calculateMonthlyPrices(dailyPrices));
+            calculatedWeeklyPrices.addAll(priceCalculationService.calculateWeeklyPrices(dailyPrices));
+            calculatedMonthlyPrices.addAll(priceCalculationService.calculateMonthlyPrices(dailyPrices));
         }
 
-        // Batch save the new aggregates
-        if (!allWeeklyPrices.isEmpty()) {
-            stockWeeklyPriceRepository.saveAll(allWeeklyPrices);
+        // Upsert Weekly Prices
+        if (!calculatedWeeklyPrices.isEmpty()) {
+            List<StockWeeklyPrice> existingWeekly = stockWeeklyPriceRepository.findByStockCodeInAndEndDateBetween(affectedStockCodes, recalcWeeklyStart, recalcWeeklyEnd);
+            // Key: StockCode + StartDate + EndDate (Assuming unique combination)
+            Map<String, StockWeeklyPrice> existingWeeklyMap = existingWeekly.stream()
+                    .collect(Collectors.toMap(
+                            p -> p.getStockCode() + "_" + p.getStartDate() + "_" + p.getEndDate(),
+                            p -> p, (p1, p2) -> p1
+                    ));
+
+            List<StockWeeklyPrice> weeklyToSave = new ArrayList<>();
+            for (StockWeeklyPrice newPrice : calculatedWeeklyPrices) {
+                String key = newPrice.getStockCode() + "_" + newPrice.getStartDate() + "_" + newPrice.getEndDate();
+                if (existingWeeklyMap.containsKey(key)) {
+                    StockWeeklyPrice existing = existingWeeklyMap.get(key);
+                    updateWeeklyPrice(existing, newPrice);
+                    weeklyToSave.add(existing);
+                } else {
+                    weeklyToSave.add(newPrice);
+                }
+            }
+            stockWeeklyPriceRepository.saveAll(weeklyToSave);
         }
-        if (!allMonthlyPrices.isEmpty()) {
-            stockMonthlyPriceRepository.saveAll(allMonthlyPrices);
+
+        // Upsert Monthly Prices
+        if (!calculatedMonthlyPrices.isEmpty()) {
+            List<StockMonthlyPrice> existingMonthly = stockMonthlyPriceRepository.findByStockCodeInAndEndDateBetween(affectedStockCodes, recalcMonthlyStart, recalcMonthlyEnd);
+            Map<String, StockMonthlyPrice> existingMonthlyMap = existingMonthly.stream()
+                    .collect(Collectors.toMap(
+                            p -> p.getStockCode() + "_" + p.getStartDate() + "_" + p.getEndDate(),
+                            p -> p, (p1, p2) -> p1
+                    ));
+
+            List<StockMonthlyPrice> monthlyToSave = new ArrayList<>();
+            for (StockMonthlyPrice newPrice : calculatedMonthlyPrices) {
+                String key = newPrice.getStockCode() + "_" + newPrice.getStartDate() + "_" + newPrice.getEndDate();
+                if (existingMonthlyMap.containsKey(key)) {
+                    StockMonthlyPrice existing = existingMonthlyMap.get(key);
+                    updateMonthlyPrice(existing, newPrice);
+                    monthlyToSave.add(existing);
+                } else {
+                    monthlyToSave.add(newPrice);
+                }
+            }
+            stockMonthlyPriceRepository.saveAll(monthlyToSave);
         }
-        log.info("[Recovery] Weekly and monthly price re-calculation complete. Saved {} weekly and {} monthly records.", allWeeklyPrices.size(), allMonthlyPrices.size());
+
+        log.info("[Recovery] Weekly and monthly price re-calculation and upsert complete.");
+    }
+
+    private void updateStockPrice(StockPrice existing, StockPrice newPrice) {
+        existing.setMarketCode(newPrice.getMarketCode());
+        existing.setVolume(newPrice.getVolume());
+        existing.setVolumePrice(newPrice.getVolumePrice());
+        existing.setStartPrice(newPrice.getStartPrice());
+        existing.setEndPrice(newPrice.getEndPrice());
+        existing.setHighPrice(newPrice.getHighPrice());
+        existing.setLowPrice(newPrice.getLowPrice());
+        existing.setDailyRange(newPrice.getDailyRange());
+        existing.setDailyRatio(newPrice.getDailyRatio());
+        existing.setStockTotalCnt(newPrice.getStockTotalCnt());
+        existing.setMarketTotalAmt(newPrice.getMarketTotalAmt());
+    }
+
+    private void updateWeeklyPrice(StockWeeklyPrice existing, StockWeeklyPrice newPrice) {
+        existing.setMarketCode(newPrice.getMarketCode());
+        existing.setVolume(newPrice.getVolume());
+        existing.setVolumePrice(newPrice.getVolumePrice());
+        existing.setStartPrice(newPrice.getStartPrice());
+        existing.setEndPrice(newPrice.getEndPrice());
+        existing.setHighPrice(newPrice.getHighPrice());
+        existing.setLowPrice(newPrice.getLowPrice());
+        existing.setStockTotalCnt(newPrice.getStockTotalCnt());
+        existing.setMarketTotalAmt(newPrice.getMarketTotalAmt());
+    }
+
+    private void updateMonthlyPrice(StockMonthlyPrice existing, StockMonthlyPrice newPrice) {
+        existing.setMarketCode(newPrice.getMarketCode());
+        existing.setVolume(newPrice.getVolume());
+        existing.setVolumePrice(newPrice.getVolumePrice());
+        existing.setStartPrice(newPrice.getStartPrice());
+        existing.setEndPrice(newPrice.getEndPrice());
+        existing.setHighPrice(newPrice.getHighPrice());
+        existing.setLowPrice(newPrice.getLowPrice());
+        existing.setStockTotalCnt(newPrice.getStockTotalCnt());
+        existing.setMarketTotalAmt(newPrice.getMarketTotalAmt());
     }
 }

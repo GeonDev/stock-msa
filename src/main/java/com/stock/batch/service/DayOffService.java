@@ -26,17 +26,18 @@ public class DayOffService {
 
     private final RestClient restClient;
 
-    // 대한민국 공휴일 체크 - 불필요한 배치 수행 안함
+    // 대한민국 공휴일 체크 - 불필요한 배치 수행 안함 (true: 휴일/주말, false: 평일)
     public boolean checkIsDayOff(LocalDate targetDate) {
 
-        // 6,7 (토요일, 일요일)
+        // 6,7 (토요일, 일요일) -> 휴일이므로 true 반환
          if(targetDate.getDayOfWeek().getValue() > 5 ){
-             return false;
+             return true;
          }
 
 
         //URI 생성
         String solMonth =  String.format("%02d", targetDate.getMonthValue());
+        String decodedServiceKey = java.net.URLDecoder.decode(serviceKey, java.nio.charset.StandardCharsets.UTF_8);
 
         URI uri = UriComponentsBuilder.newInstance()
                 .scheme("http")
@@ -44,7 +45,7 @@ public class DayOffService {
                 .path(ApplicationConstants.KAI_REST_DATE_URL)
                 .queryParam("solYear", targetDate.getYear())
                 .queryParam("solMonth", solMonth)
-                .queryParam("ServiceKey", serviceKey)
+                .queryParam("ServiceKey", decodedServiceKey)
                 .queryParam("numOfRows", 10)
                 .build()
                 .toUri();
@@ -58,8 +59,10 @@ public class DayOffService {
 
         try {
             List<String> dateList = parseLocdatesFromXml(responseXml);
+            // 휴일 목록에 포함되어 있으면 true
             return dateList.contains(toLocalDateString(targetDate));
         }catch (Exception e){
+            // 오류 발생 시 평일로 간주 (false)하여 배치 수행 시도
             return false;
         }
     }

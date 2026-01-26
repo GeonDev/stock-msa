@@ -1,7 +1,14 @@
 spring:
+  h2:
+    console:
+      enabled: false
   cloud:
+    config:
+      enabled: false
     discovery:
       enabled: false
+  config:
+    import: "optional:configserver:"   #configserver 무시 설정
   devtools:
     livereload:
       enabled: true
@@ -15,12 +22,12 @@ spring:
       schema: classpath:org/springframework/batch/core/schema-h2.sql
   datasource-meta:
     driver-class-name: org.h2.Driver
-    jdbc-url: jdbc:h2:tcp://localhost:1521/./meta-db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    jdbc-url: jdbc:h2:tcp://localhost:1521/./meta-db;MODE=MariaDB;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;CASE_INSENSITIVE_IDENTIFIERS=TRUE
     username: sa
     password:
   datasource-data:
     driver-class-name: org.h2.Driver
-    jdbc-url: jdbc:h2:tcp://localhost:1521/./data-db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    jdbc-url: jdbc:h2:tcp://localhost:1521/./data-db;MODE=MariaDB;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;CASE_INSENSITIVE_IDENTIFIERS=TRUE
     username: sa
     password:
 

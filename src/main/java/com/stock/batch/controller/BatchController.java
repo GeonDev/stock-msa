@@ -49,7 +49,7 @@ public class BatchController {
         }
 
         //공휴일 제외 값, 주말 제외
-        if (dayOffService.checkIsDayOff(toStringLocalDate(date))) {
+        if (!dayOffService.checkIsDayOff(toStringLocalDate(date))) {
             JobParameters jobParameters = new JobParametersBuilder()
                     .addString("date", date)
                     .addString("market", marketType.name())
@@ -73,7 +73,7 @@ public class BatchController {
         }
 
         //공휴일 제외 값, 주말 제외
-        if (dayOffService.checkIsDayOff(toStringLocalDate(date))) {
+        if (!dayOffService.checkIsDayOff(toStringLocalDate(date))) {
             JobParameters jobParameters = new JobParametersBuilder()
                     .addString("date", date)
                     .addLong("time", System.currentTimeMillis())
@@ -96,7 +96,7 @@ public class BatchController {
         }
 
         //공휴일 제외 값, 주말 제외
-        if (dayOffService.checkIsDayOff(toStringLocalDate(date))) {
+        if (!dayOffService.checkIsDayOff(toStringLocalDate(date))) {
             JobParameters jobParameters = new JobParametersBuilder()
                     .addString("date", date)
                     .addLong("time", System.currentTimeMillis())
@@ -104,7 +104,6 @@ public class BatchController {
 
             jobLauncher.run(jobRegistry.getJob("corpFinanceJob"), jobParameters);
         }
-
 
 
         return ResponseEntity.ok("SET CORP FINANCE");

@@ -108,7 +108,7 @@ public class StockPriceBatch {
 
         return new RepositoryItemWriterBuilder<StockPrice>()
                 .repository(stockPriceRepository)
-                .methodName("saveAll")
+                .methodName("save")
                 .build();
     }
 
