@@ -1,8 +1,9 @@
 package com.stock.batch.batchJob;
 
-import com.stock.batch.entity.StockIndicator;
-import com.stock.batch.entity.StockPrice;
-import com.stock.batch.repository.StockPriceRepository;
+import com.stock.batch.stock.batchJob.StockPriceBatch;
+import com.stock.batch.stock.entity.StockIndicator;
+import com.stock.batch.stock.entity.StockPrice;
+import com.stock.batch.stock.repository.StockPriceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
