@@ -1,9 +1,9 @@
-package com.stock.batch.corpFinance.service;
+package com.stock.batch.finance.service;
 
-import com.stock.batch.corpFinance.entity.CorpFinanceIndicator;
-import com.stock.batch.corpFinance.repository.CorpFinanceRepository;
+import com.stock.batch.finance.entity.CorpFinanceIndicator;
+import com.stock.batch.finance.repository.CorpFinanceRepository;
 import com.stock.batch.global.consts.ApplicationConstants;
-import com.stock.batch.corpFinance.entity.CorpFinance;
+import com.stock.batch.finance.entity.CorpFinance;
 import com.stock.batch.global.utils.ParseUtils;
 import com.stock.batch.global.model.ApiBody;
 import lombok.RequiredArgsConstructor;

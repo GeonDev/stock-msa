@@ -1,7 +1,7 @@
 package com.stock.batch.global.utils;
 
-import com.stock.batch.corpFinance.entity.CorpFinance;
-import com.stock.batch.corpInfo.entity.CorpInfo;
+import com.stock.batch.finance.entity.CorpFinance;
+import com.stock.batch.corp.entity.CorpInfo;
 import com.stock.batch.stock.entity.StockPrice;
 import com.stock.batch.global.model.ApiBody;
 import org.springframework.util.StringUtils;

@@ -1,4 +1,4 @@
-package com.stock.batch.corpInfo.entity;
+package com.stock.batch.corp.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

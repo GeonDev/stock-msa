@@ -1,6 +1,5 @@
 package com.stock.batch.stock.service;
 
-import com.stock.batch.corpFinance.service.CorpFinanceService;
 import com.stock.batch.stock.entity.StockMonthlyPrice;
 import com.stock.batch.stock.entity.StockPrice;
 import com.stock.batch.stock.entity.StockWeeklyPrice;

@@ -1,11 +1,13 @@
-package com.stock.batch.corpInfo.batchJob;
+package com.stock.batch.corp.batchJob;
 
-import com.stock.batch.corpInfo.batchJob.ItemReader.CorpInfoItemReader;
+import com.stock.batch.corp.batchJob.ItemReader.CorpInfoItemReader;
 
-import com.stock.batch.corpInfo.entity.CorpInfo;
-import com.stock.batch.corpInfo.repository.CorpInfoRepository;
-import com.stock.batch.corpFinance.service.CorpFinanceService;
-import com.stock.batch.corpInfo.service.CorpInfoService;
+import com.stock.batch.corp.entity.CorpDetail;
+import com.stock.batch.corp.entity.CorpInfo;
+import com.stock.batch.corp.repository.CorpDetailRepository;
+import com.stock.batch.corp.repository.CorpInfoRepository;
+import com.stock.batch.corp.service.CorpInfoService;
+import com.stock.batch.global.enums.CorpState;
 import lombok.AllArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -61,12 +63,10 @@ public class CorpInfoBatch {
         return new ItemProcessor<CorpInfo, CorpInfo>() {
             @Override
             public CorpInfo process(CorpInfo item) throws Exception {
-
                 return item;
             }
         };
     }
-
 
 
     @Bean

@@ -1,7 +1,7 @@
-package com.stock.batch.corpInfo.service;
+package com.stock.batch.corp.service;
 
 
-import com.stock.batch.corpInfo.entity.CorpInfo;
+import com.stock.batch.corp.entity.CorpInfo;
 import com.stock.batch.global.consts.ApplicationConstants;
 import com.stock.batch.global.model.ApiBody;
 import com.stock.batch.global.utils.ParseUtils;

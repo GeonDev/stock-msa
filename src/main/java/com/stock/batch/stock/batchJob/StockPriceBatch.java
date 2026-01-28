@@ -4,7 +4,6 @@ import com.stock.batch.stock.batchJob.itemReader.StockPriceItemReader;
 import com.stock.batch.stock.entity.StockIndicator;
 import com.stock.batch.stock.entity.StockPrice;
 import com.stock.batch.stock.repository.StockPriceRepository;
-import com.stock.batch.corpFinance.service.CorpFinanceService;
 import com.stock.batch.stock.service.StockService;
 import lombok.AllArgsConstructor;
 import org.springframework.batch.core.Job;

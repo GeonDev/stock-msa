@@ -1,7 +1,7 @@
-package com.stock.batch.corpFinance.repository;
+package com.stock.batch.finance.repository;
 
-import com.stock.batch.corpFinance.entity.CorpFinanceId;
-import com.stock.batch.corpFinance.entity.CorpFinanceIndicator;
+import com.stock.batch.finance.entity.CorpFinanceId;
+import com.stock.batch.finance.entity.CorpFinanceIndicator;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

@@ -1,14 +1,14 @@
-package com.stock.batch.corpFinance.batchJob;
+package com.stock.batch.finance.batchJob;
 
-import com.stock.batch.corpFinance.batchJob.ItemReader.CorpFinanceItemReader;
-import com.stock.batch.corpFinance.entity.CorpFinance;
-import com.stock.batch.corpFinance.entity.CorpFinanceIndicator;
-import com.stock.batch.corpInfo.entity.CorpInfo;
+import com.stock.batch.finance.batchJob.ItemReader.CorpFinanceItemReader;
+import com.stock.batch.finance.entity.CorpFinance;
+import com.stock.batch.finance.entity.CorpFinanceIndicator;
+import com.stock.batch.corp.entity.CorpInfo;
 import com.stock.batch.stock.entity.StockPrice;
-import com.stock.batch.corpFinance.repository.CorpFinanceRepository;
-import com.stock.batch.corpInfo.repository.CorpInfoRepository;
+import com.stock.batch.finance.repository.CorpFinanceRepository;
+import com.stock.batch.corp.repository.CorpInfoRepository;
 import com.stock.batch.stock.repository.StockPriceRepository;
-import com.stock.batch.corpFinance.service.CorpFinanceService;
+import com.stock.batch.finance.service.CorpFinanceService;
 import lombok.AllArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;

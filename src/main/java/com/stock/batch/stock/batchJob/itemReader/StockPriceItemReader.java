@@ -2,7 +2,6 @@ package com.stock.batch.stock.batchJob.itemReader;
 
 import com.stock.batch.stock.entity.StockPrice;
 import com.stock.batch.global.enums.StockMarket;
-import com.stock.batch.corpFinance.service.CorpFinanceService;
 import com.stock.batch.stock.service.StockService;
 import lombok.RequiredArgsConstructor;
 

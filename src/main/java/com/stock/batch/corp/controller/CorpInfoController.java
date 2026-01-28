@@ -1,4 +1,4 @@
-package com.stock.batch.corpInfo.controller;
+package com.stock.batch.corp.controller;
 
 
 import com.stock.batch.global.service.DayOffService;
@@ -57,5 +57,17 @@ public class CorpInfoController {
         }
 
         return ResponseEntity.ok("SET CORP CODE");
+    }
+
+    @PostMapping("/corp-detail/cleanup")
+    @Operation(summary = "기업 상태 정리", description = "최신 정보로 갱신되지 않은 기업의 상태를 DEL로 변경합니다.")
+    public ResponseEntity<String> cleanupCorpDetail() throws Exception {
+        JobParameters jobParameters = new JobParametersBuilder()
+                .addLong("time", System.currentTimeMillis())
+                .toJobParameters();
+
+        jobLauncher.run(jobRegistry.getJob("corpDetailCleanupJob"), jobParameters);
+
+        return ResponseEntity.ok("CLEANUP STARTED");
     }
 }
