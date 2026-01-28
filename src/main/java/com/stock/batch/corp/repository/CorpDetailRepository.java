@@ -1,6 +1,6 @@
-package com.stock.batch.corpInfo.repository;
+package com.stock.batch.corp.repository;
 
-import com.stock.batch.corpInfo.entity.CorpDetail;
+import com.stock.batch.corp.entity.CorpDetail;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

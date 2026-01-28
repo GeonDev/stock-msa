@@ -16,8 +16,8 @@ import java.util.HashMap;
 @Configuration
 @EnableJpaRepositories(
         basePackages = {
-                "com.stock.batch.corpFinance.repository",
-                "com.stock.batch.corpInfo.repository",
+                "com.stock.batch.finance.repository",
+                "com.stock.batch.corp.repository",
                 "com.stock.batch.stock.repository"
         },
         entityManagerFactoryRef = "dataEntityManager",

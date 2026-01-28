@@ -1,6 +1,6 @@
 package com.stock.batch.stock.service;
 
-import com.stock.batch.corpFinance.entity.CorpFinance;
+import com.stock.batch.finance.entity.CorpFinance;
 import com.stock.batch.global.consts.ApplicationConstants;
 import com.stock.batch.global.enums.StockMarket;
 import com.stock.batch.global.model.ApiBody;

@@ -1,7 +1,7 @@
-package com.stock.batch.corpInfo.batchJob.ItemReader;
+package com.stock.batch.corp.batchJob.ItemReader;
 
-import com.stock.batch.corpInfo.entity.CorpInfo;
-import com.stock.batch.corpInfo.service.CorpInfoService;
+import com.stock.batch.corp.entity.CorpInfo;
+import com.stock.batch.corp.service.CorpInfoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.beans.factory.annotation.Value;

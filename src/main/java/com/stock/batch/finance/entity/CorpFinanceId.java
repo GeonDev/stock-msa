@@ -1,4 +1,4 @@
-package com.stock.batch.corpFinance.entity;
+package com.stock.batch.finance.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

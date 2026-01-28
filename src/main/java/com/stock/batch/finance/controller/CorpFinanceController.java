@@ -1,4 +1,4 @@
-package com.stock.batch.corpFinance.controller;
+package com.stock.batch.finance.controller;
 
 
 import com.stock.batch.global.service.DayOffService;
