@@ -1,5 +1,6 @@
 package com.stock.batch.global.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
@@ -25,6 +26,9 @@ import java.util.HashMap;
 )
 public class DataDBConfig {
 
+    @Value("${spring.datasource-data.ddl-auto:validate}")
+    private String ddlAuto;
+
     @Bean
     @ConfigurationProperties(prefix = "spring.datasource-data")
     public DataSource dataDBSource() {
@@ -38,15 +42,16 @@ public class DataDBConfig {
 
         em.setDataSource(dataDBSource());
         em.setPackagesToScan(
-                "com.stock.batch.corpFinance.entity",
-                "com.stock.batch.corpInfo.entity",
+                "com.stock.batch.finance.entity",
+                "com.stock.batch.corp.entity",
                 "com.stock.batch.stock.entity"
         );
         em. setJpaVendorAdapter(new HibernateJpaVendorAdapter());
 
         HashMap<String, Object> properties = new HashMap<>();
-        properties.put("hibernate.hbm2ddl.auto", "update");
+        properties.put("hibernate.hbm2ddl.auto", ddlAuto);
         properties.put("hibernate.show_sql", "true");
+        properties.put("hibernate.dialect", "org.hibernate.dialect.MySQLDialect");
         em.setJpaPropertyMap(properties);
 
         return em;

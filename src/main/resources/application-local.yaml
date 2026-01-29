@@ -1,7 +1,4 @@
 spring:
-  h2:
-    console:
-      enabled: false
   cloud:
     config:
       enabled: false
@@ -19,17 +16,18 @@ spring:
       enabled: false
     jdbc:
       initialize-schema: always
-      schema: classpath:org/springframework/batch/core/schema-h2.sql
+      schema: classpath:org/springframework/batch/core/schema-mysql.sql
   datasource-meta:
-    driver-class-name: org.h2.Driver
-    jdbc-url: jdbc:h2:tcp://localhost:1521/./meta-db;MODE=MariaDB;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;CASE_INSENSITIVE_IDENTIFIERS=TRUE
-    username: sa
-    password:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    jdbc-url: jdbc:mysql://localhost:3306/meta_db?serverTimezone=UTC&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    password: "${MYSQL_PASSWORD:root1234}"
   datasource-data:
-    driver-class-name: org.h2.Driver
-    jdbc-url: jdbc:h2:tcp://localhost:1521/./data-db;MODE=MariaDB;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;CASE_INSENSITIVE_IDENTIFIERS=TRUE
-    username: sa
-    password:
+    ddl-auto: update
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    jdbc-url: jdbc:mysql://localhost:3306/data_db?serverTimezone=UTC&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    password: "${MYSQL_PASSWORD:root1234}"
 
 data-go:
   service-key: ${data-go.service-key}
