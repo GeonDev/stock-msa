@@ -1,0 +1,19 @@
+server:
+  port: 9000
+
+encrypt:
+  key: secret-key
+
+spring:
+  application:
+    name: config-server
+
+  cloud:
+    config:
+      server:
+        git:
+          uri: git@github.com:GeonDev/config-sub.git
+          private-key : none
+          ignore-local-ssh-settings: true
+          clone-on-start: true
+          default-label: main
