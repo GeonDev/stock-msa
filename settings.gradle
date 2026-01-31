@@ -1,1 +1,6 @@
-rootProject.name = 'stock-batch'
+rootProject.name = 'stock-msa'
+include 'services:stock-batch'
+include 'services:stock-discovery'
+include 'services:stock-gateway'
+include 'services:stock-config'
+include 'modules:stock-common'
