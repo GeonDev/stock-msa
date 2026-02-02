@@ -13,9 +13,9 @@
   - **Service Discovery:** Spring Cloud Netflix Eureka
   - **API Gateway:** Spring Cloud Gateway
   - **Config Management:** Spring Cloud Config
-- **Data Access:** Spring Data JPA, Spring Batch, H2 Database (Local/Dev), MariaDB/MySQL (Prod 예정)
+- **Data Access:** Spring Data JPA, Spring Batch, MySQL (Local/Dev)
 - **Web:** Spring Web, Undertow (Embedded Container)
-- **Communication:** Spring `RestClient`
+- **Communication:** Spring RestClient
 - **Database Migration:** Flyway
 - **Logging:** Tinylog
 - **Utilities:** Lombok, dotenv-java

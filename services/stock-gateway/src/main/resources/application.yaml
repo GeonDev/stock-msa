@@ -8,25 +8,25 @@ spring:
   cloud:
     gateway:
       routes:
-        - id: stock-batch
-          uri: lb://stock-batch
+        - id: stock-corp
+          uri: lb://stock-corp
           predicates:
-            - name: Path
-              args:
-                pattern: /batch/**
-        - id: ms2
-          uri: http://localhost:8082
+            - Path=/api/v1/corp/**
+        - id: stock-finance
+          uri: lb://stock-finance
           predicates:
-            - name: Path
-              args:
-                pattern: /ms2/**
+            - Path=/api/v1/finance/**
+        - id: stock-stock
+          uri: lb://stock-stock
+          predicates:
+            - Path=/api/v1/stock/**
 
 eureka:
   client:
     register-with-eureka: true
     fetch-registry : true
     service-url:
-      defaultZone-url: http://localhost:9000/eureka
+      defaultZone: http://localhost:8761/eureka
 
 management:
   endpoint:

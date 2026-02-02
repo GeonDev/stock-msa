@@ -20,7 +20,7 @@ public class ConfigServerApplication {
 		System.setProperty("encrypt.key", encrypt);
 
 		try {
-			String key = Files.readString(Path.of("/app/keys/private-key"));
+			String key = Files.readString(Path.of("/data/keys/private-key"));
 			System.setProperty("spring.cloud.config.server.git.private-key", key);
 		} catch (IOException e) {
 			throw new RuntimeException("SSH 키 로드 실패", e);
