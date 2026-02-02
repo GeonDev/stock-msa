@@ -1,0 +1,21 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: stock-corp
+  profiles:
+    active: local
+  datasource:
+    url: jdbc:mysql://localhost:3306/stock_corp?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: user
+    password: password
+    jpa:
+      hibernate:
+        ddl-auto: validate
+  
+  eureka:
+    client:
+      service-url:
+        defaultZone: http://localhost:8761/eureka
+  
