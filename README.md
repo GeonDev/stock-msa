@@ -1,93 +1,89 @@
 # Stock-MSA (Microservice Architecture)
 
-본 프로젝트는 공공데이터포털 및 DART API를 통해 기업 및 주식 데이터를 수집하고 분석하는 **MSA 기반의 주식 정보 시스템**입니다. 기존 단일 배치 프로젝트에서 도메인별 독립 서비스 구조로 리팩토링되었습니다.
+본 프로젝트는 공공데이터포털 및 DART API를 통해 기업 및 주식 데이터를 수집하고 분석하는 **MSA 기반의 주식 정보 시스템**입니다.
 
-## 1. 프로젝트 구조
+## 1. 프로젝트 주요 특징
 
-- **modules/stock-common**: 공통 Entity, DTO, 유틸리티 및 예외 처리.
-- **services/stock-discovery**: 서비스 등록 및 탐색 (Eureka Server).
-- **services/stock-gateway**: 통합 API 진입점 및 라우팅.
-- **services/stock-config**: 중앙 집중식 설정 관리.
-- **services/stock-corp**: 기업 정보 도메인 (Master/Detail).
-- **services/stock-finance**: 기업 재무 제표 및 지표 도메인.
-- **services/stock-stock**: 주가 시세 및 기술적 지표 도메인.
+- **중앙 설정 관리**: `stock-config`를 통한 환경별 설정 분리 및 Git 연동.
+- **서비스 탐색**: `stock-discovery`(Eureka)를 통한 마이크로서비스 동적 등록.
+- **통합 게이트웨이**: `stock-gateway`를 통한 API 라우팅 및 보안 강화.
+- **컨테이너화**: Docker Compose를 통한 인프라 및 전체 서비스의 원클릭 배포.
+- **보안 강화**: 인프라 서비스별 독립 계정 관리 및 Actuator 엔드포인트 보호.
 
 ---
 
 ## 2. 개발 환경 준비
 
 ### 사전 요구 사항
-- **Java 17**
-- **Docker** (데이터베이스 및 인프라 실행용)
+- **Java 17** (Amazon Corretto 권장)
+- **Docker** & **Docker Compose**
 
-### API 키 설정 (`.env`)
-프로젝트 루트에 `.env` 파일을 생성하고 아래 키 정보를 입력하세요.
+### 환경 변수 설정 (`.env`)
+프로젝트 루트에 `.env` 파일을 생성하고 아래 내용을 참고하여 작성하세요.
 ```properties
-data-go.service-key=YOUR_SERVICE_KEY
-dart.api-key=YOUR_API_KEY
+# API Keys
+DATA_GO_SERVICE_KEY=your_key
+DART_API_KEY=your_key
+
+# Security Credentials
+CONFIG_SERVER_USER=configAdmin
+CONFIG_SERVER_PASSWORD=your_password
+EUREKA_USER=eurekaAdmin
+EUREKA_PASSWORD=your_password
+GATEWAY_USER=gatewayAdmin
+GATEWAY_PASSWORD=your_password
+
+# Git Config (Config Server용)
+GIT_URI=your_git_repo_url
+GIT_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n..." # \n 포함 유지
 ```
 
 ---
 
-## 3. 데이터베이스 및 인프라 설정 (Docker)
+## 3. 실행 가이드 (Docker Compose)
 
-본 프로젝트는 도메인 격리를 위해 **3개의 독립된 MySQL 인스턴스**를 사용합니다. 루트 디렉토리의 `docker-compose.yaml`을 통해 한 번에 실행할 수 있습니다.
-
-### 1) 인프라 실행
+### 1) 서비스 전체 기동
 ```bash
-docker-compose up -d
+# 이미지 빌드 및 컨테이너 실행
+docker-compose up -d --build
 ```
 
-### 2) 데이터베이스 정보
-| 서비스 | 외부 포트 | 데이터베이스 명 | 사용자/암호 |
-| :--- | :---: | :--- | :--- |
-| stock-corp | 3306 | `stock_corp` | user / password |
-| stock-finance | 3307 | `stock_finance` | user / password |
-| stock-stock | 3308 | `stock_stock` | user / password |
-
-*참고: 각 서비스 실행 시 Flyway가 자동으로 최신 스키마(`V1__init_*.sql`)를 적용합니다.*
+### 2) 서비스 포트 맵핑 정보
+| 서비스 | 내부 포트 | 외부(호스트) 포트 | 용도 |
+| :--- | :---: | :---: | :--- |
+| **stock-gateway** | 8080 | **8080** | API Entry Point |
+| **stock-discovery** | 8761 | **8761** | Eureka Dashboard |
+| **stock-config** | 8888 | **8888** | Config Server |
+| **stock-corp-db** | 3306 | **3306** | 기업 정보 DB |
+| **stock-finance-db** | 3306 | **3307** | 재무 정보 DB |
+| **stock-stock-db** | 3306 | **3308** | 주식 정보 DB |
 
 ---
 
-## 4. 빌드 및 실행
+## 4. 로컬 개발 및 테스트
 
-### 전체 프로젝트 빌드
-```bash
-./gradlew clean build
-```
-
-### 서비스 실행 순서
-서비스 간 의존성을 위해 아래 순서대로 실행하는 것을 권장합니다.
-
-1.  **stock-discovery** (Port: 8761)
-2.  **stock-config** (Port: 9000)
-3.  **Domain Services** (corp: 8081, finance: 8082, stock: 8083)
-4.  **stock-gateway** (Port: 8080)
+로컬에서 개별 서비스를 실행할 때는 `local` 프로필을 사용하세요. 이 프로필은 Discovery 및 Config Client를 비활성화하여 외부 의존성 없이 기동할 수 있게 도와줍니다.
 
 ```bash
-# 예시: 개별 서비스 실행
-java -jar services/stock-corp/build/libs/stock-corp-0.0.1-SNAPSHOT.jar
+# IntelliJ 등 IDE에서 실행 시 VM Options
+-Dspring.profiles.active=local
 ```
+
+### Gateway 라우팅 규칙
+- 기업 정보: `/api/v1/corp/**`
+- 재무 정보: `/api/v1/finance/**`
+- 주식 정보: `/api/v1/stock/**`
 
 ---
 
-## 5. API 사용 및 라우팅
+## 5. API 보안
 
-모든 외부 요청은 **Gateway(8080)**를 통해 전달됩니다.
-
-- **Gateway 주소**: `http://localhost:8080`
-- **라우팅 규칙**:
-    - 기업 정보: `/api/v1/corp/**` -> `stock-corp`
-    - 재무 정보: `/api/v1/finance/**` -> `stock-finance`
-    - 주식 정보: `/api/v1/stock/**` -> `stock-stock`
-
-### 주요 API 예시
-- **특정 기업 조회**: `GET http://localhost:8080/api/v1/corp/internal/{corpCode}`
-- **최신 주가 조회**: `GET http://localhost:8080/api/v1/stock/internal/price/latest/{stockCode}`
-- **재무 배치 실행**: `POST http://localhost:8080/api/v1/finance/batch?date=20240101` (예정)
+`stock-gateway` 및 인프라 서비스는 HTTP Basic 인증을 사용합니다.
+- **Actuator 접근**: `.env`에 정의된 `GATEWAY_USER` 계정 정보 필요.
+- **Eureka Dashboard**: `EUREKA_USER` 계정 정보 필요.
 
 ---
 
 ## 6. 주의 사항
-- 각 서비스의 `application.yaml`에는 로컬 개발을 위한 기본 설정이 포함되어 있습니다.
-- 서비스 간 통신은 `stock-common`에 정의된 **DTO**를 통해 이루어지며, 엔티티를 직접 노출하지 않습니다.
+- `.env` 파일은 절대 Git에 커밋하지 마세요 (중요 정보 포함).
+- `GIT_PRIVATE_KEY` 입력 시, 실제 파일의 줄바꿈을 `\n` 문자로 치환하여 한 줄로 입력해야 합니다.

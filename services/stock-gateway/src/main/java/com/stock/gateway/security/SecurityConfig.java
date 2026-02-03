@@ -1,56 +1,58 @@
 package com.stock.gateway.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
+import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.core.userdetails.MapReactiveUserDetailsService;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
-import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.server.SecurityWebFilterChain;
 
 @Configuration
-@EnableWebSecurity
+@EnableWebFluxSecurity
 public class SecurityConfig {
 
+    @Value("${GATEWAY_USER:admin}")
+    private String gatewayUser;
+
+    @Value("${GATEWAY_PASSWORD:1234}")
+    private String gatewayPassword;
+
     @Bean
-    public BCryptPasswordEncoder bCryptPasswordEncoder(){
+    public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception{
+    public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
+        // CSRF 비활성화
+        http.csrf(ServerHttpSecurity.CsrfSpec::disable);
 
-        //csrf 설정은 무시
-        http.csrf((auth) -> auth.disable());
+        // Actuator 엔드포인트 보호
+        http.authorizeExchange(exchanges -> exchanges
+                .pathMatchers("/actuator/**").authenticated()
+                .anyExchange().permitAll() // 그 외 Gateway 라우팅은 인증 없이 통과 (필요 시 수정)
+        );
 
-        //actuator 경로에 대하여 시큐리티 값이  필요함
-        http.authorizeHttpRequests((auth) -> auth.requestMatchers("/actuator/**").authenticated());
-
-        //로그인은 베이직
+        // HTTP Basic 인증 사용
         http.httpBasic(Customizer.withDefaults());
 
         return http.build();
     }
 
-
     @Bean
-    public UserDetailsService userDetailsService() {
-
-        String username = System.getenv().getOrDefault("USER", "admin");
-        String password = System.getenv().getOrDefault("PASSWORD", "1234");
-
+    public MapReactiveUserDetailsService userDetailsService() {
         UserDetails user = User.builder()
-                .username(username)
-                .password(bCryptPasswordEncoder().encode(password))
+                .username(gatewayUser)
+                .password(passwordEncoder().encode(gatewayPassword))
                 .roles("ADMIN")
                 .build();
-
-        //inMemory에 ID/PW 저장
-        return new InMemoryUserDetailsManager(user);
+        return new MapReactiveUserDetailsService(user);
     }
 }
 

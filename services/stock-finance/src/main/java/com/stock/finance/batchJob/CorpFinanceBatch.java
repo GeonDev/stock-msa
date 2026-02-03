@@ -1,10 +1,10 @@
 package com.stock.finance.batchJob;
 
+import com.stock.common.dto.CorpInfoDto;
+import com.stock.common.dto.StockPriceDto;
 import com.stock.finance.batchJob.ItemReader.CorpFinanceItemReader;
 import com.stock.finance.entity.CorpFinance;
 import com.stock.finance.entity.CorpFinanceIndicator;
-import com.stock.finance.dto.CorpInfoDto;
-import com.stock.finance.dto.StockPriceDto;
 import com.stock.finance.repository.CorpFinanceRepository;
 import com.stock.finance.client.CorpClient;
 import com.stock.finance.client.StockClient;

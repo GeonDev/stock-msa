@@ -4,10 +4,12 @@ server:
 spring:
   application:
     name: stock-finance
+  config:
+    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888},optional:file:.env[.properties]"
   profiles:
     active: local
   datasource:
-    url: ${MYSQL_URL:jdbc:mysql://localhost:3307/stock_finance?serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
+    url: ${STOCK_FINANCE_DB_URL:jdbc:mysql://localhost:3307/stock_finance?serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
     username: ${MYSQL_USER:user}
     password: ${MYSQL_PASSWORD:password}
   jpa:
@@ -17,7 +19,19 @@ spring:
 eureka:
   client:
     service-url:
-      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
+      defaultZone: ${EUREKA_URL:http://${EUREKA_USER:admin}:${EUREKA_PASSWORD:1234}@localhost:8761/eureka}
 
 dart:
   api-key: ${DART_API_KEY}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+  cloud:
+    config:
+      enabled: false
+eureka:
+  client:
+    enabled: false
