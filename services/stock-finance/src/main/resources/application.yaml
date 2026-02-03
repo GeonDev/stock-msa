@@ -12,9 +12,16 @@ spring:
     url: ${STOCK_FINANCE_DB_URL:jdbc:mysql://localhost:3307/stock_finance?serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
     username: ${MYSQL_USER:user}
     password: ${MYSQL_PASSWORD:password}
+    batch:
+      url: ${STOCK_BATCH_DB_URL:jdbc:mysql://localhost:3309/stock_batch?serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
+      username: ${BATCH_DB_USER:batch_user}
+      password: ${BATCH_DB_PASSWORD:batch_password}
   jpa:
     hibernate:
       ddl-auto: validate
+  batch:
+    jdbc:
+      initialize-schema: always
 
 eureka:
   client:
@@ -32,6 +39,14 @@ spring:
   cloud:
     config:
       enabled: false
+  datasource:
+    url: jdbc:mysql://localhost:3307/stock_finance?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: ${MYSQL_USER:user}
+    password: ${MYSQL_PASSWORD:password}
+    batch:
+      url: jdbc:mysql://localhost:3309/stock_batch?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      username: ${BATCH_DB_USER:batch_user}
+      password: ${BATCH_DB_PASSWORD:batch_password}
 eureka:
   client:
     enabled: false

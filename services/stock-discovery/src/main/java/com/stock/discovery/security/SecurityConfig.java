@@ -33,8 +33,10 @@ public class SecurityConfig {
 
         //csrf 설정은 무시
         http.csrf((auth) -> auth.disable());
-        //모든 경로에 대하여 시큐리티 값이  필요함
-        http.authorizeHttpRequests((auth) -> auth.anyRequest().authenticated());
+        // actuator/health 는 인증 없이 접근 가능하도록 설정
+        http.authorizeHttpRequests((auth) -> auth
+                .requestMatchers("/actuator/health").permitAll()
+                .anyRequest().authenticated());
         //로그인은 베이직
         http.httpBasic(Customizer.withDefaults());
 

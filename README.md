@@ -57,6 +57,7 @@ docker-compose up -d --build
 | **stock-corp-db** | 3306 | **3306** | 기업 정보 DB |
 | **stock-finance-db** | 3306 | **3307** | 재무 정보 DB |
 | **stock-stock-db** | 3306 | **3308** | 주식 정보 DB |
+| **stock-batch-db** | 3306 | **3309** | 배치 메타 DB (공유) |
 
 ---
 
