@@ -5,6 +5,9 @@
 *.log
 logs/
 
+#docker volumes
+data/
+
 # BlueJ files
 *.ctxt
 

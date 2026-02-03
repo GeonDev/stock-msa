@@ -11,6 +11,17 @@ export PATH="$PATH:/usr/local/bin:/opt/homebrew/bin"
 source ~/.zshrc 2>/dev/null || true
 
 PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+
+# 1.1 .env 파일 로드 (GEMINI_API_KEY 등 환경 변수 주입)
+if [ -f "$PROJECT_ROOT/.env" ]; then
+    # 주석(#)이 아닌 라인들만 추출하여 export
+    while IFS= read -r line || [ -n "$line" ]; do
+        [[ $line =~ ^#.* ]] && continue
+        [[ $line =~ ^[[:space:]]*$ ]] && continue
+        export "$line"
+    done < "$PROJECT_ROOT/.env"
+fi
+
 REPORT_FILE="$PROJECT_ROOT/GEMINI_REPORT.md"
 TMP_MSG_FILE="$PROJECT_ROOT/.git/GEMINI_MSG_TMP"
 

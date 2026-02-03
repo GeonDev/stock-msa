@@ -32,6 +32,10 @@
 - `amazoncorretto:17-alpine` 이미지를 사용하여 Apple Silicon(M1/M2) 및 일반 x86 환경 모두를 지원합니다.
 - `depends_on` 및 `healthcheck`를 통해 서비스 간 기동 의존성(Discovery -> Config -> Apps)을 보장합니다.
 
+### 4. 공유 배치 데이터베이스 (Shared Batch Database)
+- **메타데이터 분리**: 각 도메인 서비스(`stock-corp`, `stock-finance`, `stock-stock`)는 비즈니스 데이터용 독립 DB 외에 **공유된 배치 DB(`stock_batch`)** 를 사용합니다.
+- **Spring Batch 통합**: `@BatchDataSource`를 통해 Spring Batch 메타데이터(Job, Step Execution 등)를 중앙에서 통합 관리합니다.
+
 ## 프로젝트 구조 (Multi-Module)
 
 ### 1. Root Project (`stock-msa`)
