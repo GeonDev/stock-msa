@@ -2,7 +2,6 @@ package com.stock.finance.controller;
 
 
 import com.stock.common.service.DayOffService;
-import com.stock.batch.stock.service.RecoveryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,7 +30,6 @@ public class CorpFinanceController {
 
     private final JobLauncher jobLauncher;
     private final JobRegistry jobRegistry;
-    private final RecoveryService recoveryService;
 
     private final DayOffService dayOffService;
 

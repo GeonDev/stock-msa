@@ -1,14 +1,21 @@
 server:
-  port: 9000
-
-encrypt:
-  key: secret
+  port: 8888
 
 spring:
   application:
     name: config-server
-  profiles:
-    active: native
+  config:
+    import: "optional:file:.env[.properties]"
+    profiles:
+      active: native
+  
+  eureka:
+    client:
+      service-url:
+        defaultZone: http://${EUREKA_USER:admin}:${EUREKA_PASSWORD:1234}@localhost:8761/eureka
+    instance:
+      prefer-ip-address: true
+  
   cloud:
     config:
       server:
@@ -16,7 +23,7 @@ spring:
           search-locations: classpath:/config
         git:
           uri: git@github.com:GeonDev/config-sub.git
-          private-key : none
+          private-key: ${GIT_PRIVATE_KEY}
           ignore-local-ssh-settings: true
           clone-on-start: true
           default-label: main

@@ -1,5 +1,6 @@
 package com.stock.discovery.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -15,6 +16,12 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    @Value("${EUREKA_USER:admin}")
+    private String eurekaUser;
+
+    @Value("${EUREKA_PASSWORD:1234}")
+    private String eurekaPassword;
 
     @Bean
     public BCryptPasswordEncoder bCryptPasswordEncoder(){
@@ -38,12 +45,9 @@ public class SecurityConfig {
     @Bean
     public UserDetailsService userDetailsService() {
 
-        String username = System.getenv().getOrDefault("CONFIG_SERVER_USER", "admin");
-        String password = System.getenv().getOrDefault("CONFIG_SERVER_PASSWORD", "1234");
-
         UserDetails user = User.builder()
-                .username(username)
-                .password(bCryptPasswordEncoder().encode(password))
+                .username(eurekaUser)
+                .password(bCryptPasswordEncoder().encode(eurekaPassword))
                 .roles("ADMIN")
                 .build();
 

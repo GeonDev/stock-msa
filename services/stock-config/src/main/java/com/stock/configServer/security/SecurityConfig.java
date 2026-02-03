@@ -1,5 +1,6 @@
 package com.stock.configServer.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -15,6 +16,14 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+
+    @Value("${CONFIG_SERVER_USER:admin}")
+    private String configServerUser;
+
+    @Value("${CONFIG_SERVER_PASSWORD:1234}")
+    private String configServerPassword;
+
 
     @Bean
     public BCryptPasswordEncoder bCryptPasswordEncoder(){
@@ -40,17 +49,16 @@ public class SecurityConfig {
     @Bean
     public UserDetailsService userDetailsService() {
 
-        String username = System.getenv().getOrDefault("CONFIG_SERVER_USER", "admin");
-        String password = System.getenv().getOrDefault("CONFIG_SERVER_PASSWORD", "1234");
-
         UserDetails user = User.builder()
-                .username(username)
-                .password(bCryptPasswordEncoder().encode(password))
+                .username(configServerUser)
+                .password(bCryptPasswordEncoder().encode(configServerPassword))
                 .roles("ADMIN")
                 .build();
 
         //inMemory에 ID/PW 저장
         return new InMemoryUserDetailsManager(user);
     }
+
+
 }
 
