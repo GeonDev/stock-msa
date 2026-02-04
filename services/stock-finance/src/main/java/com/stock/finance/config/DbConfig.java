@@ -1,7 +1,9 @@
 package com.stock.finance.config;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.batch.BatchDataSource;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
@@ -17,35 +19,42 @@ import javax.sql.DataSource;
 import java.util.HashMap;
 
 @Configuration
-@EnableJpaRepositories(
-        basePackages = "com.stock.finance.repository",
-        entityManagerFactoryRef = "entityManagerFactory",
-        transactionManagerRef = "transactionManager"
-)
+@EnableJpaRepositories(basePackages = "com.stock.finance.repository")
 public class DbConfig {
 
     @Value("${spring.jpa.hibernate.ddl-auto:validate}")
     private String ddlAuto;
 
+    @Bean
+    @Primary
+    @ConfigurationProperties(prefix = "spring.datasource")
+    public DataSourceProperties dataSourceProperties() {
+        return new DataSourceProperties();
+    }
+
     @Primary
     @Bean
-    @ConfigurationProperties(prefix = "spring.datasource")
-    public DataSource dataSource() {
-        return DataSourceBuilder.create().build();
+    public DataSource dataSource(DataSourceProperties dataSourceProperties) {
+        return dataSourceProperties.initializeDataSourceBuilder().build();
     }
 
     @Bean
     @ConfigurationProperties(prefix = "spring.datasource.batch")
+    public DataSourceProperties batchDataSourceProperties() {
+        return new DataSourceProperties();
+    }
+
+    @Bean
     @BatchDataSource
-    public DataSource batchDataSource() {
-        return DataSourceBuilder.create().build();
+    public DataSource batchDataSource(@Qualifier("batchDataSourceProperties") DataSourceProperties batchDataSourceProperties) {
+        return batchDataSourceProperties.initializeDataSourceBuilder().build();
     }
 
     @Primary
     @Bean
-    public LocalContainerEntityManagerFactoryBean entityManagerFactory() {
+    public LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource dataSource) {
         LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
-        em.setDataSource(dataSource());
+        em.setDataSource(dataSource);
         em.setPackagesToScan("com.stock.finance.entity");
         em.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
 
@@ -60,9 +69,9 @@ public class DbConfig {
 
     @Primary
     @Bean
-    public PlatformTransactionManager transactionManager() {
+    public PlatformTransactionManager transactionManager(LocalContainerEntityManagerFactoryBean entityManagerFactory) {
         JpaTransactionManager transactionManager = new JpaTransactionManager();
-        transactionManager.setEntityManagerFactory(entityManagerFactory().getObject());
+        transactionManager.setEntityManagerFactory(entityManagerFactory.getObject());
         return transactionManager;
     }
 }
