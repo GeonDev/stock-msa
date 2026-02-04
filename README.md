@@ -59,6 +59,13 @@ docker-compose up -d --build
 | **stock-stock-db** | 3306 | **3308** | 주식 정보 DB |
 | **stock-batch-db** | 3306 | **3309** | 배치 메타 DB (공유) |
 
+### 3) 데이터 영속성 (Volumes)
+각 데이터베이스는 Docker Volume을 통해 데이터가 영구 저장됩니다. 컨테이너를 내렸다 올려도 데이터는 유지됩니다.
+- `corp-db-volume`: 기업 정보 DB 데이터
+- `finance-db-volume`: 재무 정보 DB 데이터
+- `stock-db-volume`: 주식 정보 DB 데이터
+- `batch-db-volume`: 배치 메타 DB 데이터
+
 ---
 
 ## 4. 로컬 개발 및 테스트
