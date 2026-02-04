@@ -14,11 +14,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-undertow'
-    implementation 'org.springframework.cloud:spring-cloud-starter-config'
 
-    if (profile != 'local') {
-        implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
-    }
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
 
     implementation 'org.tinylog:tinylog-api:2.6.2'
     implementation 'org.tinylog:tinylog-impl:2.6.2'
@@ -29,7 +26,6 @@ dependencies {
 
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.4'
 
-    runtimeOnly 'com.h2database:h2:2.3.232'
     testImplementation 'org.springframework.batch:spring-batch-test'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
 

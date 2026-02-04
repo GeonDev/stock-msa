@@ -12,7 +12,6 @@
 - **Microservices Support:**
   - **Service Discovery:** Spring Cloud Netflix Eureka (Port: 8761)
   - **API Gateway:** Spring Cloud Gateway (**Reactive/WebFlux**) (Port: 8080)
-  - **Config Management:** Spring Cloud Config (Port: 8888)
 - **Security:** Spring Security (HTTP Basic Auth, 서비스별 계정 분리)
 - **Data Access:** Spring Data JPA, Spring Batch, MySQL, Flyway
 - **Containerization:** Docker, Docker Compose (Healthcheck 적용)
@@ -20,25 +19,21 @@
 
 ## 주요 아키텍처 및 특징
 
-### 1. 하이브리드 설정 관리 (Hybrid Configuration)
-- **Local Profile**: `active: local` 시 Discovery 및 Config Client를 비활성화하여 독립적인 개발 및 테스트가 가능합니다.
-- **Prod Profile**: Docker 환경에서는 Discovery 및 Config Server를 통해 동적으로 설정을 로드합니다.
-
-### 2. 보안 및 인증 (Security)
-- **서비스별 독립 계정**: `CONFIG_SERVER_USER`, `EUREKA_USER`, `GATEWAY_USER`를 통해 각 인프라 서비스의 접근 권한을 분리했습니다.
+### 1. 보안 및 인증 (Security)
+- **서비스별 독립 계정**: `EUREKA_USER`, `GATEWAY_USER`를 통해 각 인프라 서비스의 접근 권한을 분리했습니다.
 - **Reactive Security**: Gateway는 WebFlux 기반의 `SecurityWebFilterChain`을 사용하여 비동기 논블로킹 환경에 최적화된 보안을 제공합니다.
 
-### 3. Docker 통합 환경
+### 2. Docker 통합 환경
 - `amazoncorretto:17-alpine` 이미지를 사용하여 Apple Silicon(M1/M2) 및 일반 x86 환경 모두를 지원합니다.
-- `depends_on` 및 `healthcheck`를 통해 서비스 간 기동 의존성(Discovery -> Config -> Apps)을 보장합니다.
+- `depends_on` 및 `healthcheck`를 통해 서비스 간 기동 의존성(Discovery -> Apps)을 보장합니다.
 - **데이터 영속성 보장**: 각 DB 컨테이너는 Docker Volume(`*-db-volume`)을 마운트하여 컨테이너가 삭제되어도 데이터가 유실되지 않도록 설정했습니다.
 
-### 4. 데이터베이스 및 엔티티 매핑
+### 3. 데이터베이스 및 엔티티 매핑
 - **멀티 데이터소스 설정**: 각 서비스는 `DbConfig`를 통해 메인 DB와 공유 배치 DB(`stock_batch`)를 가집니다. `DataSourceProperties`를 사용하여 Spring Boot의 표준 프로퍼티 바인딩 방식을 준수합니다.
 - **명시적 컬럼 매핑**: DB 스키마(snake_case)와 Java 엔티티(camelCase) 간의 일관성을 위해 모든 필드에 `@Column(name = "...")` 어노테이션을 명시적으로 사용합니다.
 - **Flyway 기반 스키마 관리**: 각 서비스의 `src/main/resources/db/migration`에 위치한 SQL 스크립트를 통해 DB 스키마 버전 관리를 수행합니다.
 
-### 5. Spring Batch 운영 정책
+### 4. Spring Batch 운영 정책
 - **자동 실행 방지**: 애플리케이션 시작 시 모든 Job이 자동으로 실행되는 것을 방지하기 위해 `spring.batch.job.enabled: false` 설정을 기본으로 합니다.
 - **API 기반 트리거**: 배치는 각 서비스의 `/batch/**` 엔티티포인트를 통해 명시적으로 호출하거나 외부 스케줄러(Crontab 등)를 통해 실행합니다.
 
@@ -52,7 +47,6 @@
 
 ### 3. Service Modules (`services/`)
 - **stock-discovery**: Eureka Server. 모든 서비스의 등록 및 탐색.
-- **stock-config**: Config Server. Git 저장소 기반의 중앙 설정 관리.
 - **stock-gateway**: 통합 라우팅 및 보안 필터링.
 - **stock-corp/finance/stock**: 독립된 DB를 가진 도메인 마이크로서비스.
 

@@ -6,7 +6,6 @@ spring:
     name: gateway
   config:
     import: "optional:file:.env[.properties]"
-
   cloud:
     gateway:
       routes:
@@ -23,13 +22,6 @@ spring:
           predicates:
             - Path=/api/v1/stock/**
 
-eureka:
-  client:
-    register-with-eureka: true
-    fetch-registry : true
-    service-url:
-      defaultZone: http://${EUREKA_USER:admin}:${EUREKA_PASSWORD:1234}@localhost:8761/eureka
-
 management:
   endpoint:
     gateway:
@@ -38,3 +30,30 @@ management:
     web:
       exposure:
         include: gateway
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+  cloud:
+    config:
+      enabled: false
+
+eureka:
+  client:
+    enabled: false
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+eureka:
+  client:
+    enabled: true
+    register-with-eureka: true
+    fetch-registry : true
+    service-url:
+      defaultZone: http://${EUREKA_USER:admin}:${EUREKA_PASSWORD:1234}@stock-discovery:8761/eureka
