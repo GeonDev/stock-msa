@@ -12,6 +12,8 @@ services:
     ports:
       - "8761:8761"
     env_file: .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
     networks:
       - stock-network
     healthcheck:
@@ -20,21 +22,6 @@ services:
       timeout: 5s
       retries: 5
 
-  stock-config:
-    build: ./services/stock-config
-    container_name: stock-config
-    ports:
-      - "8888:8888"
-    env_file: .env
-    environment:
-      # 컨테이너 내부에서 Discovery를 찾을 때 서비스명 사용
-      - EUREKA_URL=http://${EUREKA_USER}:${EUREKA_PASSWORD}@stock-discovery:8761/eureka
-    networks:
-      - stock-network
-    depends_on:
-      stock-discovery:
-        condition: service_healthy
-
   stock-gateway:
     build: ./services/stock-gateway
     container_name: stock-gateway
@@ -42,13 +29,13 @@ services:
       - "8080:8080"
     env_file: .env
     environment:
-      - EUREKA_URL=http://${EUREKA_USER}:${EUREKA_PASSWORD}@stock-discovery:8761/eureka
-      - CONFIG_SERVER_URL=http://stock-config:8888
+      - SPRING_PROFILES_ACTIVE=prod
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://${EUREKA_USER}:${EUREKA_PASSWORD}@stock-discovery:8761/eureka
     networks:
       - stock-network
     depends_on:
-      - stock-discovery
-      - stock-config
+      stock-discovery:
+        condition: service_healthy
 
   # ==========================================
   # Domain Services
@@ -61,23 +48,24 @@ services:
     env_file: .env
     environment:
       - SPRING_PROFILES_ACTIVE=prod
-      - EUREKA_URL=http://${EUREKA_USER}:${EUREKA_PASSWORD}@stock-discovery:8761/eureka
-      - CONFIG_SERVER_URL=http://stock-config:8888
-      # Main DB Connection (Specific User)
-      - STOCK_CORP_DB_URL=${STOCK_CORP_DB_URL}
-      - MYSQL_USER=${CORP_DB_USER}
-      - MYSQL_PASSWORD=${CORP_DB_PASSWORD}
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://${EUREKA_USER}:${EUREKA_PASSWORD}@stock-discovery:8761/eureka
+      # Main DB Connection
+      - SPRING_DATASOURCE_URL=${STOCK_CORP_DB_URL}
+      - SPRING_DATASOURCE_USERNAME=${CORP_DB_USER}
+      - SPRING_DATASOURCE_PASSWORD=${CORP_DB_PASSWORD}
       # Batch DB Connection
-      - STOCK_BATCH_DB_URL=${STOCK_BATCH_DB_URL}
-      - BATCH_DB_USER=${BATCH_DB_USER}
-      - BATCH_DB_PASSWORD=${BATCH_DB_PASSWORD}
+      - SPRING_DATASOURCE_BATCH_URL=${STOCK_BATCH_DB_URL}
+      - SPRING_DATASOURCE_BATCH_USERNAME=${BATCH_DB_USER}
+      - SPRING_DATASOURCE_BATCH_PASSWORD=${BATCH_DB_PASSWORD}
     networks:
       - stock-network
     depends_on:
-      - stock-discovery
-      - stock-config
-      - stock-corp-db
-      - stock-batch-db
+      stock-discovery:
+        condition: service_healthy
+      stock-corp-db:
+        condition: service_started
+      stock-batch-db:
+        condition: service_started
 
   stock-finance:
     build: ./services/stock-finance
@@ -87,23 +75,24 @@ services:
     env_file: .env
     environment:
       - SPRING_PROFILES_ACTIVE=prod
-      - EUREKA_URL=http://${EUREKA_USER}:${EUREKA_PASSWORD}@stock-discovery:8761/eureka
-      - CONFIG_SERVER_URL=http://stock-config:8888
-      # Main DB Connection (Specific User)
-      - STOCK_FINANCE_DB_URL=${STOCK_FINANCE_DB_URL}
-      - MYSQL_USER=${FINANCE_DB_USER}
-      - MYSQL_PASSWORD=${FINANCE_DB_PASSWORD}
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://${EUREKA_USER}:${EUREKA_PASSWORD}@stock-discovery:8761/eureka
+      # Main DB Connection
+      - SPRING_DATASOURCE_URL=${STOCK_FINANCE_DB_URL}
+      - SPRING_DATASOURCE_USERNAME=${FINANCE_DB_USER}
+      - SPRING_DATASOURCE_PASSWORD=${FINANCE_DB_PASSWORD}
       # Batch DB Connection
-      - STOCK_BATCH_DB_URL=${STOCK_BATCH_DB_URL}
-      - BATCH_DB_USER=${BATCH_DB_USER}
-      - BATCH_DB_PASSWORD=${BATCH_DB_PASSWORD}
+      - SPRING_DATASOURCE_BATCH_URL=${STOCK_BATCH_DB_URL}
+      - SPRING_DATASOURCE_BATCH_USERNAME=${BATCH_DB_USER}
+      - SPRING_DATASOURCE_BATCH_PASSWORD=${BATCH_DB_PASSWORD}
     networks:
       - stock-network
     depends_on:
-      - stock-discovery
-      - stock-config
-      - stock-finance-db
-      - stock-batch-db
+      stock-discovery:
+        condition: service_healthy
+      stock-finance-db:
+        condition: service_started
+      stock-batch-db:
+        condition: service_started
 
   stock-stock:
     build: ./services/stock-stock
@@ -113,23 +102,24 @@ services:
     env_file: .env
     environment:
       - SPRING_PROFILES_ACTIVE=prod
-      - EUREKA_URL=http://${EUREKA_USER}:${EUREKA_PASSWORD}@stock-discovery:8761/eureka
-      - CONFIG_SERVER_URL=http://stock-config:8888
-      # Main DB Connection (Specific User)
-      - STOCK_STOCK_DB_URL=${STOCK_STOCK_DB_URL}
-      - MYSQL_USER=${STOCK_DB_USER}
-      - MYSQL_PASSWORD=${STOCK_DB_PASSWORD}
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://${EUREKA_USER}:${EUREKA_PASSWORD}@stock-discovery:8761/eureka
+      # Main DB Connection
+      - SPRING_DATASOURCE_URL=${STOCK_STOCK_DB_URL}
+      - SPRING_DATASOURCE_USERNAME=${STOCK_DB_USER}
+      - SPRING_DATASOURCE_PASSWORD=${STOCK_DB_PASSWORD}
       # Batch DB Connection
-      - STOCK_BATCH_DB_URL=${STOCK_BATCH_DB_URL}
-      - BATCH_DB_USER=${BATCH_DB_USER}
-      - BATCH_DB_PASSWORD=${BATCH_DB_PASSWORD}
+      - SPRING_DATASOURCE_BATCH_URL=${STOCK_BATCH_DB_URL}
+      - SPRING_DATASOURCE_BATCH_USERNAME=${BATCH_DB_USER}
+      - SPRING_DATASOURCE_BATCH_PASSWORD=${BATCH_DB_PASSWORD}
     networks:
       - stock-network
     depends_on:
-      - stock-discovery
-      - stock-config
-      - stock-stock-db
-      - stock-batch-db
+      stock-discovery:
+        condition: service_healthy
+      stock-stock-db:
+        condition: service_started
+      stock-batch-db:
+        condition: service_started
 
   # ==========================================
   # Databases (Specific Users per DB)
@@ -150,6 +140,10 @@ services:
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     networks:
       - stock-network
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
 
   stock-corp-db:
     image: mysql/mysql-server:8.0
@@ -167,6 +161,10 @@ services:
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     networks:
       - stock-network
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
 
   stock-finance-db:
     image: mysql/mysql-server:8.0
@@ -184,6 +182,10 @@ services:
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     networks:
       - stock-network
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
 
   stock-stock-db:
     image: mysql/mysql-server:8.0
@@ -201,6 +203,10 @@ services:
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     networks:
       - stock-network
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
 
 volumes:
   batch-db-volume:

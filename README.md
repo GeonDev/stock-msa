@@ -4,7 +4,6 @@
 
 ## 1. 프로젝트 주요 특징
 
-- **중앙 설정 관리**: `stock-config`를 통한 환경별 설정 분리 및 Git 연동.
 - **서비스 탐색**: `stock-discovery`(Eureka)를 통한 마이크로서비스 동적 등록.
 - **통합 게이트웨이**: `stock-gateway`를 통한 API 라우팅 및 보안 강화.
 - **컨테이너화**: Docker Compose를 통한 인프라 및 전체 서비스의 원클릭 배포.
@@ -26,16 +25,10 @@ DATA_GO_SERVICE_KEY=your_key
 DART_API_KEY=your_key
 
 # Security Credentials
-CONFIG_SERVER_USER=configAdmin
-CONFIG_SERVER_PASSWORD=your_password
 EUREKA_USER=eurekaAdmin
 EUREKA_PASSWORD=your_password
 GATEWAY_USER=gatewayAdmin
 GATEWAY_PASSWORD=your_password
-
-# Git Config (Config Server용)
-GIT_URI=your_git_repo_url
-GIT_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n..." # \n 포함 유지
 ```
 
 ---
@@ -53,7 +46,6 @@ docker-compose up -d --build
 | :--- | :---: | :---: | :--- |
 | **stock-gateway** | 8080 | **8080** | API Entry Point |
 | **stock-discovery** | 8761 | **8761** | Eureka Dashboard |
-| **stock-config** | 8888 | **8888** | Config Server |
 | **stock-corp-db** | 3306 | **3306** | 기업 정보 DB |
 | **stock-finance-db** | 3306 | **3307** | 재무 정보 DB |
 | **stock-stock-db** | 3306 | **3308** | 주식 정보 DB |
@@ -70,7 +62,7 @@ docker-compose up -d --build
 
 ## 4. 로컬 개발 및 테스트
 
-로컬에서 개별 서비스를 실행할 때는 `local` 프로필을 사용하세요. 이 프로필은 Discovery 및 Config Client를 비활성화하여 외부 의존성 없이 기동할 수 있게 도와줍니다.
+로컬에서 개별 서비스를 실행할 때는 `local` 프로필을 사용하세요. 이 프로필은 Discovery를 비활성화하여 외부 의존성 없이 기동할 수 있게 도와줍니다.
 
 ```bash
 # IntelliJ 등 IDE에서 실행 시 VM Options
@@ -94,4 +86,3 @@ docker-compose up -d --build
 
 ## 6. 주의 사항
 - `.env` 파일은 절대 Git에 커밋하지 마세요 (중요 정보 포함).
-- `GIT_PRIVATE_KEY` 입력 시, 실제 파일의 줄바꿈을 `\n` 문자로 치환하여 한 줄로 입력해야 합니다.
