@@ -4,7 +4,7 @@ networks:
 
 services:
   # ==========================================
-  # Infrastructure Services (Discovery, Config)
+  # Infrastructure Services
   # ==========================================
   stock-discovery:
     build: ./services/stock-discovery
@@ -63,9 +63,12 @@ services:
       - SPRING_PROFILES_ACTIVE=prod
       - EUREKA_URL=http://${EUREKA_USER}:${EUREKA_PASSWORD}@stock-discovery:8761/eureka
       - CONFIG_SERVER_URL=http://stock-config:8888
-      # DB URL을 컨테이너 내부망 주소로 변경 (localhost -> stock-corp-db)
-      - STOCK_CORP_DB_URL=jdbc:mysql://stock-corp-db:3306/stock_corp?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-      - STOCK_BATCH_DB_URL=jdbc:mysql://stock-batch-db:3306/stock_batch?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      # Main DB Connection (Specific User)
+      - STOCK_CORP_DB_URL=${STOCK_CORP_DB_URL}
+      - MYSQL_USER=${CORP_DB_USER}
+      - MYSQL_PASSWORD=${CORP_DB_PASSWORD}
+      # Batch DB Connection
+      - STOCK_BATCH_DB_URL=${STOCK_BATCH_DB_URL}
       - BATCH_DB_USER=${BATCH_DB_USER}
       - BATCH_DB_PASSWORD=${BATCH_DB_PASSWORD}
     networks:
@@ -86,8 +89,12 @@ services:
       - SPRING_PROFILES_ACTIVE=prod
       - EUREKA_URL=http://${EUREKA_USER}:${EUREKA_PASSWORD}@stock-discovery:8761/eureka
       - CONFIG_SERVER_URL=http://stock-config:8888
-      - STOCK_FINANCE_DB_URL=jdbc:mysql://stock-finance-db:3306/stock_finance?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-      - STOCK_BATCH_DB_URL=jdbc:mysql://stock-batch-db:3306/stock_batch?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      # Main DB Connection (Specific User)
+      - STOCK_FINANCE_DB_URL=${STOCK_FINANCE_DB_URL}
+      - MYSQL_USER=${FINANCE_DB_USER}
+      - MYSQL_PASSWORD=${FINANCE_DB_PASSWORD}
+      # Batch DB Connection
+      - STOCK_BATCH_DB_URL=${STOCK_BATCH_DB_URL}
       - BATCH_DB_USER=${BATCH_DB_USER}
       - BATCH_DB_PASSWORD=${BATCH_DB_PASSWORD}
     networks:
@@ -108,8 +115,12 @@ services:
       - SPRING_PROFILES_ACTIVE=prod
       - EUREKA_URL=http://${EUREKA_USER}:${EUREKA_PASSWORD}@stock-discovery:8761/eureka
       - CONFIG_SERVER_URL=http://stock-config:8888
-      - STOCK_STOCK_DB_URL=jdbc:mysql://stock-stock-db:3306/stock_stock?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-      - STOCK_BATCH_DB_URL=jdbc:mysql://stock-batch-db:3306/stock_batch?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      # Main DB Connection (Specific User)
+      - STOCK_STOCK_DB_URL=${STOCK_STOCK_DB_URL}
+      - MYSQL_USER=${STOCK_DB_USER}
+      - MYSQL_PASSWORD=${STOCK_DB_PASSWORD}
+      # Batch DB Connection
+      - STOCK_BATCH_DB_URL=${STOCK_BATCH_DB_URL}
       - BATCH_DB_USER=${BATCH_DB_USER}
       - BATCH_DB_PASSWORD=${BATCH_DB_PASSWORD}
     networks:
@@ -121,13 +132,13 @@ services:
       - stock-batch-db
 
   # ==========================================
-  # Databases
+  # Databases (Specific Users per DB)
   # ==========================================
   stock-batch-db:
     image: mysql/mysql-server:8.0
     container_name: stock-batch-db
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: stock_batch
       MYSQL_USER: ${BATCH_DB_USER}
       MYSQL_PASSWORD: ${BATCH_DB_PASSWORD}
@@ -135,23 +146,24 @@ services:
     ports:
       - "3309:3306"
     volumes:
-      - ./data/batch-db:/var/lib/mysql
+      - batch-db-volume:/var/lib/mysql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     networks:
       - stock-network
+
   stock-corp-db:
     image: mysql/mysql-server:8.0
     container_name: stock-corp-db
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: stock_corp
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_USER: ${CORP_DB_USER}
+      MYSQL_PASSWORD: ${CORP_DB_PASSWORD}
       MYSQL_ROOT_HOST: "%"
     ports:
       - "3306:3306"
     volumes:
-      - ./data/corp-db:/var/lib/mysql
+      - corp-db-volume:/var/lib/mysql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     networks:
       - stock-network
@@ -160,15 +172,15 @@ services:
     image: mysql/mysql-server:8.0
     container_name: stock-finance-db
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: stock_finance
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_USER: ${FINANCE_DB_USER}
+      MYSQL_PASSWORD: ${FINANCE_DB_PASSWORD}
       MYSQL_ROOT_HOST: "%"
     ports:
       - "3307:3306"
     volumes:
-      - ./data/finance-db:/var/lib/mysql
+      - finance-db-volume:/var/lib/mysql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     networks:
       - stock-network
@@ -177,15 +189,21 @@ services:
     image: mysql/mysql-server:8.0
     container_name: stock-stock-db
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: stock_stock
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_USER: ${STOCK_DB_USER}
+      MYSQL_PASSWORD: ${STOCK_DB_PASSWORD}
       MYSQL_ROOT_HOST: "%"
     ports:
       - "3308:3306"
     volumes:
-      - ./data/stock-db:/var/lib/mysql
+      - stock-db-volume:/var/lib/mysql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     networks:
       - stock-network
+
+volumes:
+  batch-db-volume:
+  corp-db-volume:
+  finance-db-volume:
+  stock-db-volume:

@@ -22,6 +22,7 @@ import java.io.Serializable;
 public class CorpDetail implements Serializable {
 
     @Id
+    @Column(name = "corp_code")
     String corpCode;
 
     @Enumerated(EnumType.STRING)
@@ -31,6 +32,7 @@ public class CorpDetail implements Serializable {
     CorpState state;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "corp_type")
     CorpCurrency corpType;
 
 }
