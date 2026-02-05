@@ -86,16 +86,16 @@ public class StockPriceBatch {
         }
         return prices.stream()
                 .limit(days)
-                .mapToInt(StockPrice::getEndPrice)
+                .mapToLong(StockPrice::getEndPrice)
                 .average()
                 .orElse(0.0);
     }
 
-    private Double calculateMomentum(Integer currentPrice, List<StockPrice> prices, int months) {
+    private Double calculateMomentum(Long currentPrice, List<StockPrice> prices, int months) {
         if (prices.size() < (long) months * 20) { // Approximate trading days in a month
             return null;
         }
-        Integer pastPrice = prices.get(months * 20 -1).getEndPrice();
+        Long pastPrice = prices.get(months * 20 -1).getEndPrice();
         if (pastPrice == null || pastPrice == 0) {
             return 0.0;
         }

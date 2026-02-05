@@ -33,22 +33,22 @@ public class StockWeeklyPrice {
     LocalDate endDate;
 
     @Column(name = "volume")
-    Integer volume;
+    Long volume;
 
     @Column(name = "volume_price")
     Long volumePrice;
 
     @Column(name = "start_price")
-    Integer startPrice;
+    Long startPrice;
 
     @Column(name = "end_price")
-    Integer endPrice;
+    Long endPrice;
 
     @Column(name = "high_price")
-    Integer highPrice;
+    Long highPrice;
 
     @Column(name = "low_price")
-    Integer lowPrice;
+    Long lowPrice;
 
     @Column(name = "stock_total_cnt")
     Long stockTotalCnt;
