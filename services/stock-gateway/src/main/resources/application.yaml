@@ -17,8 +17,8 @@ spring:
           uri: lb://stock-finance
           predicates:
             - Path=/api/v1/finance/**
-        - id: stock-stock
-          uri: lb://stock-stock
+        - id: stock-price
+          uri: lb://stock-price
           predicates:
             - Path=/api/v1/stock/**
 

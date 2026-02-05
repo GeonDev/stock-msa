@@ -94,32 +94,31 @@ services:
       stock-batch-db:
         condition: service_started
 
-  stock-stock:
-    build: ./services/stock-stock
-    container_name: stock-stock
+  stock-price:
+    build: ./services/stock-price
+    container_name: stock-price
     ports:
       - "8083:8083"
     env_file: .env
     environment:
       - SPRING_PROFILES_ACTIVE=prod
-      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://${EUREKA_USER}:${EUREKA_PASSWORD}@stock-discovery:8761/eureka
-      # Main DB Connection
-      - SPRING_DATASOURCE_URL=${STOCK_STOCK_DB_URL}
-      - SPRING_DATASOURCE_USERNAME=${STOCK_DB_USER}
-      - SPRING_DATASOURCE_PASSWORD=${STOCK_DB_PASSWORD}
+      - EUREKA_URL=http://${EUREKA_USER}:${EUREKA_PASSWORD}@stock-discovery:8761/eureka
+      - CONFIG_SERVER_URL=http://stock-config:8888
+      # Main DB Connection (Specific User)
+      - STOCK_PRICE_DB_URL=${STOCK_PRICE_DB_URL}
+      - MYSQL_USER=${PRICE_DB_USER}
+      - MYSQL_PASSWORD=${PRICE_DB_PASSWORD}
       # Batch DB Connection
-      - SPRING_DATASOURCE_BATCH_URL=${STOCK_BATCH_DB_URL}
-      - SPRING_DATASOURCE_BATCH_USERNAME=${BATCH_DB_USER}
-      - SPRING_DATASOURCE_BATCH_PASSWORD=${BATCH_DB_PASSWORD}
+      - STOCK_BATCH_DB_URL=${STOCK_BATCH_DB_URL}
+      - BATCH_DB_USER=${BATCH_DB_USER}
+      - BATCH_DB_PASSWORD=${BATCH_DB_PASSWORD}
     networks:
       - stock-network
     depends_on:
-      stock-discovery:
-        condition: service_healthy
-      stock-stock-db:
-        condition: service_started
-      stock-batch-db:
-        condition: service_started
+      - stock-discovery
+      - stock-config
+      - stock-price-db
+      - stock-batch-db
 
   # ==========================================
   # Databases (Specific Users per DB)
@@ -140,10 +139,6 @@ services:
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     networks:
       - stock-network
-    healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
-      timeout: 20s
-      retries: 10
 
   stock-corp-db:
     image: mysql/mysql-server:8.0
@@ -161,10 +156,6 @@ services:
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     networks:
       - stock-network
-    healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
-      timeout: 20s
-      retries: 10
 
   stock-finance-db:
     image: mysql/mysql-server:8.0
@@ -182,34 +173,26 @@ services:
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     networks:
       - stock-network
-    healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
-      timeout: 20s
-      retries: 10
 
-  stock-stock-db:
+  stock-price-db:
     image: mysql/mysql-server:8.0
-    container_name: stock-stock-db
+    container_name: stock-price-db
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: stock_stock
-      MYSQL_USER: ${STOCK_DB_USER}
-      MYSQL_PASSWORD: ${STOCK_DB_PASSWORD}
+      MYSQL_DATABASE: stock_price
+      MYSQL_USER: ${PRICE_DB_USER}
+      MYSQL_PASSWORD: ${PRICE_DB_PASSWORD}
       MYSQL_ROOT_HOST: "%"
     ports:
       - "3308:3306"
     volumes:
-      - stock-db-volume:/var/lib/mysql
+      - price-db-volume:/var/lib/mysql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     networks:
       - stock-network
-    healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
-      timeout: 20s
-      retries: 10
 
 volumes:
   batch-db-volume:
   corp-db-volume:
   finance-db-volume:
-  stock-db-volume:
+  price-db-volume:
