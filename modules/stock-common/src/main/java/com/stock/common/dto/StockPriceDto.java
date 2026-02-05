@@ -16,12 +16,12 @@ public class StockPriceDto {
     private String stockCode;
     private String marketCode;
     private LocalDate basDt;
-    private Integer volume;
+    private Long volume;
     private Long volumePrice;
-    private Integer startPrice;
-    private Integer endPrice;
-    private Integer highPrice;
-    private Integer lowPrice;
+    private Long startPrice;
+    private Long endPrice;
+    private Long highPrice;
+    private Long lowPrice;
     private Double dailyRange;
     private Double dailyRatio;
     private Long stockTotalCnt;
