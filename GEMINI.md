@@ -2,7 +2,7 @@
 
 ## 프로젝트 개요
 
-`stock-msa`는 단일 배치 서비스 구조에서 도메인 중심의 **MSA(Microservice Architecture)** 환경으로 리팩토링된 프로젝트입니다. **Gradle Multi-Module Monorepo** 구조를 취하고 있으며, **Docker 기반의 통합 개발 환경**과 **중앙 집중식 설정 관리**를 제공합니다.
+`stock-msa`는 단일 배치 서비스 구조에서 도메인 중심의 **MSA(Microservice Architecture)** 환경으로 리팩토링된 프로젝트입니다. 주식 정보를 수집하여 **동적 자산배분(퀀트) 투자**에 도움이 되는 시스템 구축을 목표로 하며, **Gradle Multi-Module Monorepo** 구조를 취하고 있습니다. 또한 **Docker 기반의 통합 개발 환경**과 **중앙 집중식 설정 관리**를 제공합니다.
 
 ## 주요 기술 스택
 
@@ -37,6 +37,15 @@
 - **자동 실행 방지**: 애플리케이션 시작 시 모든 Job이 자동으로 실행되는 것을 방지하기 위해 `spring.batch.job.enabled: false` 설정을 기본으로 합니다.
 - **API 기반 트리거**: 배치는 각 서비스의 `/batch/**` 엔티티포인트를 통해 명시적으로 호출하거나 외부 스케줄러(Crontab 등)를 통해 실행합니다.
 
+### 5. 외부 API 연동 현황
+시스템의 신뢰도를 높이기 위해 다음과 같은 공공 및 금융 데이터를 연동하고 있습니다.
+- **금융위원회 (공공데이터포털)**:
+    - `주식시세정보`: 종목별 주가 및 시세 내역.
+    - `기업 재무 정보`: 상장사 요약 재무제표.
+    - `상장종목정보`: KRX 상장 기업 마스터 정보.
+- **한국천문연구원**: `특일 정보` (휴장일 계산용).
+- **금융감독원 (Open DART)**: 공시 정보 및 상세 재무제표.
+
 ## 프로젝트 구조 (Multi-Module)
 
 ### 1. Root Project (`stock-msa`)
@@ -48,7 +57,7 @@
 ### 3. Service Modules (`services/`)
 - **stock-discovery**: Eureka Server. 모든 서비스의 등록 및 탐색.
 - **stock-gateway**: 통합 라우팅 및 보안 필터링.
-- **stock-corp/finance/stock**: 독립된 DB를 가진 도메인 마이크로서비스.
+- **stock-corp/finance/price**: 독립된 DB를 가진 도메인 마이크로서비스.
 
 ## 실행 및 빌드 방법
 
