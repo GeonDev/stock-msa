@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.math.BigDecimal;
 
 @Entity
 @Data
@@ -18,41 +19,41 @@ public class StockWeeklyPrice {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long Id;
+    private Long id;
 
     @Column(name = "stock_code")
-    String stockCode;
+    private String stockCode;
 
     @Column(name = "market_code")
-    String marketCode;
+    private String marketCode;
 
     @Column(name = "start_date")
-    LocalDate startDate;
+    private LocalDate startDate;
 
     @Column(name = "end_date")
-    LocalDate endDate;
+    private LocalDate endDate;
 
     @Column(name = "volume")
-    Long volume;
+    private BigDecimal volume;
 
     @Column(name = "volume_price")
-    Long volumePrice;
+    private BigDecimal volumePrice;
 
     @Column(name = "start_price")
-    Long startPrice;
+    private BigDecimal startPrice;
 
     @Column(name = "end_price")
-    Long endPrice;
+    private BigDecimal endPrice;
 
     @Column(name = "high_price")
-    Long highPrice;
+    private BigDecimal highPrice;
 
     @Column(name = "low_price")
-    Long lowPrice;
+    private BigDecimal lowPrice;
 
     @Column(name = "stock_total_cnt")
-    Long stockTotalCnt;
+    private BigDecimal stockTotalCnt;
 
     @Column(name = "market_total_amt")
-    Long marketTotalAmt;
+    private BigDecimal marketTotalAmt;
 }

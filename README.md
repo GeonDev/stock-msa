@@ -8,13 +8,17 @@
 - **통합 게이트웨이**: `stock-gateway`를 통한 API 라우팅 및 보안 강화.
 - **컨테이너화**: Docker Compose를 통한 인프라 및 전체 서비스의 원클릭 배포.
 - **보안 강화**: 인프라 서비스별 독립 계정 관리 및 Actuator 엔드포인트 보호.
+- **데이터 무결성 (Phase 1 완료)**:
+    - **정합성 검증**: 재무제표의 대차대조표 등식 및 필수 값 검증 로직 탑재.
+    - **퀀트 분석 준비**: 수정주가(Split/Dividend Adjusted) 자동 계산 및 `Ta4j` 기반 기술적 지표(RSI, MACD, Bollinger Bands) 사전 적재.
+    - **고정밀 연산**: 주가/거래량 및 기술적 지표에 `BigDecimal`(`DECIMAL`) 타입 적용으로 오버플로우 방지 및 계산 정합성 확보.
 
 ---
 
 ## 2. 개발 환경 준비
 
 ### 사전 요구 사항
-- **Java 17** (Amazon Corretto 권장)
+- **Java 21** (Amazon Corretto 권장)
 - **Docker** & **Docker Compose**
 
 ### 환경 변수 설정 (`.env`)

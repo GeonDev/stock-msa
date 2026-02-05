@@ -13,6 +13,9 @@ import java.util.Optional;
 @Repository
 public interface StockPriceRepository extends JpaRepository<StockPrice, Long> {
     List<StockPrice> findTop200ByStockCodeAndBasDtBeforeOrderByBasDtDesc(String stockCode, LocalDate basDt);
+
+    List<StockPrice> findTop300ByStockCodeAndBasDtBeforeOrderByBasDtDesc(String stockCode, LocalDate basDt);
+
     Optional<StockPrice> findFirstByStockCodeOrderByBasDtDesc(String stockCode);
     List<StockPrice> findByStockCodeOrderByBasDtAsc(String stockCode);
 

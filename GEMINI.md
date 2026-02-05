@@ -7,7 +7,7 @@
 ## 주요 기술 스택
 
 - **Backend Framework:** Spring Boot 3.4.8
-- **Language:** Java 17 (Amazon Corretto)
+- **Language:** Java 21 (Amazon Corretto)
 - **Build Tool:** Gradle (Multi-Module)
 - **Microservices Support:**
   - **Service Discovery:** Spring Cloud Netflix Eureka (Port: 8761)
@@ -31,20 +31,19 @@
 ### 3. 데이터베이스 및 엔티티 매핑
 - **멀티 데이터소스 설정**: 각 서비스는 `DbConfig`를 통해 메인 DB와 공유 배치 DB(`stock_batch`)를 가집니다. `DataSourceProperties`를 사용하여 Spring Boot의 표준 프로퍼티 바인딩 방식을 준수합니다.
 - **명시적 컬럼 매핑**: DB 스키마(snake_case)와 Java 엔티티(camelCase) 간의 일관성을 위해 모든 필드에 `@Column(name = "...")` 어노테이션을 명시적으로 사용합니다.
+- **데이터 타입 최적화**: 거래량(`volume`), 주가(`price`), 기술적 지표 및 재무 비율 데이터는 오버플로우 방지와 고정밀 연산을 위해 `BigDecimal`(`DECIMAL(25, 4)`) 타입을 사용하여 금융 데이터의 정확성을 보장합니다.
 - **Flyway 기반 스키마 관리**: 각 서비스의 `src/main/resources/db/migration`에 위치한 SQL 스크립트를 통해 DB 스키마 버전 관리를 수행합니다.
 
 ### 4. Spring Batch 운영 정책
 - **자동 실행 방지**: 애플리케이션 시작 시 모든 Job이 자동으로 실행되는 것을 방지하기 위해 `spring.batch.job.enabled: false` 설정을 기본으로 합니다.
 - **API 기반 트리거**: 배치는 각 서비스의 `/batch/**` 엔티티포인트를 통해 명시적으로 호출하거나 외부 스케줄러(Crontab 등)를 통해 실행합니다.
 
-### 5. 외부 API 연동 현황
-시스템의 신뢰도를 높이기 위해 다음과 같은 공공 및 금융 데이터를 연동하고 있습니다.
-- **금융위원회 (공공데이터포털)**:
-    - `주식시세정보`: 종목별 주가 및 시세 내역.
-    - `기업 재무 정보`: 상장사 요약 재무제표.
-    - `상장종목정보`: KRX 상장 기업 마스터 정보.
-- **한국천문연구원**: `특일 정보` (휴장일 계산용).
-- **금융감독원 (Open DART)**: 공시 정보 및 상세 재무제표.
+### 5. Phase 1: 데이터 무결성 및 전처리 (완료)
+퀀트 분석의 신뢰도를 높이기 위해 원천 데이터 검증 및 가공 로직이 구축되었습니다.
+- **데이터 타입 강화**: 주가, 거래량, 재무 항목 및 모든 기술적 지표 필드를 `BigDecimal`로 전환하여 고정밀 부동 소수점 연산 지원 및 오버플로우 원천 차단.
+- **기업 이벤트 및 수정주가**: 증자, 분할 등 이벤트(`CorpEventHistory`)를 수집하고, 이를 반영한 수정종가(`adjClosePrice`) 자동 산출 로직 적용.
+- **기술적 지표 엔진**: `ta4j` 라이브러리를 통합하여 이동평균선(MA), RSI, MACD, 볼린저밴드 등 핵심 지표를 `BigDecimal` 정밀도로 사전 계산.
+- **재무 데이터 정합성 검증**: 수집된 재무제표의 대차대조표 등식(`자산=부채+자본`) 및 필수 필드 누락 여부를 즉시 검증하여 `ValidationStatus`(`VALID`/`INVALID`) 부여.
 
 ## 프로젝트 구조 (Multi-Module)
 
@@ -53,16 +52,19 @@
 
 ### 2. Common Module (`modules/stock-common`)
 - 공통 DTO (`CorpInfoDto`, `StockPriceDto`), 예외 처리, 유틸리티.
+- **ValidationStatus**: 데이터 무결성 상태 관리를 위한 Enum.
 
 ### 3. Service Modules (`services/`)
 - **stock-discovery**: Eureka Server. 모든 서비스의 등록 및 탐색.
 - **stock-gateway**: 통합 라우팅 및 보안 필터링.
-- **stock-corp/finance/price**: 독립된 DB를 가진 도메인 마이크로서비스.
+- **stock-corp**: 기업 기본 정보 및 테마/업종 관리.
+- **stock-finance**: 재무제표 수집 및 **데이터 정합성 검증**.
+- **stock-price**: 주가 시세, **수정주가 계산**, **기술적 지표 산출**.
 
 ## 실행 및 빌드 방법
 
 ### 사전 요구 사항
-- Java 17 이상
+- Java 21 이상
 - Docker & Docker Compose
 
 ### 빌드 및 실행 (Docker)
@@ -75,4 +77,4 @@
 - 외부 API 키(`DATA_GO_SERVICE_KEY`, `DART_API_KEY`)가 `.env` 파일에 올바르게 설정되어 있어야 합니다.
 
 ---
-*마지막 업데이트: 2026-02-04*
+*마지막 업데이트: 2026-02-05 (Phase 1 Complete)*

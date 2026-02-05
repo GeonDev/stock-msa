@@ -32,6 +32,10 @@ public class ApplicationConstants {
 
     public static final String DART_STOCK_FINANCE_MULTI_URI = "/api/fnlttMultiAcnt.json";
 
+    public static final String KRX_STOCK_ISSUANCE_URI = "/1160100/service/GetKrxIssuInfoService/getIssuInfo";
 
+    public static final String KRX_STOCK_RIGHTS_URI = "/1160100/service/GetKrxRightSchedService/getRightSched";
+
+    public static final String KRX_STOCK_DIVIDEND_URI = "/1160100/service/GetKrxDiviInfoService/getDiviInfo";
 
 }
