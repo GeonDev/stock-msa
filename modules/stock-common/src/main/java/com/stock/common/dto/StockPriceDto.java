@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Data
@@ -16,14 +17,14 @@ public class StockPriceDto {
     private String stockCode;
     private String marketCode;
     private LocalDate basDt;
-    private Long volume;
-    private Long volumePrice;
-    private Long startPrice;
-    private Long endPrice;
-    private Long highPrice;
-    private Long lowPrice;
-    private Double dailyRange;
-    private Double dailyRatio;
-    private Long stockTotalCnt;
-    private Long marketTotalAmt;
+    private BigDecimal volume;
+    private BigDecimal volumePrice;
+    private BigDecimal startPrice;
+    private BigDecimal endPrice;
+    private BigDecimal highPrice;
+    private BigDecimal lowPrice;
+    private BigDecimal dailyRange;
+    private BigDecimal dailyRatio;
+    private BigDecimal stockTotalCnt;
+    private BigDecimal marketTotalAmt;
 }

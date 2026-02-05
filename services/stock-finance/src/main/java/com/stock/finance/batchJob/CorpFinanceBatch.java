@@ -2,6 +2,7 @@ package com.stock.finance.batchJob;
 
 import com.stock.common.dto.CorpInfoDto;
 import com.stock.common.dto.StockPriceDto;
+import com.stock.common.enums.ValidationStatus;
 import com.stock.finance.batchJob.ItemReader.CorpFinanceItemReader;
 import com.stock.finance.entity.CorpFinance;
 import com.stock.finance.entity.CorpFinanceIndicator;
@@ -9,6 +10,8 @@ import com.stock.finance.repository.CorpFinanceRepository;
 import com.stock.finance.client.CorpClient;
 import com.stock.finance.client.StockClient;
 import com.stock.finance.service.CorpFinanceService;
+import com.stock.finance.service.FinanceValidationService;
+import jakarta.persistence.EntityManagerFactory;
 import lombok.AllArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -17,6 +20,8 @@ import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.database.JpaPagingItemReader;
+import org.springframework.batch.item.database.builder.JpaPagingItemReaderBuilder;
 import org.springframework.batch.item.data.RepositoryItemWriter;
 import org.springframework.batch.item.data.builder.RepositoryItemWriterBuilder;
 import org.springframework.context.annotation.Bean;
@@ -33,6 +38,8 @@ public class CorpFinanceBatch {
     private final StockClient stockClient;
     private final PlatformTransactionManager platformTransactionManager;
     private final CorpFinanceService corpFinanceService;
+    private final FinanceValidationService financeValidationService;
+    private final EntityManagerFactory entityManagerFactory;
 
     @Bean
     @StepScope
@@ -44,6 +51,7 @@ public class CorpFinanceBatch {
     public Job corpFinanceJob() {
         return new JobBuilder("corpFinanceJob", jobRepository)
                 .start(corpFinanceStep())
+                .next(validateFinanceStep())
                 .build();
     }
 
@@ -55,6 +63,35 @@ public class CorpFinanceBatch {
                 .processor(corpFinanceProcessor())
                 .writer(corpFinanceWriter())
                 .build();
+    }
+
+    @Bean
+    public Step validateFinanceStep() {
+        return new StepBuilder("validateFinanceStep", jobRepository)
+                .<CorpFinance, CorpFinance>chunk(100, platformTransactionManager)
+                .reader(validateFinanceItemReader())
+                .processor(validateFinanceProcessor())
+                .writer(corpFinanceWriter())
+                .build();
+    }
+
+    @Bean
+    public JpaPagingItemReader<CorpFinance> validateFinanceItemReader() {
+        return new JpaPagingItemReaderBuilder<CorpFinance>()
+                .name("validateFinanceItemReader")
+                .entityManagerFactory(entityManagerFactory)
+                .queryString("SELECT f FROM CorpFinance f WHERE f.validationStatus IS NULL")
+                .pageSize(100)
+                .build();
+    }
+
+    @Bean
+    public ItemProcessor<CorpFinance, CorpFinance> validateFinanceProcessor() {
+        return item -> {
+            ValidationStatus status = financeValidationService.performValidation(item);
+            item.setValidationStatus(status);
+            return item;
+        };
     }
 
     @Bean

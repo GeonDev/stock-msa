@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.math.BigDecimal;
 
 @Entity
 @Data
@@ -32,45 +33,49 @@ public class StockPrice {
     @Column(name = "bas_dt")
     LocalDate basDt;
 
+    //수정 종가
+    @Column(name = "adj_close_price")
+    BigDecimal adjClosePrice;
+
     //체결수량의 누적 합계
     @Column(name = "volume")
-    Long volume;
+    private BigDecimal volume;
 
     //거래건 별 체결가격 * 체결수량의 누적 합계
     @Column(name = "volume_price")
-    Long volumePrice;
+    private BigDecimal volumePrice;
 
     //시초가
     @Column(name = "start_price")
-    Long startPrice;
+    private BigDecimal startPrice;
 
     //종가
     @Column(name = "end_price")
-    Long endPrice;
+    private BigDecimal endPrice;
 
     //일간 최고가
     @Column(name = "high_price")
-    Long highPrice;
+    private BigDecimal highPrice;
 
     //일간 최저가
     @Column(name = "low_price")
-    Long lowPrice;
+    private BigDecimal lowPrice;
 
     //전일 대비 등락값
     @Column(name = "daily_range")
-    Double dailyRange;
+    private BigDecimal dailyRange;
 
     //전일 대비등락율
     @Column(name = "daily_ratio")
-    Double dailyRatio;
+    private BigDecimal dailyRatio;
 
     //상장 주식수
     @Column(name = "stock_total_cnt")
-    Long stockTotalCnt;
+    private BigDecimal stockTotalCnt;
 
     // 종가 * 상장 주식수 (시가총액)
     @Column(name = "market_total_amt")
-    Long marketTotalAmt;
+    private BigDecimal marketTotalAmt;
 
     @OneToOne(mappedBy = "stockPrice", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @lombok.ToString.Exclude

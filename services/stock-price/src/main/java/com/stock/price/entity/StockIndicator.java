@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 
 @Entity
 @Data
@@ -28,22 +29,37 @@ public class StockIndicator implements Serializable  {
     private StockPrice stockPrice;
 
     @Column(name = "ma5")
-    private Double ma5;
+    private BigDecimal ma5;
     @Column(name = "ma20")
-    private Double ma20;
+    private BigDecimal ma20;
     @Column(name = "ma60")
-    private Double ma60;
+    private BigDecimal ma60;
     @Column(name = "ma120")
-    private Double ma120;
+    private BigDecimal ma120;
     @Column(name = "ma200")
-    private Double ma200;
+    private BigDecimal ma200;
     @Column(name = "ma250")
-    private Double ma250;
+    private BigDecimal ma250;
 
     @Column(name = "momentum1m")
-    private Double momentum1m;
+    private BigDecimal momentum1m;
     @Column(name = "momentum3m")
-    private Double momentum3m;
+    private BigDecimal momentum3m;
     @Column(name = "momentum6m")
-    private Double momentum6m;
+    private BigDecimal momentum6m;
+
+    @Column(name = "rsi14")
+    private BigDecimal rsi14;
+
+    @Column(name = "bollinger_upper")
+    private BigDecimal bollingerUpper;
+
+    @Column(name = "bollinger_lower")
+    private BigDecimal bollingerLower;
+
+    @Column(name = "macd")
+    private BigDecimal macd;
+
+    @Column(name = "macd_signal")
+    private BigDecimal macdSignal;
 }

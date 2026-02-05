@@ -13,6 +13,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.math.BigDecimal;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -74,31 +75,35 @@ public class CorpFinanceService {
         return corpList;
     }
 
-    public CorpFinanceIndicator calculateIndicators(CorpFinance currentFinance, Long marketCap) {
+    public CorpFinanceIndicator calculateIndicators(CorpFinance currentFinance, BigDecimal marketCap) {
         CorpFinanceIndicator.CorpFinanceIndicatorBuilder builder = CorpFinanceIndicator.builder()
                 .corpCode(currentFinance.getCorpCode())
                 .basDt(currentFinance.getBasDt());
 
         // Calculate ROE, ROA, Debt Ratio from current data
-        if (currentFinance.getTotalCapital() != null && currentFinance.getTotalCapital() != 0) {
+        if (currentFinance.getTotalCapital() != null && currentFinance.getTotalCapital().compareTo(BigDecimal.ZERO) != 0) {
             if (currentFinance.getNetIncome() != null) {
-                builder.roe((double) currentFinance.getNetIncome() / currentFinance.getTotalCapital() * 100);
+                builder.roe(currentFinance.getNetIncome()
+                        .divide(currentFinance.getTotalCapital(), 8, java.math.RoundingMode.HALF_UP)
+                        .multiply(BigDecimal.valueOf(100)));
             }
         }
-        if (currentFinance.getTotalAsset() != null && currentFinance.getTotalAsset() != 0 && currentFinance.getNetIncome() != null) {
-            builder.roa((double) currentFinance.getNetIncome() / currentFinance.getTotalAsset() * 100);
+        if (currentFinance.getTotalAsset() != null && currentFinance.getTotalAsset().compareTo(BigDecimal.ZERO) != 0 && currentFinance.getNetIncome() != null) {
+            builder.roa(currentFinance.getNetIncome()
+                    .divide(currentFinance.getTotalAsset(), 8, java.math.RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100)));
         }
 
         // Calculate PER, PBR, PSR from current data and market cap
-        if (marketCap != null && marketCap > 0) {
-            if (currentFinance.getNetIncome() != null && currentFinance.getNetIncome() > 0) {
-                builder.per((double) marketCap / currentFinance.getNetIncome());
+        if (marketCap != null && marketCap.compareTo(BigDecimal.ZERO) > 0) {
+            if (currentFinance.getNetIncome() != null && currentFinance.getNetIncome().compareTo(BigDecimal.ZERO) > 0) {
+                builder.per(marketCap.divide(currentFinance.getNetIncome(), 8, java.math.RoundingMode.HALF_UP));
             }
-            if (currentFinance.getTotalCapital() != null && currentFinance.getTotalCapital() > 0) {
-                builder.pbr((double) marketCap / currentFinance.getTotalCapital());
+            if (currentFinance.getTotalCapital() != null && currentFinance.getTotalCapital().compareTo(BigDecimal.ZERO) > 0) {
+                builder.pbr(marketCap.divide(currentFinance.getTotalCapital(), 8, java.math.RoundingMode.HALF_UP));
             }
-            if (currentFinance.getRevenue() != null && currentFinance.getRevenue() > 0) {
-                builder.psr((double) marketCap / currentFinance.getRevenue());
+            if (currentFinance.getRevenue() != null && currentFinance.getRevenue().compareTo(BigDecimal.ZERO) > 0) {
+                builder.psr(marketCap.divide(currentFinance.getRevenue(), 8, java.math.RoundingMode.HALF_UP));
             }
         }
 
@@ -114,11 +119,13 @@ public class CorpFinanceService {
         return builder.build();
     }
 
-    private Double calculateGrowthRate(Long currentValue, Long previousValue) {
-        if (currentValue == null || previousValue == null || previousValue == 0) {
+    private BigDecimal calculateGrowthRate(BigDecimal currentValue, BigDecimal previousValue) {
+        if (currentValue == null || previousValue == null || previousValue.compareTo(BigDecimal.ZERO) == 0) {
             return null;
         }
-        return ((double) currentValue / previousValue - 1) * 100;
+        return currentValue.divide(previousValue, 8, java.math.RoundingMode.HALF_UP)
+                .subtract(BigDecimal.ONE)
+                .multiply(BigDecimal.valueOf(100));
     }
 
 }

@@ -5,6 +5,7 @@ import com.stock.price.entity.StockPrice;
 import com.stock.price.entity.StockWeeklyPrice;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.WeekFields;
 import java.util.*;
@@ -34,14 +35,26 @@ public class PriceCalculationService {
             String stockCode = weekPrices.get(0).getStockCode();
             String marketCode = weekPrices.get(0).getMarketCode();
 
-            long startPrice = weekPrices.get(0).getStartPrice();
-            long endPrice = weekPrices.get(weekPrices.size() - 1).getEndPrice();
-            long highPrice = weekPrices.stream().mapToLong(StockPrice::getHighPrice).max().orElse(0L);
-            long lowPrice = weekPrices.stream().mapToLong(StockPrice::getLowPrice).min().orElse(0L);
-            long volume = weekPrices.stream().mapToLong(StockPrice::getVolume).sum();
-            long volumePrice = weekPrices.stream().mapToLong(StockPrice::getVolumePrice).sum();
-            long stockTotalCnt = weekPrices.get(weekPrices.size() - 1).getStockTotalCnt();
-            long marketTotalAmt = weekPrices.get(weekPrices.size() - 1).getMarketTotalAmt();
+            BigDecimal startPrice = weekPrices.get(0).getStartPrice();
+            BigDecimal endPrice = weekPrices.get(weekPrices.size() - 1).getEndPrice();
+            BigDecimal highPrice = weekPrices.stream()
+                    .map(StockPrice::getHighPrice)
+                    .filter(Objects::nonNull)
+                    .max(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
+            BigDecimal lowPrice = weekPrices.stream()
+                    .map(StockPrice::getLowPrice)
+                    .filter(Objects::nonNull)
+                    .min(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
+            BigDecimal volume = weekPrices.stream()
+                    .map(StockPrice::getVolume)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal volumePrice = weekPrices.stream()
+                    .map(StockPrice::getVolumePrice)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal stockTotalCnt = weekPrices.get(weekPrices.size() - 1).getStockTotalCnt();
+            BigDecimal marketTotalAmt = weekPrices.get(weekPrices.size() - 1).getMarketTotalAmt();
 
             weeklyPrices.add(StockWeeklyPrice.builder()
                     .stockCode(stockCode)
@@ -83,14 +96,26 @@ public class PriceCalculationService {
             String stockCode = monthPrices.get(0).getStockCode();
             String marketCode = monthPrices.get(0).getMarketCode();
 
-            long startPrice = monthPrices.get(0).getStartPrice();
-            long endPrice = monthPrices.get(monthPrices.size() - 1).getEndPrice();
-            long highPrice = monthPrices.stream().mapToLong(StockPrice::getHighPrice).max().orElse(0L);
-            long lowPrice = monthPrices.stream().mapToLong(StockPrice::getLowPrice).min().orElse(0L);
-            long volume = monthPrices.stream().mapToLong(StockPrice::getVolume).sum();
-            long volumePrice = monthPrices.stream().mapToLong(StockPrice::getVolumePrice).sum();
-            long stockTotalCnt = monthPrices.get(monthPrices.size() - 1).getStockTotalCnt();
-            long marketTotalAmt = monthPrices.get(monthPrices.size() - 1).getMarketTotalAmt();
+            BigDecimal startPrice = monthPrices.get(0).getStartPrice();
+            BigDecimal endPrice = monthPrices.get(monthPrices.size() - 1).getEndPrice();
+            BigDecimal highPrice = monthPrices.stream()
+                    .map(StockPrice::getHighPrice)
+                    .filter(Objects::nonNull)
+                    .max(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
+            BigDecimal lowPrice = monthPrices.stream()
+                    .map(StockPrice::getLowPrice)
+                    .filter(Objects::nonNull)
+                    .min(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
+            BigDecimal volume = monthPrices.stream()
+                    .map(StockPrice::getVolume)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal volumePrice = monthPrices.stream()
+                    .map(StockPrice::getVolumePrice)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal stockTotalCnt = monthPrices.get(monthPrices.size() - 1).getStockTotalCnt();
+            BigDecimal marketTotalAmt = monthPrices.get(monthPrices.size() - 1).getMarketTotalAmt();
 
             monthlyPrices.add(StockMonthlyPrice.builder()
                     .stockCode(stockCode)

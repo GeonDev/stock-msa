@@ -8,6 +8,7 @@ import org.w3c.dom.NodeList;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -84,6 +85,17 @@ public class ParseUtils {
             return Double.parseDouble(value);
         } catch (NumberFormatException e) {
             return 0.0;
+        }
+    }
+
+    public static BigDecimal safeParseBigDecimal(String value) {
+        if (!StringUtils.hasText(value)) {
+            return BigDecimal.ZERO;
+        }
+        try {
+            return new BigDecimal(value.trim());
+        } catch (NumberFormatException e) {
+            return BigDecimal.ZERO;
         }
     }
 
