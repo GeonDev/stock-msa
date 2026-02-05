@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.ta4j.core.BarSeries;
 import org.ta4j.core.BaseBarSeriesBuilder;
 import org.ta4j.core.indicators.MACDIndicator;
+import org.ta4j.core.indicators.ROCIndicator;
 import org.ta4j.core.indicators.RSIIndicator;
 import org.ta4j.core.indicators.averages.EMAIndicator;
 import org.ta4j.core.indicators.averages.SMAIndicator;
@@ -84,8 +85,14 @@ public class TechnicalIndicatorService {
         indicator.setMacd(getValue(macd, endIndex));
         indicator.setMacdSignal(getValue(macdSignal, endIndex));
         
-        // Momentum (기존 로직 유지 또는 Ta4j ROCIndicator로 대체 가능. 현재는 기존 필드 유지)
-        // indicator.setMomentum1m(...) -> Ta4j ROCIndicator(closePrice, 20) 활용 가능
+        // Momentum (1m, 3m, 6m)
+        ROCIndicator roc1m = new ROCIndicator(closePrice, 20);
+        ROCIndicator roc3m = new ROCIndicator(closePrice, 60);
+        ROCIndicator roc6m = new ROCIndicator(closePrice, 120);
+        
+        indicator.setMomentum1m(getValue(roc1m, endIndex));
+        indicator.setMomentum3m(getValue(roc3m, endIndex));
+        indicator.setMomentum6m(getValue(roc6m, endIndex));
     }
 
     private BarSeries createBarSeries(List<StockPrice> prices) {

@@ -94,17 +94,20 @@ echo "${BLUE}[INFO] 총 ${TOTAL_LINES} 라인 분석 중...${NC}"
 AI_PROMPT="${CLEAN_INPUT}
 
 [분석 요청사항]
-1. 치명적 결함(보안, NPE, 로직 오류) 발견 시에만 [BLOCK] 키워드를 사용하세요.
-2. YAML/Properties 파일은 도메인별로 설정이 중복될 수 있으므로 절대 [BLOCK] 하지 마세요.
-3. 다음 태그를 포함하여 응답하세요:
-   [PASS]
-   [PROJECT_IMPACT]: 전체 시스템 영향 (멀티 모듈 의존성 등)
-   [SIDE_EFFECTS]: 부작용 리스크
-   [CLEAN_CODE]: 리팩토링 제안 (Spring Boot/MSA 관점)
-   [PERFORMANCE]: 최적화 제안
-   [COMPLEXITY]: 복잡도 (1~10)
-   [TEST_GUIDE]: 필수 테스트 시나리오
-   [COMMIT_MSG]: 커밋 메시지 (한글로만, 접두사 제외)"
+1. 다음의 경우 반드시 [BLOCK] 키워드를 사용하여 커밋을 차단하세요:
+   - 보안 취약점 (API 키 노출 등)
+   - 치명적인 로직 오류 (NPE 등)
+   - YAML/Properties 설정 파일의 문법 오류, 잘못된 들여쓰기, 필수 값 누락, 유효하지 않은 URL 포맷
+
+2. 다음 태그를 사용하여 구조화된 리포트를 작성하세요:
+   [BLOCK] (차단 시 사유 작성)
+   [PASS] (통과 시)
+   [PROJECT_IMPACT]
+   [SIDE_EFFECTS]
+   [CLEAN_CODE]
+   [PERFORMANCE]
+   [TEST_GUIDE]
+   [COMMIT_MSG] (한글로 작성, 50자 이내 요약 + 본문)"
 
 AI_RESPONSE=$(echo "$AI_PROMPT" | gemini 2>&1 || echo "ERROR")
 
@@ -140,10 +143,19 @@ CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
     echo "---"
 } > "$REPORT_FILE"
 
-if echo "$CLEANED_RESPONSE" | grep -qi '[[BLOCK]]'; then
-    BLOCK_REASON=$(echo "$CLEANED_RESPONSE" | grep -i '[[BLOCK]]' | head -1)
-    echo "${RED}🚨 [BLOCK] 커밋 거부: ${BLOCK_REASON}${NC}"
-    echo "### 🚨 커밋 거부 사유\n\n${BLOCK_REASON}\n\n#### 상세 분석\n${CLEANED_RESPONSE}" >> "$REPORT_FILE"
+if echo "$CLEANED_RESPONSE" | grep -qi '\[BLOCK\]'; then
+    # [BLOCK] 태그 이후의 내용을 추출하여 사유로 사용
+    BLOCK_REASON=$(echo "$CLEANED_RESPONSE" | sed -n '/\[BLOCK\]/,/\[/p' | grep -v "\\[" | sed 's/\[BLOCK\]//g' | xargs)
+    
+    echo "${RED}🚨 [BLOCK] 커밋 거부${NC}"
+    echo "${RED}사유: ${BLOCK_REASON}${NC}"
+    
+    echo "### 🚨 커밋 거부 사유" >> "$REPORT_FILE"
+    echo "> ${BLOCK_REASON}" >> "$REPORT_FILE"
+    echo "" >> "$REPORT_FILE"
+    echo "#### 📝 상세 분석" >> "$REPORT_FILE"
+    echo "${CLEANED_RESPONSE}" >> "$REPORT_FILE"
+    
     exit 1
 else
     echo "${GREEN}✅ [PASS] 코드 리뷰 통과!${NC}"

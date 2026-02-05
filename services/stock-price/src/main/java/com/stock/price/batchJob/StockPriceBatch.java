@@ -1,5 +1,9 @@
 package com.stock.price.batchJob;
 
+import com.stock.common.consts.ApplicationConstants;
+import com.stock.price.batchJob.itemReader.AdjustedPriceItemReader;
+import com.stock.price.batchJob.itemReader.CorpEventItemReader;
+import com.stock.price.batchJob.itemReader.StockIndicatorItemReader;
 import com.stock.price.batchJob.itemReader.StockPriceItemReader;
 import com.stock.price.entity.StockPrice;
 import com.stock.price.repository.StockPriceRepository;
@@ -17,8 +21,6 @@ import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
-import org.springframework.batch.item.database.JpaPagingItemReader;
-import org.springframework.batch.item.database.builder.JpaPagingItemReaderBuilder;
 import org.springframework.batch.item.data.RepositoryItemWriter;
 import org.springframework.batch.item.data.builder.RepositoryItemWriterBuilder;
 import org.springframework.batch.repeat.RepeatStatus;
@@ -43,7 +45,25 @@ public class StockPriceBatch {
     private final TechnicalIndicatorService technicalIndicatorService;
     private final CorpEventService corpEventService;
     private final AdjustedPriceService adjustedPriceService;
-    private final EntityManagerFactory entityManagerFactory;
+
+
+    @Bean
+    @StepScope
+    public CorpEventItemReader corpEventItemReader() {
+        return new CorpEventItemReader(stockPriceRepository);
+    }
+
+    @Bean
+    @StepScope
+    public AdjustedPriceItemReader adjustedPriceItemReader() {
+        return new AdjustedPriceItemReader(stockPriceRepository);
+    }
+
+    @Bean
+    @StepScope
+    public StockIndicatorItemReader stockIndicatorItemReader() {
+        return new StockIndicatorItemReader(stockPriceRepository);
+    }
 
     @Bean
     @StepScope
@@ -52,25 +72,11 @@ public class StockPriceBatch {
     }
 
     @Bean
-    @StepScope
-    public JpaPagingItemReader<StockPrice> stockIndicatorItemReader(@Value("#{jobParameters['targetDate']}") String targetDate) {
-        LocalDate date = (targetDate != null) ? LocalDate.parse(targetDate) : LocalDate.now();
-        
-        return new JpaPagingItemReaderBuilder<StockPrice>()
-                .name("stockIndicatorItemReader")
-                .entityManagerFactory(entityManagerFactory)
-                .queryString("SELECT s FROM StockPrice s WHERE s.basDt = :targetDate")
-                .parameterValues(Collections.singletonMap("targetDate", date))
-                .pageSize(100)
-                .build();
-    }
-
-    @Bean
     public Job stockDataJob() {
         return new JobBuilder("stockDataJob", jobRepository)
                 .start(stockDataStep())
-                .next(corpEventStep(null))
-                .next(calculateAdjPriceStep(null))
+                .next(corpEventStep())
+                .next(calculateAdjPriceStep())
                 .next(calculateIndicatorStep())
                 .build();
     }
@@ -78,63 +84,52 @@ public class StockPriceBatch {
     @Bean
     public Step stockDataStep() {
         return new StepBuilder("stockDataStep", jobRepository)
-                .<StockPrice, StockPrice>chunk(100, platformTransactionManager)
+                .<StockPrice, StockPrice>chunk(ApplicationConstants.STOCK_PRICE_CHUNK_SIZE, platformTransactionManager)
                 .reader(stockApiItemReader())
-                .processor(stockItemProcessor()) // Simple pass-through
+                .processor(stockItemProcessor())
                 .writer(stockItemWriter())
                 .build();
     }
 
     @Bean
-    @StepScope
-    public Step corpEventStep(@Value("#{jobParameters['targetDate']}") String targetDate) {
+    public Step corpEventStep() {
         return new StepBuilder("corpEventStep", jobRepository)
-                .tasklet((contribution, chunkContext) -> {
-                    LocalDate date = (targetDate != null) ? LocalDate.parse(targetDate) : LocalDate.now();
-                    log.info("Starting Corp Event Collection for date: {}", date);
-                    
-                    // 1. 금일 수집된 종목 리스트 조회
-                    List<String> stockCodes = stockPriceRepository.findDistinctStockCodeByBasDtBetween(date, date);
-                    
-                    for (String code : stockCodes) {
+                .<String, String>chunk(ApplicationConstants.STOCK_PRICE_CHUNK_SIZE, platformTransactionManager)
+                .reader(corpEventItemReader())
+                .writer(chunk -> {
+                    for (String code : chunk) {
                         try {
                             corpEventService.collectAndSaveEvents(code);
                         } catch (Exception e) {
                             log.error("Failed to collect events for {}: {}", code, e.getMessage());
                         }
                     }
-                    return RepeatStatus.FINISHED;
-                }, platformTransactionManager)
+                })
                 .build();
     }
 
     @Bean
-    @StepScope
-    public Step calculateAdjPriceStep(@Value("#{jobParameters['targetDate']}") String targetDate) {
+    public Step calculateAdjPriceStep() {
         return new StepBuilder("calculateAdjPriceStep", jobRepository)
-                .tasklet((contribution, chunkContext) -> {
-                    LocalDate date = (targetDate != null) ? LocalDate.parse(targetDate) : LocalDate.now();
-                    log.info("Starting Adjusted Price Calculation for date: {}", date);
-                    
-                    List<String> stockCodes = stockPriceRepository.findDistinctStockCodeByBasDtBetween(date, date);
-                    
-                    for (String code : stockCodes) {
-                         try {
+                .<String, String>chunk(ApplicationConstants.STOCK_PRICE_CHUNK_SIZE, platformTransactionManager)
+                .reader(adjustedPriceItemReader())
+                .writer(chunk -> {
+                    for (String code : chunk) {
+                        try {
                             adjustedPriceService.calculateAndSaveAdjustedPrices(code);
                         } catch (Exception e) {
                             log.error("Failed to calculate adjusted price for {}: {}", code, e.getMessage());
                         }
                     }
-                    return RepeatStatus.FINISHED;
-                }, platformTransactionManager)
+                })
                 .build();
     }
 
     @Bean
     public Step calculateIndicatorStep() {
         return new StepBuilder("calculateIndicatorStep", jobRepository)
-                .<StockPrice, StockPrice>chunk(100, platformTransactionManager)
-                .reader(stockIndicatorItemReader(null)) // null for compile-time, overridden by StepScope
+                .<StockPrice, StockPrice>chunk(ApplicationConstants.STOCK_PRICE_CHUNK_SIZE, platformTransactionManager)
+                .reader(stockIndicatorItemReader())
                 .processor(indicatorItemProcessor())
                 .writer(stockItemWriter())
                 .build();
@@ -143,11 +138,14 @@ public class StockPriceBatch {
     @Bean
     public ItemProcessor<StockPrice, StockPrice> indicatorItemProcessor() {
         return item -> {
-            // 1. Fetch historical data (Top 300 for MA250 calculation)
             List<StockPrice> history = stockPriceRepository.findTop300ByStockCodeAndBasDtBeforeOrderByBasDtDesc(
                     item.getStockCode(), item.getBasDt());
-            
-            // 2. Calculate indicators
+
+            if (history.size() < 300) {
+                log.warn("Insufficient history data for stock: {}. Required: 300, Found: {}", item.getStockCode(), history.size());
+                return null;
+            }
+
             technicalIndicatorService.calculateAndFillIndicators(item, history);
             
             return item;
@@ -156,7 +154,7 @@ public class StockPriceBatch {
 
     @Bean
     public ItemProcessor<StockPrice, StockPrice> stockItemProcessor() {
-        return item -> item; // Data collection only
+        return item -> item;
     }
 
     @Bean

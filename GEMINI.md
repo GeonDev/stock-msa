@@ -42,8 +42,8 @@
 퀀트 분석의 신뢰도를 높이기 위해 원천 데이터 검증 및 가공 로직이 구축되었습니다.
 - **데이터 타입 강화**: 주가, 거래량, 재무 항목 및 모든 기술적 지표 필드를 `BigDecimal`로 전환하여 고정밀 부동 소수점 연산 지원 및 오버플로우 원천 차단.
 - **기업 이벤트 및 수정주가**: 증자, 분할 등 이벤트(`CorpEventHistory`)를 수집하고, 이를 반영한 수정종가(`adjClosePrice`) 자동 산출 로직 적용.
-- **기술적 지표 엔진**: `ta4j` 라이브러리를 통합하여 이동평균선(MA), RSI, MACD, 볼린저밴드 등 핵심 지표를 `BigDecimal` 정밀도로 사전 계산.
-- **재무 데이터 정합성 검증**: 수집된 재무제표의 대차대조표 등식(`자산=부채+자본`) 및 필수 필드 누락 여부를 즉시 검증하여 `ValidationStatus`(`VALID`/`INVALID`) 부여.
+- **기술적 지표 엔진**: `ta4j` 라이브러리를 통합하여 이동평균선(MA), RSI, MACD, 볼린저밴드 및 **모멘텀(1m, 3m, 6m)** 등 핵심 지표를 `BigDecimal` 정밀도로 사전 계산.
+- **데이터 정합성 검증**: 수집된 재무제표의 대차대조표 등식(`자산=부채+자본`) 검증 및 **기술적 지표 산출 시 최소 300거래일 이상의 데이터 확보 여부**를 체크하여 신뢰도 보장.
 
 ## 프로젝트 구조 (Multi-Module)
 
@@ -52,6 +52,7 @@
 
 ### 2. Common Module (`modules/stock-common`)
 - 공통 DTO (`CorpInfoDto`, `StockPriceDto`), 예외 처리, 유틸리티.
+- **ApplicationConstants**: `STOCK_PRICE_CHUNK_SIZE` 등 시스템 전반의 성능/운영 파라미터 중앙 관리.
 - **ValidationStatus**: 데이터 무결성 상태 관리를 위한 Enum.
 
 ### 3. Service Modules (`services/`)
@@ -60,6 +61,7 @@
 - **stock-corp**: 기업 기본 정보 및 테마/업종 관리.
 - **stock-finance**: 재무제표 수집 및 **데이터 정합성 검증**.
 - **stock-price**: 주가 시세, **수정주가 계산**, **기술적 지표 산출**.
+    - **Chunk-Oriented Batch**: 모든 데이터 처리 스텝을 Reader-Processor-Writer 구조로 표준화하여 대용량 데이터 처리 안정성 확보.
 
 ## 실행 및 빌드 방법
 

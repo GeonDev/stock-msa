@@ -40,7 +40,7 @@ public class CorpEventService {
                     .stockCode(stockCode)
                     .eventDate(info.getEventDate())
                     .eventType(eventType)
-                    .ratio(info.getIssuanceRatio()) // API가 주는 배정비율 그대로 저장 (계산 시 변환)
+                    .ratio(info.getIssuanceRatio())
                     .amount(info.getIssuanceAmount())
                     .description(info.getEventType())
                     .build();
