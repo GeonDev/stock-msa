@@ -1,37 +1,44 @@
 package com.stock.price.batchJob;
 
+import com.stock.common.consts.ApplicationConstants;
+import com.stock.price.batchJob.itemReader.MonthlyStockCodeItemReader;
 import com.stock.price.entity.StockMonthlyPrice;
 import com.stock.price.entity.StockPrice;
 import com.stock.price.repository.StockMonthlyPriceRepository;
 import com.stock.price.repository.StockPriceRepository;
 import com.stock.price.service.PriceCalculationService;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.batch.item.database.JdbcCursorItemReader;
-import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import javax.sql.DataSource;
 import java.util.List;
 
+@Slf4j
 @Configuration
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class StockMonthlyPriceBatch {
 
     private final JobRepository jobRepository;
     private final PlatformTransactionManager platformTransactionManager;
-    private final DataSource dataSource;
     private final StockPriceRepository stockPriceRepository;
     private final PriceCalculationService priceCalculationService;
     private final StockMonthlyPriceRepository stockMonthlyPriceRepository;
+
+    @Bean
+    @StepScope
+    public MonthlyStockCodeItemReader stockCodeReaderMonthly() {
+        return new MonthlyStockCodeItemReader(stockPriceRepository);
+    }
 
     @Bean
     public Job monthlyStockDataJob() {
@@ -43,20 +50,10 @@ public class StockMonthlyPriceBatch {
     @Bean
     public Step monthlyStockDataStep() {
         return new StepBuilder("monthlyStockDataStep", jobRepository)
-                .<String, List<StockMonthlyPrice>>chunk(10, platformTransactionManager)
-                .reader(stockCodeReaderMonthly()) // Use a different bean name for the reader
+                .<String, List<StockMonthlyPrice>>chunk(ApplicationConstants.STOCK_PRICE_CHUNK_SIZE, platformTransactionManager)
+                .reader(stockCodeReaderMonthly())
                 .processor(monthlyStockProcessor())
                 .writer(monthlyStockWriter())
-                .build();
-    }
-
-    @Bean
-    public JdbcCursorItemReader<String> stockCodeReaderMonthly() {
-        return new JdbcCursorItemReaderBuilder<String>()
-                .name("stockCodeReaderMonthly")
-                .dataSource(dataSource)
-                .sql("SELECT DISTINCT stock_code FROM TB_STOCK_PRICE")
-                .rowMapper((rs, rowNum) -> rs.getString(1))
                 .build();
     }
 
@@ -75,7 +72,9 @@ public class StockMonthlyPriceBatch {
     public ItemWriter<List<StockMonthlyPrice>> monthlyStockWriter() {
         return items -> {
             for (List<StockMonthlyPrice> monthlyPrices : items) {
-                stockMonthlyPriceRepository.saveAll(monthlyPrices);
+                if (monthlyPrices != null && !monthlyPrices.isEmpty()) {
+                    stockMonthlyPriceRepository.saveAll(monthlyPrices);
+                }
             }
         };
     }

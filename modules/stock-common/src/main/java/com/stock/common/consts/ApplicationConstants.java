@@ -8,6 +8,9 @@ public class ApplicationConstants {
 
     public static final String SPLIT_KEY = ",";
 
+    // 배치 처리 시 청크 크기
+    public static final int STOCK_PRICE_CHUNK_SIZE = 100;
+
     //OPEN DART 제공 연도(최소 2015년)
     public static final int LIMIT_YEAR = 2015;
 

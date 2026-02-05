@@ -22,6 +22,9 @@ public interface StockPriceRepository extends JpaRepository<StockPrice, Long> {
     @Query("SELECT DISTINCT s.stockCode FROM StockPrice s WHERE s.basDt BETWEEN :startDate AND :endDate")
     List<String> findDistinctStockCodeByBasDtBetween(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
+    @Query("SELECT DISTINCT s.stockCode FROM StockPrice s")
+    List<String> findDistinctStockCodes();
+
     List<StockPrice> findByStockCodeInAndBasDtBetween(List<String> stockCodes, LocalDate startDate, LocalDate endDate);
 
     List<StockPrice> findByBasDt(LocalDate basDt);
