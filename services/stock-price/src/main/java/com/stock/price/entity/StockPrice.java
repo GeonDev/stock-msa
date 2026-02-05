@@ -34,7 +34,7 @@ public class StockPrice {
 
     //체결수량의 누적 합계
     @Column(name = "volume")
-    Integer volume;
+    Long volume;
 
     //거래건 별 체결가격 * 체결수량의 누적 합계
     @Column(name = "volume_price")
@@ -42,19 +42,19 @@ public class StockPrice {
 
     //시초가
     @Column(name = "start_price")
-    Integer startPrice;
+    Long startPrice;
 
     //종가
     @Column(name = "end_price")
-    Integer endPrice;
+    Long endPrice;
 
     //일간 최고가
     @Column(name = "high_price")
-    Integer highPrice;
+    Long highPrice;
 
     //일간 최저가
     @Column(name = "low_price")
-    Integer lowPrice;
+    Long lowPrice;
 
     //전일 대비 등락값
     @Column(name = "daily_range")
