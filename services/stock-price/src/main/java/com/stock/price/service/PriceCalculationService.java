@@ -34,11 +34,11 @@ public class PriceCalculationService {
             String stockCode = weekPrices.get(0).getStockCode();
             String marketCode = weekPrices.get(0).getMarketCode();
 
-            int startPrice = weekPrices.get(0).getStartPrice();
-            int endPrice = weekPrices.get(weekPrices.size() - 1).getEndPrice();
-            int highPrice = weekPrices.stream().mapToInt(StockPrice::getHighPrice).max().orElse(0);
-            int lowPrice = weekPrices.stream().mapToInt(StockPrice::getLowPrice).min().orElse(0);
-            int volume = weekPrices.stream().mapToInt(StockPrice::getVolume).sum();
+            long startPrice = weekPrices.get(0).getStartPrice();
+            long endPrice = weekPrices.get(weekPrices.size() - 1).getEndPrice();
+            long highPrice = weekPrices.stream().mapToLong(StockPrice::getHighPrice).max().orElse(0L);
+            long lowPrice = weekPrices.stream().mapToLong(StockPrice::getLowPrice).min().orElse(0L);
+            long volume = weekPrices.stream().mapToLong(StockPrice::getVolume).sum();
             long volumePrice = weekPrices.stream().mapToLong(StockPrice::getVolumePrice).sum();
             long stockTotalCnt = weekPrices.get(weekPrices.size() - 1).getStockTotalCnt();
             long marketTotalAmt = weekPrices.get(weekPrices.size() - 1).getMarketTotalAmt();
@@ -83,11 +83,11 @@ public class PriceCalculationService {
             String stockCode = monthPrices.get(0).getStockCode();
             String marketCode = monthPrices.get(0).getMarketCode();
 
-            int startPrice = monthPrices.get(0).getStartPrice();
-            int endPrice = monthPrices.get(monthPrices.size() - 1).getEndPrice();
-            int highPrice = monthPrices.stream().mapToInt(StockPrice::getHighPrice).max().orElse(0);
-            int lowPrice = monthPrices.stream().mapToInt(StockPrice::getLowPrice).min().orElse(0);
-            int volume = monthPrices.stream().mapToInt(StockPrice::getVolume).sum();
+            long startPrice = monthPrices.get(0).getStartPrice();
+            long endPrice = monthPrices.get(monthPrices.size() - 1).getEndPrice();
+            long highPrice = monthPrices.stream().mapToLong(StockPrice::getHighPrice).max().orElse(0L);
+            long lowPrice = monthPrices.stream().mapToLong(StockPrice::getLowPrice).min().orElse(0L);
+            long volume = monthPrices.stream().mapToLong(StockPrice::getVolume).sum();
             long volumePrice = monthPrices.stream().mapToLong(StockPrice::getVolumePrice).sum();
             long stockTotalCnt = monthPrices.get(monthPrices.size() - 1).getStockTotalCnt();
             long marketTotalAmt = monthPrices.get(monthPrices.size() - 1).getMarketTotalAmt();

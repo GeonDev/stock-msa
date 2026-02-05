@@ -8,6 +8,6 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 @SpringBootApplication(scanBasePackages = "com.stock")
 public class StockPriceApplication {
     public static void main(String[] args) {
-        SpringApplication.run(StockStockApplication.class, args);
+        SpringApplication.run(StockPriceApplication.class, args);
     }
 }
