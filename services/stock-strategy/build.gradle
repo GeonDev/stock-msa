@@ -1,0 +1,34 @@
+def profile = project.findProperty('profile') ?: 'local'
+
+println "Current profile: ${profile}"
+
+configurations {
+    all {
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-tomcat'
+    }
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-batch'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-undertow'
+    
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+    
+    implementation 'org.tinylog:tinylog-api:2.6.2'
+    implementation 'org.tinylog:tinylog-impl:2.6.2'
+    
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-mysql'
+    runtimeOnly 'com.mysql:mysql-connector-j'
+    
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.4'
+    
+    testImplementation 'org.springframework.batch:spring-batch-test'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    
+    implementation 'io.github.cdimascio:dotenv-java:2.2.0'
+    implementation project(':modules:stock-common')
+}

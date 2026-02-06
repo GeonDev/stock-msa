@@ -50,10 +50,15 @@ docker-compose up -d --build
 | :--- | :---: | :---: | :--- |
 | **stock-gateway** | 8080 | **8080** | API Entry Point |
 | **stock-discovery** | 8761 | **8761** | Eureka Dashboard |
+| **stock-corp** | 8081 | **8081** | 기업 정보 서비스 |
+| **stock-finance** | 8082 | **8082** | 재무 정보 서비스 |
+| **stock-price** | 8083 | **8083** | 주식 정보 서비스 |
+| **stock-strategy** | 8084 | **8084** | 백테스팅 전략 서비스 |
 | **stock-corp-db** | 3306 | **3306** | 기업 정보 DB |
 | **stock-finance-db** | 3306 | **3307** | 재무 정보 DB |
 | **stock-price-db** | 3306 | **3308** | 주식 정보 DB |
 | **stock-batch-db** | 3306 | **3309** | 배치 메타 DB (공유) |
+| **stock-strategy-db** | 3306 | **3310** | 백테스팅 전략 DB |
 
 ### 3) 데이터 영속성 (Volumes)
 각 데이터베이스는 Docker Volume을 통해 데이터가 영구 저장됩니다. 컨테이너를 내렸다 올려도 데이터는 유지됩니다.
@@ -61,6 +66,7 @@ docker-compose up -d --build
 - `finance-db-volume`: 재무 정보 DB 데이터
 - `price-db-volume`: 주식 정보 DB 데이터
 - `batch-db-volume`: 배치 메타 DB 데이터
+- `strategy-db-volume`: 백테스팅 전략 DB 데이터
 
 ---
 
@@ -77,6 +83,7 @@ docker-compose up -d --build
 - 기업 정보: `/api/v1/corp/**`
 - 재무 정보: `/api/v1/finance/**`
 - 주식 정보: `/api/v1/stock/**`
+- 백테스팅 전략: `/api/v1/strategy/**`
 
 ---
 
