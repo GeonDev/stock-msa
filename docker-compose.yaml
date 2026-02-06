@@ -121,6 +121,33 @@ services:
       stock-batch-db:
         condition: service_healthy
 
+  stock-strategy:
+    build: ./services/stock-strategy
+    container_name: stock-strategy
+    ports:
+      - "8084:8084"
+    env_file: .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://${EUREKA_USER}:${EUREKA_PASSWORD}@stock-discovery:8761/eureka
+      # Main DB Connection
+      - SPRING_DATASOURCE_URL=${STOCK_STRATEGY_DB_URL}
+      - SPRING_DATASOURCE_USERNAME=${STRATEGY_DB_USER}
+      - SPRING_DATASOURCE_PASSWORD=${STRATEGY_DB_PASSWORD}
+      # Batch DB Connection
+      - SPRING_DATASOURCE_BATCH_URL=${STOCK_BATCH_DB_URL}
+      - SPRING_DATASOURCE_BATCH_USERNAME=${BATCH_DB_USER}
+      - SPRING_DATASOURCE_BATCH_PASSWORD=${BATCH_DB_PASSWORD}
+    networks:
+      - stock-network
+    depends_on:
+      stock-discovery:
+        condition: service_healthy
+      stock-strategy-db:
+        condition: service_healthy
+      stock-batch-db:
+        condition: service_healthy
+
   # ==========================================
   # Databases (Specific Users per DB)
   # ==========================================
@@ -212,8 +239,31 @@ services:
       timeout: 5s
       retries: 5
 
+  stock-strategy-db:
+    image: mysql/mysql-server:8.0
+    container_name: stock-strategy-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: stock_strategy
+      MYSQL_USER: ${STRATEGY_DB_USER}
+      MYSQL_PASSWORD: ${STRATEGY_DB_PASSWORD}
+      MYSQL_ROOT_HOST: "%"
+    ports:
+      - "3310:3306"
+    volumes:
+      - strategy-db-volume:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    networks:
+      - stock-network
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   batch-db-volume:
   corp-db-volume:
   finance-db-volume:
   price-db-volume:
+  strategy-db-volume:

@@ -21,6 +21,10 @@ spring:
           uri: lb://stock-price
           predicates:
             - Path=/api/v1/stock/**
+        - id: stock-strategy
+          uri: lb://stock-strategy
+          predicates:
+            - Path=/api/v1/strategy/**
 
 management:
   endpoint:

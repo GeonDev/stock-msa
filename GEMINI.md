@@ -45,6 +45,14 @@
 - **기술적 지표 엔진**: `ta4j` 라이브러리를 통합하여 이동평균선(MA), RSI, MACD, 볼린저밴드 및 **모멘텀(1m, 3m, 6m)** 등 핵심 지표를 `BigDecimal` 정밀도로 사전 계산.
 - **데이터 정합성 검증**: 수집된 재무제표의 대차대조표 등식(`자산=부채+자본`) 검증 및 **기술적 지표 산출 시 최소 300거래일 이상의 데이터 확보 여부**를 체크하여 신뢰도 보장.
 
+### 6. Phase 2: 백테스팅 엔진 (완료)
+과거 데이터를 기반으로 퀀트 전략의 유효성을 검증하는 시뮬레이션 환경이 구축되었습니다.
+- **백테스팅 엔진**: `stock-strategy` 서비스 신설. 시뮬레이션, 포트폴리오 스냅샷, 매매 이력을 관리.
+- **유니버스 필터링**: 시가총액, 거래량, 업종, 재무지표 등을 기준으로 투자 대상 종목(Universe)을 선정하는 필터링 엔진 구현.
+- **시뮬레이션 로직**: 리밸런싱 주기(일/주/월/분기/년)에 따른 매매 시그널 생성 및 거래 비용(수수료, 세금)을 반영한 포트폴리오 가치 추적.
+- **성과 분석 지표**: CAGR, MDD, Sharpe Ratio, 승률 등 핵심 퀀트 지표 자동 산출.
+- **서비스간 통신**: `stock-strategy` 서비스가 `stock-corp`, `stock-finance`, `stock-price` 서비스와 `RestClient`를 통해 데이터를 동적으로 조회하여 전략 실행.
+
 ## 프로젝트 구조 (Multi-Module)
 
 ### 1. Root Project (`stock-msa`)
@@ -62,6 +70,9 @@
 - **stock-finance**: 재무제표 수집 및 **데이터 정합성 검증**.
 - **stock-price**: 주가 시세, **수정주가 계산**, **기술적 지표 산출**.
     - **Chunk-Oriented Batch**: 모든 데이터 처리 스텝을 Reader-Processor-Writer 구조로 표준화하여 대용량 데이터 처리 안정성 확보.
+- **stock-strategy**: **(New)** 백테스팅 시뮬레이션 및 전략 성과 분석.
+    - **Simulation Engine**: 포트폴리오 상태 추적 및 매매 시그널 실행.
+    - **Performance Metrics**: CAGR, MDD, Sharpe Ratio 계산.
 
 ## 실행 및 빌드 방법
 
@@ -75,8 +86,8 @@
 3. **상태 확인**: `docker-compose ps` (모든 서비스 `healthy` 확인)
 
 ### 로컬 실행 시 유의사항
-- 로컬 DB 접속 시 `docker-compose.yaml`에 정의된 서비스별 계정(`corp_user`, `finance_user` 등)과 포트를 확인해야 합니다.
+- 로컬 DB 접속 시 `docker-compose.yaml`에 정의된 서비스별 계정(`corp_user`, `finance_user`, `strategy_user` 등)과 포트를 확인해야 합니다.
 - 외부 API 키(`DATA_GO_SERVICE_KEY`, `DART_API_KEY`)가 `.env` 파일에 올바르게 설정되어 있어야 합니다.
 
 ---
-*마지막 업데이트: 2026-02-05 (Phase 1 Complete)*
+*마지막 업데이트: 2026-02-06 (Phase 2 Complete)*
