@@ -1,5 +1,6 @@
 package com.stock.common.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,5 +17,7 @@ public class CorpInfoDto {
     private String corpName;
     private String stockCode;
     private String isinCode;
+    
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate checkDt;
 }

@@ -4,6 +4,7 @@ package com.stock.corp.service;
 import com.stock.corp.entity.CorpInfo;
 import com.stock.common.consts.ApplicationConstants;
 import com.stock.common.model.ApiBody;
+import com.stock.corp.repository.CorpInfoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,6 +29,8 @@ public class CorpInfoService {
     String serviceKey;
 
     private final RestClient restClient;
+
+    private final CorpInfoRepository corpInfoRepository;
 
     public List<CorpInfo> getCorpInfo(String basDt) throws Exception {
         List<CorpInfo> corpList = new ArrayList<>();
@@ -69,7 +72,6 @@ public class CorpInfoService {
             return corpList;
     }
 
-    private final com.stock.corp.repository.CorpInfoRepository corpInfoRepository;
 
     public CorpInfo getCorpInfoByCorpCode(String corpCode) {
         return corpInfoRepository.findById(corpCode).orElse(null);

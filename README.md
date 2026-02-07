@@ -8,9 +8,11 @@
 - **통합 게이트웨이**: `stock-gateway`를 통한 API 라우팅 및 보안 강화.
 - **컨테이너화**: Docker Compose를 통한 인프라 및 전체 서비스의 원클릭 배포.
 - **보안 강화**: 인프라 서비스별 독립 계정 관리 및 Actuator 엔드포인트 보호.
+- **서비스 간 통신**: RestClient 기반의 안정적인 마이크로서비스 간 데이터 연동.
 - **데이터 무결성 (Phase 1 완료)**:
     - **정합성 검증**: 재무제표의 대차대조표 등식 및 필수 값 검증 로직 탑재.
     - **퀀트 분석 준비**: 수정주가(Split/Dividend Adjusted) 자동 계산 및 `Ta4j` 기반 기술적 지표(RSI, MACD, Bollinger Bands, **Momentum**) 사전 적재.
+    - **재무 지표 계산**: PER, PBR, ROE, ROA 등 주요 재무 지표 자동 산출 (93% 성공률).
     - **배치 안정성**: Chunk 기반의 표준화된 배치 아키텍처 적용 및 `ApplicationConstants`를 통한 처리 성능 중앙 제어.
 
 ---
@@ -41,9 +43,14 @@ GATEWAY_PASSWORD=your_password
 
 ### 1) 서비스 전체 기동
 ```bash
-# 이미지 빌드 및 컨테이너 실행
+# 로컬 빌드 없이 바로 실행 (Multi-stage Dockerfile)
 docker-compose up -d --build
 ```
+
+**주요 개선사항:**
+- ✅ 로컬 Gradle 빌드 불필요
+- ✅ Docker 내부에서 자동 빌드
+- ✅ 빌드 캐시 활용으로 재빌드 시간 단축
 
 ### 2) 서비스 포트 맵핑 정보
 | 서비스 | 내부 포트 | 외부(호스트) 포트 | 용도 |
@@ -95,6 +102,29 @@ docker-compose up -d --build
 
 ---
 
+## 6. 주요 기술 스택
+
+### 핵심 기술
+- **Java 21** (Amazon Corretto)
+- **Spring Boot 3.4.8** / **Spring Cloud 2024.0.2**
+- **Spring Batch**: 대용량 데이터 수집 및 처리
+- **Spring Data JPA** + **Flyway**: 데이터베이스 관리
+- **MySQL 8.0**: 도메인별 독립 데이터베이스
+
+### 주요 라이브러리
+- **Jackson JSR310**: Java 8 날짜/시간 타입 직렬화 (JavaTimeModule)
+- **Ta4j**: 기술적 지표 계산 (RSI, MACD, Bollinger Bands)
+- **RestClient**: 마이크로서비스 간 통신
+- **Undertow**: 고성능 웹 서버
+- **Lombok**: 보일러플레이트 코드 감소
+
+### 배치 아키텍처
+- **ItemReader 분리**: 모든 배치 Reader는 `batchJob/ItemReader/` 패키지에 독립 클래스로 구성
+- **Chunk 기반 처리**: 대용량 데이터를 청크 단위로 안정적 처리
+- **트랜잭션 관리**: 청크별 트랜잭션으로 장애 격리
+
+---
+
 ## 7. 연동 외부 API 정보
 
 본 시스템은 공신력 있는 데이터 확보를 위해 아래의 외부 API를 연동하고 있습니다.
@@ -112,3 +142,5 @@ docker-compose up -d --build
 
 ## 8. 주의 사항
 - `.env` 파일은 절대 Git에 커밋하지 마세요 (중요 정보 포함).
+- **Stock Code 형식**: 기업 정보는 `A900100` (A 접두사), 주가 데이터는 `900100` (숫자만) 형식을 사용합니다.
+- **서비스 간 통신**: Docker 환경에서는 서비스 이름(예: `stock-price:8083`)을 사용하고, 로컬 개발 시에는 `localhost`를 사용합니다.

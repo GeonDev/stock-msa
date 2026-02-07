@@ -20,6 +20,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import static com.stock.common.consts.ApplicationConstants.STOCK_CORP_CHUNK_SIZE;
+
 @Configuration
 @AllArgsConstructor
 public class CorpInfoBatch {
@@ -47,7 +49,7 @@ public class CorpInfoBatch {
     @Bean
     public Step corpDataStep() {
         return new StepBuilder("corpDataStep", jobRepository)
-                .<CorpInfo, CorpInfo>chunk(100, platformTransactionManager)
+                .<CorpInfo, CorpInfo>chunk(STOCK_CORP_CHUNK_SIZE, platformTransactionManager)
                 .reader(corpInfoItemReader())
                 .processor(corpDataProcessor())
                 .writer(corpItemWriter())

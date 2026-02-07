@@ -57,6 +57,12 @@ eureka:
   client:
     enabled: false
 
+services:
+  stock-corp:
+    url: http://localhost:8081
+  stock-price:
+    url: http://localhost:8083
+
 ---
 spring:
   config:
@@ -68,3 +74,9 @@ eureka:
     enabled: true
     service-url:
       defaultZone: http://${EUREKA_USER:admin}:${EUREKA_PASSWORD:1234}@stock-discovery:8761/eureka
+
+services:
+  stock-corp:
+    url: http://stock-corp:8081
+  stock-price:
+    url: http://stock-price:8083
