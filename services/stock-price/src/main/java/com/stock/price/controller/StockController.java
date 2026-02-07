@@ -1,4 +1,4 @@
-package com.stock.price.batchJob.controller;
+package com.stock.price.controller;
 
 
 import com.stock.price.service.RecoveryService;

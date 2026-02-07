@@ -5,6 +5,7 @@ import com.stock.common.consts.ApplicationConstants;
 import com.stock.common.enums.StockMarket;
 import com.stock.common.model.ApiBody;
 import com.stock.price.entity.StockPrice;
+import com.stock.price.repository.StockPriceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,6 +30,8 @@ public class StockService {
     String serviceKey;
 
     private final RestClient restClient;
+
+    private final StockPriceRepository stockPriceRepository;
 
 
     public List<StockPrice> getStockPrice(StockMarket marketType, String basDt) throws Exception {
@@ -75,7 +78,6 @@ public class StockService {
         return priceList;
     }
 
-    private final com.stock.price.repository.StockPriceRepository stockPriceRepository;
 
     public StockPrice getLatestStockPrice(String stockCode) {
         return stockPriceRepository.findFirstByStockCodeOrderByBasDtDesc(stockCode).orElse(null);

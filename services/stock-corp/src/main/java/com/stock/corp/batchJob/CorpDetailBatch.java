@@ -1,5 +1,6 @@
 package com.stock.corp.batchJob;
 
+import com.stock.corp.batchJob.ItemReader.CorpDetailItemReader;
 import com.stock.corp.entity.CorpDetail;
 import com.stock.corp.entity.CorpInfo;
 import com.stock.corp.repository.CorpDetailRepository;
@@ -13,17 +14,15 @@ import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
-import org.springframework.batch.item.data.RepositoryItemReader;
 import org.springframework.batch.item.data.RepositoryItemWriter;
-import org.springframework.batch.item.data.builder.RepositoryItemReaderBuilder;
 import org.springframework.batch.item.data.builder.RepositoryItemWriterBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.domain.Sort;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.LocalDate;
-import java.util.Collections;
+
+import static com.stock.common.consts.ApplicationConstants.STOCK_CORP_CHUNK_SIZE;
 
 @Configuration
 @AllArgsConstructor
@@ -44,7 +43,7 @@ public class CorpDetailBatch {
     @Bean
     public Step corpDetailCleanupStep() {
         return new StepBuilder("corpDetailCleanupStep", jobRepository)
-                .<CorpInfo, CorpDetail>chunk(100, platformTransactionManager)
+                .<CorpInfo, CorpDetail>chunk(STOCK_CORP_CHUNK_SIZE, platformTransactionManager)
                 .reader(corpInfoReader())
                 .processor(corpDetailProcessor())
                 .writer(corpDetailWriter())
@@ -52,14 +51,8 @@ public class CorpDetailBatch {
     }
 
     @Bean
-    public RepositoryItemReader<CorpInfo> corpInfoReader() {
-        return new RepositoryItemReaderBuilder<CorpInfo>()
-                .name("corpInfoReader")
-                .repository(corpInfoRepository)
-                .methodName("findAll")
-                .pageSize(100)
-                .sorts(Collections.singletonMap("corpCode", Sort.Direction.ASC))
-                .build();
+    public CorpDetailItemReader corpInfoReader() {
+        return new CorpDetailItemReader(corpInfoRepository);
     }
 
     @Bean

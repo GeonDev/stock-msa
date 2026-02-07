@@ -9,7 +9,11 @@ public class ApplicationConstants {
     public static final String SPLIT_KEY = ",";
 
     // 배치 처리 시 청크 크기
-    public static final int STOCK_PRICE_CHUNK_SIZE = 100;
+    public static final int STOCK_PRICE_CHUNK_SIZE = 1000;
+
+    public static final int STOCK_CORP_CHUNK_SIZE = 1000;
+
+    public static final int STOCK_FINANCE_CHUNK_SIZE = 1000;
 
     //OPEN DART 제공 연도(최소 2015년)
     public static final int LIMIT_YEAR = 2015;
@@ -19,11 +23,7 @@ public class ApplicationConstants {
 
     public static final String API_GO_URL = "apis.data.go.kr";
 
-    public static final String DART_API_URL = "opendart.fss.or.kr";
-
     public static final String KAI_REST_DATE_URL = "/B090041/openapi/service/SpcdeInfoService/getRestDeInfo";
-
-    public static final String KRX_STOCK_LIST_URI = "/1160100/service/GetKrxListedInfoService/getItemInfo";
 
     public static final String KRX_STOCK_FINANCE_URI = "1160100/service/GetFinaStatInfoService_V2/getSummFinaStat_V2";
 
@@ -31,14 +31,6 @@ public class ApplicationConstants {
 
     public static final String KRX_STOCK_VALUE_URI = "/1160100/service/GetStockSecuritiesInfoService/getStockPriceInfo";
 
-    public static final String DART_STOCK_FINANCE_SINGLE_URI = "/api/fnlttSinglAcnt.json";
-
-    public static final String DART_STOCK_FINANCE_MULTI_URI = "/api/fnlttMultiAcnt.json";
-
     public static final String KRX_STOCK_ISSUANCE_URI = "/1160100/service/GetKrxIssuInfoService/getIssuInfo";
-
-    public static final String KRX_STOCK_RIGHTS_URI = "/1160100/service/GetKrxRightSchedService/getRightSched";
-
-    public static final String KRX_STOCK_DIVIDEND_URI = "/1160100/service/GetKrxDiviInfoService/getDiviInfo";
 
 }

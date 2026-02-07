@@ -12,7 +12,7 @@ public class StockClient {
 
     private final RestClient restClient;
 
-    @Value("${services.stock-stock.url:http://localhost:8083}")
+    @Value("${services.stock-price.url:http://localhost:8083}")
     private String stockServiceUrl;
 
     public StockPriceDto getLatestStockPrice(String stockCode) {
