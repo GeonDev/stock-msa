@@ -17,6 +17,7 @@ public class CorpInfoDto {
     private String corpName;
     private String stockCode;
     private String isinCode;
+    private String market;
     
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate checkDt;

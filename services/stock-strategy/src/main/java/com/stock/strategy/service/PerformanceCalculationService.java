@@ -16,8 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -170,8 +170,41 @@ public class PerformanceCalculationService {
     }
 
     private int calculateProfitableTrades(List<TradeHistory> trades) {
-        // 간단한 구현: 매수-매도 쌍을 찾아서 수익 여부 판단
-        // 실제로는 더 정교한 로직 필요
-        return 0;
+        // 종목별로 매수-매도 쌍을 추적하여 수익 여부 판단
+        Map<String, List<TradeHistory>> tradesByStock = trades.stream()
+                .collect(Collectors.groupingBy(TradeHistory::getStockCode));
+
+        int profitableCount = 0;
+
+        for (Map.Entry<String, List<TradeHistory>> entry : tradesByStock.entrySet()) {
+            List<TradeHistory> stockTrades = entry.getValue();
+            
+            // 매수/매도를 시간순으로 정렬
+            stockTrades.sort(Comparator.comparing(TradeHistory::getTradeDate));
+
+            // FIFO 방식으로 매수-매도 매칭
+            Queue<TradeHistory> buyQueue = new LinkedList<>();
+            
+            for (TradeHistory trade : stockTrades) {
+                if ("BUY".equals(trade.getOrderType())) {
+                    buyQueue.offer(trade);
+                } else if ("SELL".equals(trade.getOrderType())) {
+                    // 매도 시 가장 오래된 매수와 매칭
+                    if (!buyQueue.isEmpty()) {
+                        TradeHistory buyTrade = buyQueue.poll();
+                        
+                        // 수익 계산 (매도가 - 매수가)
+                        BigDecimal profit = trade.getPrice().subtract(buyTrade.getPrice())
+                                .multiply(BigDecimal.valueOf(Math.min(trade.getQuantity(), buyTrade.getQuantity())));
+                        
+                        if (profit.compareTo(BigDecimal.ZERO) > 0) {
+                            profitableCount++;
+                        }
+                    }
+                }
+            }
+        }
+
+        return profitableCount;
     }
 }

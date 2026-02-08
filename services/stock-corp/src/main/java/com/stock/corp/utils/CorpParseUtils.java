@@ -51,6 +51,7 @@ public class CorpParseUtils {
                         .stockCode(getTagValue("srtnCd", item))
                         .isinCode(getTagValue("isinCd", item))
                         .corpCode(getTagValue("crno", item))
+                        .market(getTagValue("mrktCtg", item))
                         .checkDt(LocalDate.now())
                         .build());
             }

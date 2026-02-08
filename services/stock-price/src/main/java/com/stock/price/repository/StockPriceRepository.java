@@ -17,6 +17,9 @@ public interface StockPriceRepository extends JpaRepository<StockPrice, Long> {
     List<StockPrice> findTop300ByStockCodeAndBasDtBeforeOrderByBasDtDesc(String stockCode, LocalDate basDt);
 
     Optional<StockPrice> findFirstByStockCodeOrderByBasDtDesc(String stockCode);
+    
+    Optional<StockPrice> findByStockCodeAndBasDt(String stockCode, LocalDate basDt);
+    
     List<StockPrice> findByStockCodeOrderByBasDtAsc(String stockCode);
 
     @Query("SELECT DISTINCT s.stockCode FROM StockPrice s WHERE s.basDt BETWEEN :startDate AND :endDate")

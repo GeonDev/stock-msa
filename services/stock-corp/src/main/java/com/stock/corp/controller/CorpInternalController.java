@@ -4,11 +4,9 @@ import com.stock.common.dto.CorpInfoDto;
 import com.stock.corp.entity.CorpInfo;
 import com.stock.corp.service.CorpInfoService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -21,22 +19,18 @@ public class CorpInternalController {
 
     @GetMapping("/{corpCode}")
     public CorpInfoDto getCorpInfoByCorpCode(@PathVariable String corpCode) {
-        CorpInfo entity = corpInfoService.getCorpInfoByCorpCode(corpCode);
-        if (entity == null) return null;
-        
-        return CorpInfoDto.builder()
-                .corpCode(entity.getCorpCode())
-                .corpName(entity.getCorpName())
-                .stockCode(entity.getStockCode())
-                .isinCode(entity.getIsinCode())
-                .checkDt(entity.getCheckDt())
-                .build();
+        return corpInfoService.getCorpInfoByCorpCode(corpCode);
+    }
+
+    @GetMapping("/corps")
+    public List<CorpInfoDto> getCorpsByMarket(@RequestParam String market) {
+        return corpInfoService.getCorpsByMarket(market);
     }
 
     @GetMapping("/valid-codes")
     public Set<String> getValidCorpCodes() {
         return corpInfoService.getAllValidCorpInfos().stream()
-                .map(CorpInfo::getCorpCode)
+                .map(CorpInfoDto::getCorpCode)
                 .collect(Collectors.toSet());
     }
 }

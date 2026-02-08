@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface CorpInfoRepository extends JpaRepository<CorpInfo, String> {
     List<CorpInfo> findAllByStockCodeIsNotNull();
+    List<CorpInfo> findAllByMarket(String market);
 }

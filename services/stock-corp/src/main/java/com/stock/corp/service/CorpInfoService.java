@@ -1,7 +1,9 @@
 package com.stock.corp.service;
 
 
+import com.stock.common.dto.CorpInfoDto;
 import com.stock.corp.entity.CorpInfo;
+import com.stock.corp.mapper.CorpInfoMapper;
 import com.stock.common.consts.ApplicationConstants;
 import com.stock.common.model.ApiBody;
 import com.stock.corp.repository.CorpInfoRepository;
@@ -29,8 +31,8 @@ public class CorpInfoService {
     String serviceKey;
 
     private final RestClient restClient;
-
     private final CorpInfoRepository corpInfoRepository;
+    private final CorpInfoMapper corpInfoMapper;
 
     public List<CorpInfo> getCorpInfo(String basDt) throws Exception {
         List<CorpInfo> corpList = new ArrayList<>();
@@ -73,11 +75,17 @@ public class CorpInfoService {
     }
 
 
-    public CorpInfo getCorpInfoByCorpCode(String corpCode) {
-        return corpInfoRepository.findById(corpCode).orElse(null);
+    public CorpInfoDto getCorpInfoByCorpCode(String corpCode) {
+        return corpInfoRepository.findById(corpCode)
+                .map(corpInfoMapper::toDto)
+                .orElse(null);
     }
 
-    public List<CorpInfo> getAllValidCorpInfos() {
-        return corpInfoRepository.findAllByStockCodeIsNotNull();
+    public List<CorpInfoDto> getAllValidCorpInfos() {
+        return corpInfoMapper.toDtoList(corpInfoRepository.findAllByStockCodeIsNotNull());
+    }
+
+    public List<CorpInfoDto> getCorpsByMarket(String market) {
+        return corpInfoMapper.toDtoList(corpInfoRepository.findAllByMarket(market));
     }
 }
