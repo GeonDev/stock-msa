@@ -34,6 +34,9 @@ public class CorpInfo implements Serializable {
     @Column(name = "isin_code")
     String isinCode;
 
+    @Column(name = "market")
+    String market;
+
     //검사일 -> 상장 폐지인지 확인
     @LastModifiedDate
     @Column(name = "check_dt")

@@ -2,9 +2,12 @@ package com.stock.price.service;
 
 
 import com.stock.common.consts.ApplicationConstants;
+import com.stock.common.dto.StockPriceDto;
 import com.stock.common.enums.StockMarket;
 import com.stock.common.model.ApiBody;
+import com.stock.common.utils.DateUtils;
 import com.stock.price.entity.StockPrice;
+import com.stock.price.mapper.StockPriceMapper;
 import com.stock.price.repository.StockPriceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +19,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,8 +34,8 @@ public class StockService {
     String serviceKey;
 
     private final RestClient restClient;
-
     private final StockPriceRepository stockPriceRepository;
+    private final StockPriceMapper stockPriceMapper;
 
 
     public List<StockPrice> getStockPrice(StockMarket marketType, String basDt) throws Exception {
@@ -79,8 +83,17 @@ public class StockService {
     }
 
 
-    public StockPrice getLatestStockPrice(String stockCode) {
-        return stockPriceRepository.findFirstByStockCodeOrderByBasDtDesc(stockCode).orElse(null);
+    public StockPriceDto getLatestStockPrice(String stockCode) {
+        return stockPriceRepository.findFirstByStockCodeOrderByBasDtDesc(stockCode.replace("A", ""))
+                .map(stockPriceMapper::toDto)
+                .orElse(null);
+    }
+
+    public StockPriceDto getPriceByDate(String stockCode, String date) {
+        LocalDate localDate = DateUtils.toStringLocalDate(date);
+        return stockPriceRepository.findByStockCodeAndBasDt(stockCode.replace("A", ""), localDate)
+                .map(stockPriceMapper::toDto)
+                .orElse(null);
     }
 
 

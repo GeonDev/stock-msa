@@ -3,6 +3,7 @@ CREATE TABLE TB_CORP_INFO (
     corp_name VARCHAR(255),
     stock_code VARCHAR(255),
     isin_code VARCHAR(255),
+    market VARCHAR(255),
     check_dt DATE
 );
 

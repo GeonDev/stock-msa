@@ -1,5 +1,6 @@
 package com.stock.strategy.strategy;
 
+import com.stock.common.utils.DateUtils;
 import com.stock.strategy.client.PriceClient;
 import com.stock.strategy.dto.PortfolioHolding;
 import com.stock.strategy.dto.TradeOrder;
@@ -58,9 +59,10 @@ public class EqualWeightStrategy implements Strategy {
             }
 
             // 유니버스 종목 리밸런싱
+            String dateStr = DateUtils.toLocalDateString(date);
             for (String stockCode : universe) {
                 try {
-                    var priceDto = priceClient.getPriceByDate(stockCode, date.toString());
+                    var priceDto = priceClient.getPriceByDate(stockCode, dateStr);
                     if (priceDto == null || priceDto.getEndPrice() == null) {
                         continue;
                     }

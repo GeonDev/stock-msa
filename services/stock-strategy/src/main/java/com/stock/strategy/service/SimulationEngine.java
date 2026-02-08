@@ -2,7 +2,10 @@ package com.stock.strategy.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.stock.common.dto.StockPriceDto;
 import com.stock.common.service.DayOffService;
+import com.stock.common.utils.DateUtils;
+import com.stock.strategy.client.PriceClient;
 import com.stock.strategy.dto.BacktestRequest;
 import com.stock.strategy.dto.PortfolioHolding;
 import com.stock.strategy.dto.TradeOrder;
@@ -41,6 +44,7 @@ public class SimulationEngine {
     private final UniverseFilterService universeFilterService;
     private final StrategyFactory strategyFactory;
     private final PerformanceCalculationService performanceCalculationService;
+    private final PriceClient priceClient;
     private final ObjectMapper objectMapper;
 
     @Transactional
@@ -152,8 +156,33 @@ public class SimulationEngine {
     }
 
     private void updatePortfolioValue(LocalDate date, Portfolio portfolio) {
-        // 실제 구현에서는 PriceClient를 통해 현재가 조회
-        // 여기서는 간단히 처리
+        // 보유 종목의 현재가를 조회하여 포트폴리오 가치 업데이트
+        String dateStr = DateUtils.toLocalDateString(date);
+        
+        for (Map.Entry<String, PortfolioHolding> entry : portfolio.getHoldings().entrySet()) {
+            String stockCode = entry.getKey();
+            PortfolioHolding holding = entry.getValue();
+            
+            try {
+                // 해당 날짜의 주가 조회
+                StockPriceDto priceDto = priceClient.getPriceByDate(stockCode, dateStr);
+                
+                if (priceDto != null && priceDto.getEndPrice() != null) {
+                    // 현재가 업데이트
+                    holding.setCurrentPrice(priceDto.getEndPrice());
+                    // 시장가치 재계산
+                    BigDecimal marketValue = priceDto.getEndPrice()
+                            .multiply(BigDecimal.valueOf(holding.getQuantity()));
+                    holding.setMarketValue(marketValue);
+                } else {
+                    // 가격 정보가 없으면 이전 가격 유지
+                    log.warn("No price data for {} on {}, keeping previous price", stockCode, date);
+                }
+            } catch (Exception e) {
+                // API 호출 실패 시 이전 가격 유지
+                log.error("Failed to fetch price for {} on {}: {}", stockCode, date, e.getMessage());
+            }
+        }
     }
 
     private boolean shouldSaveSnapshot(LocalDate date, RebalancingPeriod period) {
