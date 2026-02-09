@@ -23,7 +23,7 @@ public class BacktestService {
     public BacktestResponse startBacktest(BacktestRequest request) {
         // 시뮬레이션 엔티티 생성
         BacktestSimulation simulation = BacktestSimulation.builder()
-                .strategyName(request.getStrategyName())
+                .strategyName(request.getStrategyType().getCode())
                 .startDate(request.getStartDate())
                 .endDate(request.getEndDate())
                 .initialCapital(request.getInitialCapital())
