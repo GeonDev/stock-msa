@@ -59,7 +59,7 @@ public class SimulationEngine {
         Portfolio portfolio = new Portfolio(request.getInitialCapital());
         
         // 전략 가져오기
-        Strategy strategy = strategyFactory.getStrategy(request.getStrategyName());
+        Strategy strategy = strategyFactory.getStrategy(request.getStrategyType());
 
         // 시뮬레이션 실행
         LocalDate currentDate = request.getStartDate();

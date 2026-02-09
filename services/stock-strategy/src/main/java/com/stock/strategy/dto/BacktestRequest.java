@@ -1,6 +1,7 @@
 package com.stock.strategy.dto;
 
 import com.stock.strategy.enums.RebalancingPeriod;
+import com.stock.strategy.enums.StrategyType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,7 +15,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @Builder
 public class BacktestRequest {
-    private String strategyName;
+    private StrategyType strategyType;
     private LocalDate startDate;
     private LocalDate endDate;
     private BigDecimal initialCapital;
