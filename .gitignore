@@ -48,6 +48,7 @@ replay_pid*
 # System Files
 .DS_Store
 Thumbs.db
+mcp-shell.log
 
 # Gemini Analysis Report
 GEMINI_REPORT.md
