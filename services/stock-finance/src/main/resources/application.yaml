@@ -21,15 +21,7 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
 
-  # Datasource
-  datasource:
-    url: ${STOCK_FINANCE_DB_URL:jdbc:mysql://localhost:3307/stock_finance?serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
-    username: ${FINANCE_DB_USER:finance_user}
-    password: ${FINANCE_DB_PASSWORD:finance_pass}
-    batch:
-      url: ${STOCK_BATCH_DB_URL:jdbc:mysql://localhost:3309/stock_batch?serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
-      username: ${BATCH_DB_USER:batch_user}
-      password: ${BATCH_DB_PASSWORD:batch_pass}
+
 
   # Batch
   batch:
@@ -53,6 +45,16 @@ spring:
     config:
       enabled: false
 
+  # Datasource
+  datasource:
+    url: jdbc:mysql://localhost:3307/stock_finance?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: finance_user
+    password: finance_pass
+    batch:
+      url: jdbc:mysql://localhost:3309/stock_batch?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      username: batch_user
+      password: batch_pass
+
 eureka:
   client:
     enabled: false
@@ -68,6 +70,16 @@ spring:
   config:
     activate:
       on-profile: prod
+
+  # Datasource
+  datasource:
+    url: ${STOCK_FINANCE_DB_URL:jdbc:mysql://localhost:3307/stock_finance?serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
+    username: ${FINANCE_DB_USER:finance_user}
+    password: ${FINANCE_DB_PASSWORD:finance_pass}
+    batch:
+      url: ${STOCK_BATCH_DB_URL:jdbc:mysql://localhost:3309/stock_batch?serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
+      username: ${BATCH_DB_USER:batch_user}
+      password: ${BATCH_DB_PASSWORD:batch_pass}
 
 eureka:
   client:
