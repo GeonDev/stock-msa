@@ -32,4 +32,20 @@ public class PriceClient {
                 .retrieve()
                 .body(StockPriceDto.class);
     }
+
+    public List<StockPriceDto> getPricesByDateBatch(List<String> stockCodes, String date) {
+        String stockCodesParam = String.join(",", stockCodes);
+        return restClient.get()
+                .uri(priceServiceUrl + "/api/v1/stock/internal/prices/batch?stockCodes=" + stockCodesParam + "&date=" + date)
+                .retrieve()
+                .body(new ParameterizedTypeReference<List<StockPriceDto>>() {});
+    }
+
+    public List<com.stock.common.dto.StockIndicatorDto> getIndicatorsByDateBatch(List<String> stockCodes, String date) {
+        String stockCodesParam = String.join(",", stockCodes);
+        return restClient.get()
+                .uri(priceServiceUrl + "/api/v1/stock/internal/indicators/batch?stockCodes=" + stockCodesParam + "&date=" + date)
+                .retrieve()
+                .body(new ParameterizedTypeReference<List<com.stock.common.dto.StockIndicatorDto>>() {});
+    }
 }

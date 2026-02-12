@@ -31,4 +31,9 @@ dependencies {
 
     implementation 'io.github.cdimascio:dotenv-java:2.2.0'
     implementation project(':modules:stock-common')
+
+    // MapStruct
+    implementation 'org.mapstruct:mapstruct:1.5.5.Final'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
+    annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
 }

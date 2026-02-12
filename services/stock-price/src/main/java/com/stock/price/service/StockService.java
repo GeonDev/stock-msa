@@ -36,6 +36,8 @@ public class StockService {
     private final RestClient restClient;
     private final StockPriceRepository stockPriceRepository;
     private final StockPriceMapper stockPriceMapper;
+    private final com.stock.price.repository.StockIndicatorRepository stockIndicatorRepository;
+    private final com.stock.price.mapper.StockIndicatorMapper stockIndicatorMapper;
 
 
     public List<StockPrice> getStockPrice(StockMarket marketType, String basDt) throws Exception {
@@ -89,12 +91,84 @@ public class StockService {
                 .orElse(null);
     }
 
-    public StockPriceDto getPriceByDate(String stockCode, String date) {
-        LocalDate localDate = DateUtils.toStringLocalDate(date);
-        return stockPriceRepository.findByStockCodeAndBasDt(stockCode.replace("A", ""), localDate)
-                .map(stockPriceMapper::toDto)
-                .orElse(null);
-    }
+        public StockPriceDto getPriceByDate(String stockCode, String date) {
 
+            LocalDate localDate = DateUtils.toStringLocalDate(date);
 
-}
+            return stockPriceRepository.findByStockCodeAndBasDt(stockCode.replace("A", ""), localDate)
+
+                    .map(stockPriceMapper::toDto)
+
+                    .orElse(null);
+
+        }
+
+    
+
+            public List<StockPriceDto> getPricesByDateBatch(List<String> stockCodes, String date) {
+
+    
+
+                LocalDate localDate = DateUtils.toStringLocalDate(date);
+
+    
+
+                List<String> codes = stockCodes.stream().map(c -> c.replace("A", "")).toList();
+
+    
+
+                return stockPriceRepository.findByStockCodeInAndBasDt(codes, localDate).stream()
+
+    
+
+                        .map(stockPriceMapper::toDto)
+
+    
+
+                        .toList();
+
+    
+
+            }
+
+    
+
+        
+
+    
+
+            public List<com.stock.common.dto.StockIndicatorDto> getIndicatorsByDateBatch(List<String> stockCodes, String date) {
+
+    
+
+                LocalDate localDate = DateUtils.toStringLocalDate(date);
+
+    
+
+                List<String> codes = stockCodes.stream().map(c -> c.replace("A", "")).toList();
+
+    
+
+                return stockIndicatorRepository.findByStockCodesAndBasDt(codes, localDate).stream()
+
+    
+
+                        .map(stockIndicatorMapper::toDto)
+
+    
+
+                        .toList();
+
+    
+
+            }
+
+    
+
+        }
+
+    
+
+        
+
+    

@@ -33,12 +33,18 @@
 - **Phase 1 (완료)**: 데이터 무결성 검증, 수정주가 계산, 기술적 지표 사전 산출 엔진 구축.
 - **Phase 2 (완료)**: `stock-strategy` 서비스 신설, 리밸런싱 시뮬레이션 및 CAGR, MDD 등 퀀트 성과 분석 지표 산출.
 
-## 최근 변경사항 및 수정 (2026-02-07)
+## 최근 변경사항 및 수정 (2026-02-12)
 
-- **LocalDate 직렬화 수정**: Jackson의 `JavaTimeModule` 설정 및 `WRITE_DATES_AS_TIMESTAMPS` 비활성화를 통해 ISO-8601 형식 준수.
-- **서비스 간 통신 복구**: `stock-finance`에서 `stock-price` 호출 시의 설정 키 오타 수정 및 Docker 네트워크 서비스명 적용.
-- **재무 지표 계산 정합성**: 기업 정보(`A900100`)와 주가 데이터(`900100`) 간의 종목 코드 형식 불일치 해결 (조회 시 'A' 접두사 제거).
-- **배치 리더 리팩토링**: 일관성을 위해 모든 ItemReader를 독립 클래스로 분리 완료.
+- **API 문서화 강화**: `stock-common` 및 `stock-strategy` 모듈의 모든 DTO에 Swagger(`@Schema`) 어노테이션을 추가하여 필드별 설명과 예시 값을 명시했습니다.
+- **유니버스 필터링 엔진 고도화**:
+    - `Map<String, Object>` 기반의 불투명한 필터 구조를 `CustomFilterCriteria` DTO로 정규화하여 타입 안정성을 확보했습니다.
+    - **재무 지표 필터**: PER, PBR, ROE, PSR, 부채비율 및 흑자여부(`onlyProfitable`) 필터링 기능을 구현했습니다.
+    - **기술적 지표 필터**: RSI, MACD 및 이동평균선(20/60/120일) 대비 가격 위치 기반 필터링을 추가했습니다.
+    - **성능 최적화**: 서비스 간 통신 시 Batch API를 활용하여 대량 종목의 지표를 효율적으로 조회하도록 개선했습니다.
+- **업종 분류 시스템 도입**:
+    - GICS 표준 기반의 `SectorType` Enum을 정의하고 `CorpDetail` 엔티티 및 DTO에 반영했습니다.
+    - `TB_CORP_DETAIL` 테이블에 `sector` 컬럼을 추가하는 Flyway 마이그레이션(`V1.1`)을 완료했습니다.
+    - OpenDART API를 활용한 업종 정보 자동 수집 및 매핑 실행 계획(`doc/Sector_Automation_Implementation_Plan.md`)을 수립했습니다.
 
 ## 코딩 가이드라인 (Coding Guidelines)
 
@@ -77,4 +83,5 @@ stock-msa/
 - **로컬 개발**: `local` 프로필 활성화 (`-Dspring.profiles.active=local`) 시 Eureka 없이 독립 실행 가능.
 
 ---
-*마지막 업데이트: 2026-02-07 (Based on Steering Guidelines)*
+
+*마지막 업데이트: 2026-02-12 (Enhanced Filtering & Sector Implementation)*
