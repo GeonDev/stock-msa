@@ -3,10 +3,7 @@ package com.stock.price.controller;
 import com.stock.common.dto.StockPriceDto;
 import com.stock.price.service.StockService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -23,5 +20,15 @@ public class StockInternalController {
     @GetMapping("/price/{stockCode}/{date}")
     public StockPriceDto getPriceByDate(@PathVariable String stockCode, @PathVariable String date) {
         return stockService.getPriceByDate(stockCode, date);
+    }
+
+    @GetMapping("/prices/batch")
+    public java.util.List<StockPriceDto> getPricesByDateBatch(@RequestParam java.util.List<String> stockCodes, @RequestParam String date) {
+        return stockService.getPricesByDateBatch(stockCodes, date);
+    }
+
+    @GetMapping("/indicators/batch")
+    public java.util.List<com.stock.common.dto.StockIndicatorDto> getIndicatorsByDateBatch(@RequestParam java.util.List<String> stockCodes, @RequestParam String date) {
+        return stockService.getIndicatorsByDateBatch(stockCodes, date);
     }
 }

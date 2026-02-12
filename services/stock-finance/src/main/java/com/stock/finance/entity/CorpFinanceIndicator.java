@@ -75,7 +75,6 @@ public class CorpFinanceIndicator {
     @Column(name = "op_income_growth")
     private BigDecimal opIncomeGrowth;
 
-
     /**
      * 자기자본이익률 (Return on Equity)
      * 순이익을 자기자본으로 나눈 값. 높을수록 수익성이 좋음.

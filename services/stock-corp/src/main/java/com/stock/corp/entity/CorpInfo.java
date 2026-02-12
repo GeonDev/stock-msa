@@ -37,6 +37,10 @@ public class CorpInfo implements Serializable {
     @Column(name = "market")
     String market;
 
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "corp_code", insertable = false, updatable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    private CorpDetail corpDetail;
+
     //검사일 -> 상장 폐지인지 확인
     @LastModifiedDate
     @Column(name = "check_dt")

@@ -10,6 +10,7 @@ import java.util.List;
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface CorpInfoMapper {
     
+    @org.mapstruct.Mapping(source = "corpDetail.sector", target = "sector")
     CorpInfoDto toDto(CorpInfo entity);
     
     List<CorpInfoDto> toDtoList(List<CorpInfo> entities);

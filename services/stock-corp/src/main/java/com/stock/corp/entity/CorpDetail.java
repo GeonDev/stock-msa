@@ -35,4 +35,8 @@ public class CorpDetail implements Serializable {
     @Column(name = "corp_type")
     CorpCurrency corpType;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "sector")
+    com.stock.common.enums.SectorType sector;
+
 }
