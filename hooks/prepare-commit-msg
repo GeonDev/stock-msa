@@ -18,19 +18,9 @@ if [[ -z "$COMMIT_SOURCE" || "$COMMIT_SOURCE" == "template" || "$COMMIT_SOURCE" 
         AI_MSG=$(cat "$TMP_MSG_FILE")
         
         # 3. AI 메시지를 커밋 메시지의 기본값으로 설정
-        # 기존에 입력된 내용이 있더라도 AI가 제안한 컨벤션 메시지로 시작하도록 구성
         echo "$AI_MSG" > "$COMMIT_MSG_FILE"
         
-        # 4. 상세 리포트가 있다면 주석으로 추가하여 리뷰 결과를 참고하게 함
-        if [ -f "$REPORT_FILE" ]; then
-            echo "" >> "$COMMIT_MSG_FILE"
-            echo "# 🤖 Gemini MSA Code Review Report" >> "$COMMIT_MSG_FILE"
-            echo "# --------------------------------------------" >> "$COMMIT_MSG_FILE"
-            # 리포트의 모든 라인 앞에 #을 붙여 주석 처리 (커밋에는 포함되지 않음)
-            sed 's/^/# /' "$REPORT_FILE" >> "$COMMIT_MSG_FILE"
-        fi
-        
-        # 5. 사용한 임시 파일 정리
+        # 4. 사용한 임시 파일 정리
         rm "$TMP_MSG_FILE"
     fi
 fi

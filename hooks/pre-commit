@@ -81,7 +81,8 @@ AI_PROMPT="${CLEAN_INPUT}
 - 형식: <type>(<scope>): <subject>
 - type: feat(기능), fix(버그), refactor(개선), docs(문서), chore(설정)
 - scope: 변경된 모듈명 (common, corp, finance, price, strategy, gateway, discovery)
-- subject: 한글로 명확하게 요약 (50자 이내)"
+- subject: 반드시 **한글**로 명확하게 요약 (50자 이내)
+- 예시: feat(corp): OpenDART 업종 수집 배치 구현"
 
 # 5. AI 호출 및 결과 처리
 AI_RESPONSE=$(gemini -m gemini-2.0-flash -p "$AI_PROMPT" 2>/dev/null || echo "ERROR")
