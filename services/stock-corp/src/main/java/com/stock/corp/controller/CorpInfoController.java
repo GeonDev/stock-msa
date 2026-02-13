@@ -70,4 +70,16 @@ public class CorpInfoController {
 
         return ResponseEntity.ok("CLEANUP STARTED");
     }
+
+    @PostMapping("/corp-detail/sector-update")
+    @Operation(summary = "업종 정보 수집", description = "OpenDART API를 통해 기업의 업종 정보를 수집 및 갱신합니다.")
+    public ResponseEntity<String> updateSectorInfo() throws Exception {
+        JobParameters jobParameters = new JobParametersBuilder()
+                .addLong("time", System.currentTimeMillis())
+                .toJobParameters();
+
+        jobLauncher.run(jobRegistry.getJob("sectorUpdateJob"), jobParameters);
+
+        return ResponseEntity.ok("SECTOR UPDATE STARTED");
+    }
 }

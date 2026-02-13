@@ -71,7 +71,6 @@ public class CorpInfoBatch {
 
     @Bean
     public RepositoryItemWriter<CorpInfo> corpItemWriter() {
-
         return new RepositoryItemWriterBuilder<CorpInfo>()
                 .repository(corpInfoRepository)
                 .methodName("save")

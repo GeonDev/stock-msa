@@ -23,6 +23,8 @@ public class ApplicationConstants {
 
     public static final String API_GO_URL = "apis.data.go.kr";
 
+    public static final String DART_URL = "opendart.fss.or.kr";
+
     public static final String KAI_REST_DATE_URL = "/B090041/openapi/service/SpcdeInfoService/getRestDeInfo";
 
     public static final String KRX_STOCK_FINANCE_URI = "1160100/service/GetFinaStatInfoService_V2/getSummFinaStat_V2";
@@ -32,5 +34,9 @@ public class ApplicationConstants {
     public static final String KRX_STOCK_VALUE_URI = "/1160100/service/GetStockSecuritiesInfoService/getStockPriceInfo";
 
     public static final String KRX_STOCK_ISSUANCE_URI = "/1160100/service/GetKrxIssuInfoService/getIssuInfo";
+
+    public static final String DART_CORP_INFO_URL = "/api/company.json";
+
+
 
 }

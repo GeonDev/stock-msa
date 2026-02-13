@@ -31,6 +31,9 @@ spring:
 data-go:
   service-key: ${DATA_GO_SERVICE_KEY}
 
+dart:
+  api-key: ${DART_API_KEY}
+
 ---
 spring:
   config:
