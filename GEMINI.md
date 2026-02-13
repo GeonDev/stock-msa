@@ -41,10 +41,11 @@
     - **재무 지표 필터**: PER, PBR, ROE, PSR, 부채비율 및 흑자여부(`onlyProfitable`) 필터링 기능을 구현했습니다.
     - **기술적 지표 필터**: RSI, MACD 및 이동평균선(20/60/120일) 대비 가격 위치 기반 필터링을 추가했습니다.
     - **성능 최적화**: 서비스 간 통신 시 Batch API를 활용하여 대량 종목의 지표를 효율적으로 조회하도록 개선했습니다.
-- **업종 분류 시스템 도입**:
+- **업종 분류 시스템 및 자동화 구현**:
     - GICS 표준 기반의 `SectorType` Enum을 정의하고 `CorpDetail` 엔티티 및 DTO에 반영했습니다.
     - `TB_CORP_DETAIL` 테이블에 `sector` 컬럼을 추가하는 Flyway 마이그레이션(`V1.1`)을 완료했습니다.
-    - OpenDART API를 활용한 업종 정보 자동 수집 및 매핑 실행 계획(`doc/Sector_Automation_Implementation_Plan.md`)을 수립했습니다.
+    - **OpenDART 기반 자동 수집**: `induty_code`(한국표준산업분류, KSIC)를 활용한 업종 정보 자동 수집 배치(`SectorUpdateBatch`)를 구현했습니다.
+    - **코드 기반 정밀 매핑**: KSIC 중분류 코드(앞 2자리)를 `SectorType`으로 변환하는 매핑 로직을 `stock-common` 모듈에 구축했습니다.
 
 ## 코딩 가이드라인 (Coding Guidelines)
 

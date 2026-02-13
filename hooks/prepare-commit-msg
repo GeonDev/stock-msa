@@ -1,16 +1,36 @@
 #!/bin/zsh
 
-# 인텔리제이 환경 대응을 위한 경로 추가
+# 인텔리제이 및 다양한 터미널 환경 대응
 export PATH="$PATH:/usr/local/bin:/opt/homebrew/bin"
 
 COMMIT_MSG_FILE=$1
-# 프로젝트 루트 기반의 절대 경로 확인
+COMMIT_SOURCE=$2 # 커밋 소스 (message, template, merge 등)
+
 PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 TMP_MSG_FILE="$PROJECT_ROOT/.git/GEMINI_MSG_TMP"
+REPORT_FILE="$PROJECT_ROOT/GEMINI_REPORT.md"
 
-# 임시 파일이 있고 내용이 비어있지 않은지 확인
-if [ -f "$TMP_MSG_FILE" ] && [ -s "$TMP_MSG_FILE" ]; then
-    # 기존 메시지(인텔리제이에 입력한 내용)가 있어도 제미나이 메시지로 덮어씌움
-    cat "$TMP_MSG_FILE" > "$COMMIT_MSG_FILE"
-    rm "$TMP_MSG_FILE"
+# 1. 일반적인 커밋 상황(신규 커밋, 템플릿 사용 등)에서만 동작
+if [[ -z "$COMMIT_SOURCE" || "$COMMIT_SOURCE" == "template" || "$COMMIT_SOURCE" == "message" ]]; then
+    
+    # 2. pre-commit 단계에서 생성된 AI 추천 메시지가 있는지 확인
+    if [ -f "$TMP_MSG_FILE" ] && [ -s "$TMP_MSG_FILE" ]; then
+        AI_MSG=$(cat "$TMP_MSG_FILE")
+        
+        # 3. AI 메시지를 커밋 메시지의 기본값으로 설정
+        # 기존에 입력된 내용이 있더라도 AI가 제안한 컨벤션 메시지로 시작하도록 구성
+        echo "$AI_MSG" > "$COMMIT_MSG_FILE"
+        
+        # 4. 상세 리포트가 있다면 주석으로 추가하여 리뷰 결과를 참고하게 함
+        if [ -f "$REPORT_FILE" ]; then
+            echo "" >> "$COMMIT_MSG_FILE"
+            echo "# 🤖 Gemini MSA Code Review Report" >> "$COMMIT_MSG_FILE"
+            echo "# --------------------------------------------" >> "$COMMIT_MSG_FILE"
+            # 리포트의 모든 라인 앞에 #을 붙여 주석 처리 (커밋에는 포함되지 않음)
+            sed 's/^/# /' "$REPORT_FILE" >> "$COMMIT_MSG_FILE"
+        fi
+        
+        # 5. 사용한 임시 파일 정리
+        rm "$TMP_MSG_FILE"
+    fi
 fi
