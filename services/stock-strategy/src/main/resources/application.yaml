@@ -47,6 +47,15 @@ services:
   stock-finance:
     url: ${STOCK_FINANCE_URL:http://localhost:8082}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
 ---
 spring:
   config:

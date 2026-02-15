@@ -9,6 +9,7 @@ import com.stock.strategy.repository.PortfolioSnapshotRepository;
 import com.stock.strategy.service.BacktestService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +30,7 @@ public class BacktestController {
 
     @Operation(summary = "백테스팅 시작", description = "새로운 백테스팅 시뮬레이션을 시작합니다")
     @PostMapping
-    public ResponseEntity<BacktestResponse> startBacktest(@RequestBody BacktestRequest request) {
+    public ResponseEntity<BacktestResponse> startBacktest(@Valid @RequestBody BacktestRequest request) {
         BacktestResponse response = backtestService.startBacktest(request);
         return ResponseEntity.ok(response);
     }

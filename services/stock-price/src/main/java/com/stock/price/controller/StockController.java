@@ -7,6 +7,8 @@ import com.stock.common.service.DayOffService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.JobParameters;
@@ -15,6 +17,7 @@ import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -27,6 +30,7 @@ import static com.stock.common.utils.DateUtils.toStringLocalDate;
 
 
 @Slf4j
+@Validated
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/batch")
@@ -42,8 +46,12 @@ public class StockController {
     @PostMapping("/price")
     @Operation(summary = "주식 가격 정보 수집", description = "지정된 시장과 날짜의 주식 시세 데이터를 수집합니다.")
     public ResponseEntity<String> stockPriceApi(
-            @Parameter(description = "시장 구분 (KOSPI, KOSDAQ 등)") @RequestParam(value = "market") StockMarket marketType,
-            @Parameter(description = "기준 일자 (yyyyMMdd, 미입력 시 전일)") @RequestParam(value = "date", required = false) String date) throws Exception {
+            @Parameter(description = "시장 구분 (KOSPI, KOSDAQ 등)") 
+            @NotNull(message = "시장 구분은 필수입니다") 
+            @RequestParam(value = "market") StockMarket marketType,
+            @Parameter(description = "기준 일자 (yyyyMMdd, 미입력 시 전일)") 
+            @Pattern(regexp = "^\\d{8}$", message = "날짜 형식은 yyyyMMdd 형식이어야 합니다")
+            @RequestParam(value = "date", required = false) String date) throws Exception {
 
         if (!StringUtils.hasText(date)) {
             //금융위원회 데이터는 당일 데이터 조회 불가
@@ -92,8 +100,14 @@ public class StockController {
     @PostMapping("/price/recovery")
     @Operation(summary = "주식 시세 정보 재수집", description = "특정 기간의 일별, 주별, 월별 시세 데이터를 재수집합니다.")
     public ResponseEntity<String> recoveryStockPriceApi(
-            @Parameter(description = "시작일 (yyyyMMdd)", example = "20240101") @RequestParam(value = "startDate") String startDate,
-            @Parameter(description = "종료일 (yyyyMMdd)", example = "20240331") @RequestParam(value = "endDate") String endDate) {
+            @Parameter(description = "시작일 (yyyyMMdd)", example = "20240101") 
+            @NotNull(message = "시작일은 필수입니다")
+            @Pattern(regexp = "^\\d{8}$", message = "날짜 형식은 yyyyMMdd 형식이어야 합니다")
+            @RequestParam(value = "startDate") String startDate,
+            @Parameter(description = "종료일 (yyyyMMdd)", example = "20240331") 
+            @NotNull(message = "종료일은 필수입니다")
+            @Pattern(regexp = "^\\d{8}$", message = "날짜 형식은 yyyyMMdd 형식이어야 합니다")
+            @RequestParam(value = "endDate") String endDate) {
 
         recoveryService.recoverStockPrices(toStringLocalDate(startDate), toStringLocalDate(endDate));
 

@@ -34,6 +34,15 @@ data-go:
 dart:
   api-key: ${DART_API_KEY}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
 ---
 spring:
   config:

@@ -30,10 +30,12 @@ management:
   endpoint:
     gateway:
       enabled: true
+    health:
+      show-details: always
   endpoints:
     web:
       exposure:
-        include: gateway
+        include: gateway,health,info
 
 ---
 spring:

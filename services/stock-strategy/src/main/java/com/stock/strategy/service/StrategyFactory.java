@@ -5,6 +5,7 @@ import com.stock.strategy.strategy.EqualWeightStrategy;
 import com.stock.strategy.strategy.LowVolatilityStrategy;
 import com.stock.strategy.strategy.MomentumStrategy;
 import com.stock.strategy.strategy.Strategy;
+import com.stock.strategy.strategy.ValueStrategy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -18,13 +19,14 @@ public class StrategyFactory {
     private final EqualWeightStrategy equalWeightStrategy;
     private final MomentumStrategy momentumStrategy;
     private final LowVolatilityStrategy lowVolatilityStrategy;
+    private final ValueStrategy valueStrategy;
 
     public Strategy getStrategy(StrategyType strategyType) {
         return switch (strategyType) {
             case EQUAL_WEIGHT -> equalWeightStrategy;
             case MOMENTUM -> momentumStrategy;
             case LOW_VOLATILITY -> lowVolatilityStrategy;
-            case VALUE -> throw new UnsupportedOperationException("Value strategy not implemented yet");
+            case VALUE -> valueStrategy;
         };
     }
 

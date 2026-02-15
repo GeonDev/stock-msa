@@ -36,6 +36,15 @@ dart:
 data-go:
   service-key: ${DATA_GO_SERVICE_KEY}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
 ---
 spring:
   config:

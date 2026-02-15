@@ -77,7 +77,13 @@ public class SimulationEngine {
                 List<String> universe = universeFilterService.filter(currentDate, request.getUniverseFilter());
                 
                 // 전략에 따른 매매 시그널 생성
-                List<TradeOrder> orders = strategy.rebalance(currentDate, portfolio, universe);
+                List<TradeOrder> orders;
+                if (strategy instanceof com.stock.strategy.strategy.ValueStrategy && request.getValueStrategyConfig() != null) {
+                    orders = ((com.stock.strategy.strategy.ValueStrategy) strategy).rebalance(
+                            currentDate, portfolio, universe, request.getValueStrategyConfig());
+                } else {
+                    orders = strategy.rebalance(currentDate, portfolio, universe);
+                }
                 
                 // 매매 실행
                 executeOrders(simulationId, currentDate, orders, portfolio, request.getTradingFeeRate(), request.getTaxRate());

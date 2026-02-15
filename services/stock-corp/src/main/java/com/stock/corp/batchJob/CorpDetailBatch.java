@@ -44,14 +44,14 @@ public class CorpDetailBatch {
     public Step corpDetailCleanupStep() {
         return new StepBuilder("corpDetailCleanupStep", jobRepository)
                 .<CorpInfo, CorpDetail>chunk(STOCK_CORP_CHUNK_SIZE, platformTransactionManager)
-                .reader(corpInfoReader())
+                .reader(corpDetailReader())
                 .processor(corpDetailProcessor())
                 .writer(corpDetailWriter())
                 .build();
     }
 
     @Bean
-    public CorpDetailItemReader corpInfoReader() {
+    public CorpDetailItemReader corpDetailReader() {
         return new CorpDetailItemReader(corpInfoRepository);
     }
 

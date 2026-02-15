@@ -14,6 +14,11 @@
     - **퀀트 분석 준비**: 수정주가(Split/Dividend Adjusted) 자동 계산 및 `Ta4j` 기반 기술적 지표(RSI, MACD, Bollinger Bands, **Momentum**) 사전 적재.
     - **재무 지표 계산**: PER, PBR, ROE, ROA 등 주요 재무 지표 자동 산출 (93% 성공률).
     - **배치 안정성**: Chunk 기반의 표준화된 배치 아키텍처 적용 및 `ApplicationConstants`를 통한 처리 성능 중앙 제어.
+- **입력값 검증 (2026-02-15 완료)**:
+    - **Spring Validation**: `@Valid` 및 `@Validated` 기반 입력값 검증 시스템 구축.
+    - **글로벌 예외 처리**: 일관된 에러 응답 형식 제공 (`GlobalExceptionHandler`, `ErrorResponse`).
+    - **DTO 검증**: 필수 필드, 날짜 범위, 금액 범위, 중첩 객체 검증.
+    - **RequestParam 검증**: 날짜 형식, 연도 범위, 필수 파라미터 검증.
 
 ---
 

@@ -51,16 +51,16 @@ public class SectorUpdateBatch {
     public Step sectorUpdateStep() {
         return new StepBuilder("sectorUpdateStep", jobRepository)
                 .<CorpInfo, CorpDetail>chunk(ApplicationConstants.STOCK_CORP_CHUNK_SIZE, transactionManager)
-                .reader(corpInfoReader())
+                .reader(sectorUpdateReader())
                 .processor(sectorUpdateProcessor())
                 .writer(sectorUpdateWriter())
                 .build();
     }
 
     @Bean
-    public RepositoryItemReader<CorpInfo> corpInfoReader() {
+    public RepositoryItemReader<CorpInfo> sectorUpdateReader() {
         return new RepositoryItemReaderBuilder<CorpInfo>()
-                .name("corpInfoReader")
+                .name("sectorUpdateReader")
                 .repository(corpInfoRepository)
                 .methodName("findAll")
                 .sorts(Collections.singletonMap("corpCode", Sort.Direction.ASC))
