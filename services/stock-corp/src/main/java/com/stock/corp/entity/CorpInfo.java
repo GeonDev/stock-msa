@@ -34,6 +34,10 @@ public class CorpInfo implements Serializable {
     @Column(name = "isin_code")
     String isinCode;
 
+    //DART 고유번호 (8자리)
+    @Column(name = "dart_corp_code", length = 8)
+    String dartCorpCode;
+
     @Column(name = "market")
     String market;
 

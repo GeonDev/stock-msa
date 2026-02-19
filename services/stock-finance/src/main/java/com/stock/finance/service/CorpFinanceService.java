@@ -1,84 +1,169 @@
 package com.stock.finance.service;
 
+import com.stock.common.enums.ReportCode;
+import com.stock.finance.client.CorpClient;
+import com.stock.finance.client.DartClient;
+import com.stock.finance.dto.DartFinancialResponse;
 import com.stock.finance.entity.CorpFinanceIndicator;
 import com.stock.finance.repository.CorpFinanceRepository;
-import com.stock.common.consts.ApplicationConstants;
 import com.stock.finance.entity.CorpFinance;
-import com.stock.common.model.ApiBody;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.util.UriComponents;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.math.BigDecimal;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-
-import static com.stock.finance.utils.FinanceParseUtils.parseCorpFinanceFromXml;
+import java.util.Map;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class CorpFinanceService {
 
-    @Value("${data-go.service-key}")
-    String serviceKey;
+    private final DartClient dartClient;
+    private final DartFinanceConverter dartFinanceConverter;
+    private final CorpClient corpClient;
+    private final QuarterlyFinanceService quarterlyFinanceService;
 
-    private final RestClient restClient;
-    private final CorpFinanceRepository corpFinanceRepository;
 
-
-    public List<CorpFinance> getCorpFinance(String bizYear) throws Exception {
-        List<CorpFinance> corpList = new ArrayList<>();
-        int pageNum = 1;
-        int totalPage = 1;
-
-        String decodedServiceKey = URLDecoder.decode(serviceKey, StandardCharsets.UTF_8);
-
-        while (totalPage >= pageNum) {
-            UriComponents uri = UriComponentsBuilder
-                    .newInstance()
-                    .scheme("https")
-                    .host(ApplicationConstants.API_GO_URL)
-                    .path(ApplicationConstants.KRX_STOCK_FINANCE_URI)
-                    .queryParam("serviceKey", decodedServiceKey)
-                    .queryParam("numOfRows", ApplicationConstants.PAGE_SIZE)
-                    .queryParam("pageNo", pageNum)
-                    .queryParam("bizYear", bizYear)
-                    .build();
-
-            String responseBody = restClient.get()
-                    .uri(uri.toUri())
-                    .retrieve()
-                    .body(String.class);
-
-            try {
-                ApiBody<CorpFinance> result = parseCorpFinanceFromXml(responseBody);
-                log.debug("pageNum : {} totalPage : {}" , pageNum, totalPage);
-                if(pageNum == 1){
-                    totalPage = (int) Math.ceil((double) result.getTotalCount() / ApplicationConstants.PAGE_SIZE);
+    /**
+     * 테스트용: 단일 기업 재무 정보 조회
+     * 
+     * @param stockCode 종목 코드 (A 접두사 포함)
+     * @param year 조회 연도
+     * @return 4개 분기 재무 데이터 리스트
+     */
+    public List<CorpFinance> testSingleCompanyFinance(String stockCode, String year) {
+        List<CorpFinance> result = new ArrayList<>();
+        
+        try {
+            // DB에서 DART 고유번호 조회
+            String corpCode = corpClient.getDartCorpCode(stockCode);
+            if (corpCode == null || corpCode.isEmpty()) {
+                log.warn("DART corp code not found in DB for stock: {}", stockCode);
+                return result;
+            }
+            
+            log.info("Found DART corp code: {} for stock: {}", corpCode, stockCode);
+            
+            // 4개 분기 데이터 조회
+            ReportCode[] reportCodes = {ReportCode.Q1, ReportCode.SEMI, ReportCode.Q3, ReportCode.ANNUAL};
+            
+            for (ReportCode reportCode : reportCodes) {
+                try {
+                    log.info("Fetching {} {} for {}", year, reportCode, stockCode);
+                    
+                    DartFinancialResponse response = dartClient.getFinancialStatement(
+                            corpCode, year, reportCode.getCode(), "CFS");
+                    
+                    if (response != null && response.getList() != null && !response.getList().isEmpty()) {
+                        CorpFinance finance = dartFinanceConverter.convertToCorpFinance(
+                                response.getList(), stockCode, year, reportCode);
+                        
+                        if (finance != null) {
+                            result.add(finance);
+                            log.info("Successfully fetched {} {} - {} accounts", 
+                                year, reportCode, response.getList().size());
+                        }
+                    } else {
+                        log.warn("No data for {} {}", year, reportCode);
+                    }
+                    
+                } catch (Exception e) {
+                    log.error("Failed to fetch {} {}: {}", year, reportCode, e.getMessage());
                 }
-                corpList.addAll(result.getItemList());
-                pageNum++;
+            }
+            
+        } catch (Exception e) {
+            log.error("Failed to test single company finance: {}", stockCode, e);
+        }
+        
+        return result;
+    }
+
+    /**
+     * 재무 정보 조회 (DART API)
+     */
+    public List<CorpFinance> getCorpFinance(String bizYear) throws Exception {
+        log.info("Fetching financial data from DART API for year: {}", bizYear);
+        List<CorpFinance> dartData = getCorpFinanceFromDart(bizYear);
+        log.info("Successfully fetched {} records from DART API", dartData.size());
+        return dartData;
+    }
+    
+    /**
+     * DART API로 재무 정보 조회
+     */
+    private List<CorpFinance> getCorpFinanceFromDart(String bizYear) {
+        List<CorpFinance> result = new ArrayList<>();
+        
+        // 1. 전체 상장사 목록 조회 (stock-corp 서비스에서)
+        List<String> stockCodes = corpClient.getAllStockCodes();
+        if (stockCodes == null || stockCodes.isEmpty()) {
+            log.warn("No stock codes found from corp service");
+            return result;
+        }
+        
+        log.info("Fetching financial data for {} companies from DART", stockCodes.size());
+        
+        // 2. 보고서 코드 목록 (4개 분기)
+        ReportCode[] reportCodes = {ReportCode.Q1, ReportCode.SEMI, ReportCode.Q3, ReportCode.ANNUAL};
+        
+        // 3. 각 회사별 재무제표 조회
+        int successCount = 0;
+        int failCount = 0;
+        
+        for (String stockCode : stockCodes) {
+            try {
+                // DB에서 DART 고유번호 조회
+                String corpCode = corpClient.getDartCorpCode(stockCode);
+                if (corpCode == null || corpCode.isEmpty()) {
+                    failCount++;
+                    continue;
+                }
+                
+                // 각 분기별 데이터 수집
+                for (ReportCode reportCode : reportCodes) {
+                    try {
+                        DartFinancialResponse response = dartClient.getFinancialStatement(
+                                corpCode, bizYear, reportCode.getCode(), "CFS");
+                        
+                        if (response != null && response.getList() != null && !response.getList().isEmpty()) {
+                            CorpFinance finance = dartFinanceConverter.convertToCorpFinance(
+                                    response.getList(), stockCode, bizYear, reportCode);
+                            
+                            if (finance != null) {
+                                result.add(finance);
+                                successCount++;
+                            }
+                        }
+                        
+                        // API 호출 제한 고려 (100ms 딜레이)
+                        Thread.sleep(100);
+                        
+                    } catch (Exception e) {
+                        log.warn("Failed to fetch DART data: {} - {} - {}", stockCode, bizYear, reportCode);
+                    }
+                }
+                
             } catch (Exception e) {
-                log.error("Failed to parse XML response: {}", responseBody);
-                throw e;
+                log.error("Failed to fetch DART data for stock: {}", stockCode, e);
+                failCount++;
             }
         }
-
-        return corpList;
+        
+        log.info("DART API fetch completed: {} success, {} failed", successCount, failCount);
+        
+        return result;
     }
+    
 
     public CorpFinanceIndicator calculateIndicators(CorpFinance currentFinance, BigDecimal marketCap) {
         CorpFinanceIndicator.CorpFinanceIndicatorBuilder builder = CorpFinanceIndicator.builder()
                 .corpCode(currentFinance.getCorpCode())
-                .basDt(currentFinance.getBasDt());
+                .basDt(currentFinance.getBasDt())
+                .reportCode(currentFinance.getReportCode());
 
         // Calculate ROE, ROA, Debt Ratio from current data
         if (currentFinance.getTotalCapital() != null && currentFinance.getTotalCapital().compareTo(BigDecimal.ZERO) != 0) {
@@ -105,16 +190,57 @@ public class CorpFinanceService {
             if (currentFinance.getRevenue() != null && currentFinance.getRevenue().compareTo(BigDecimal.ZERO) > 0) {
                 builder.psr(marketCap.divide(currentFinance.getRevenue(), 8, java.math.RoundingMode.HALF_UP));
             }
+            
+            // PCR (Price to Cashflow Ratio)
+            if (currentFinance.getOperatingCashflow() != null && currentFinance.getOperatingCashflow().compareTo(BigDecimal.ZERO) > 0) {
+                builder.pcr(marketCap.divide(currentFinance.getOperatingCashflow(), 8, java.math.RoundingMode.HALF_UP));
+            }
+            
+            // FCF Yield (%)
+            if (currentFinance.getFreeCashflow() != null && currentFinance.getFreeCashflow().compareTo(BigDecimal.ZERO) > 0) {
+                builder.fcfYield(currentFinance.getFreeCashflow()
+                        .divide(marketCap, 8, java.math.RoundingMode.HALF_UP)
+                        .multiply(BigDecimal.valueOf(100)));
+            }
+            
+            // EV/EBITDA (간단 계산: 시가총액 + 순부채 / EBITDA)
+            if (currentFinance.getEbitda() != null && currentFinance.getEbitda().compareTo(BigDecimal.ZERO) > 0) {
+                BigDecimal netDebt = BigDecimal.ZERO;
+                if (currentFinance.getTotalDebt() != null) {
+                    netDebt = currentFinance.getTotalDebt();
+                }
+                BigDecimal enterpriseValue = marketCap.add(netDebt);
+                builder.evEbitda(enterpriseValue.divide(currentFinance.getEbitda(), 8, java.math.RoundingMode.HALF_UP));
+            }
+        }
+        
+        // Operating Margin (%)
+        if (currentFinance.getRevenue() != null && currentFinance.getRevenue().compareTo(BigDecimal.ZERO) > 0 
+                && currentFinance.getOpIncome() != null) {
+            builder.operatingMargin(currentFinance.getOpIncome()
+                    .divide(currentFinance.getRevenue(), 8, java.math.RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100)));
+        }
+        
+        // Net Margin (%)
+        if (currentFinance.getRevenue() != null && currentFinance.getRevenue().compareTo(BigDecimal.ZERO) > 0 
+                && currentFinance.getNetIncome() != null) {
+            builder.netMargin(currentFinance.getNetIncome()
+                    .divide(currentFinance.getRevenue(), 8, java.math.RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100)));
         }
 
-        // Fetch previous finance data to calculate growth rates
-        Optional<CorpFinance> prevFinanceOpt = corpFinanceRepository.findTop1ByCorpCodeAndBasDtBeforeOrderByBasDtDesc(currentFinance.getCorpCode(), currentFinance.getBasDt());
-        if (prevFinanceOpt.isPresent()) {
-            CorpFinance prevFinance = prevFinanceOpt.get();
-            builder.revenueGrowth(calculateGrowthRate(currentFinance.getRevenue(), prevFinance.getRevenue()));
-            builder.netIncomeGrowth(calculateGrowthRate(currentFinance.getNetIncome(), prevFinance.getNetIncome()));
-            builder.opIncomeGrowth(calculateGrowthRate(currentFinance.getOpIncome(), prevFinance.getOpIncome()));
-        }
+        // QoQ 성장률 계산
+        Map<String, BigDecimal> qoqGrowth = quarterlyFinanceService.calculateQoQGrowth(currentFinance);
+        builder.qoqRevenueGrowth(qoqGrowth.get("qoqRevenueGrowth"));
+        builder.qoqOpIncomeGrowth(qoqGrowth.get("qoqOpIncomeGrowth"));
+        builder.qoqNetIncomeGrowth(qoqGrowth.get("qoqNetIncomeGrowth"));
+        
+        // YoY 성장률 계산
+        Map<String, BigDecimal> yoyGrowth = quarterlyFinanceService.calculateYoYGrowth(currentFinance);
+        builder.yoyRevenueGrowth(yoyGrowth.get("yoyRevenueGrowth"));
+        builder.yoyOpIncomeGrowth(yoyGrowth.get("yoyOpIncomeGrowth"));
+        builder.yoyNetIncomeGrowth(yoyGrowth.get("yoyNetIncomeGrowth"));
 
         return builder.build();
     }
@@ -123,9 +249,8 @@ public class CorpFinanceService {
         if (currentValue == null || previousValue == null || previousValue.compareTo(BigDecimal.ZERO) == 0) {
             return null;
         }
-        return currentValue.divide(previousValue, 8, java.math.RoundingMode.HALF_UP)
-                .subtract(BigDecimal.ONE)
+        return currentValue.subtract(previousValue)
+                .divide(previousValue.abs(), 8, java.math.RoundingMode.HALF_UP)
                 .multiply(BigDecimal.valueOf(100));
     }
-
 }

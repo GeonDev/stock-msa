@@ -9,7 +9,8 @@
 - **컨테이너화**: Docker Compose를 통한 인프라 및 전체 서비스의 원클릭 배포.
 - **보안 강화**: 인프라 서비스별 독립 계정 관리 및 Actuator 엔드포인트 보호.
 - **서비스 간 통신**: RestClient 기반의 안정적인 마이크로서비스 간 데이터 연동.
-- **데이터 무결성 (Phase 1 완료)**:
+- **데이터 무결성 (Phase 1 진행 중)**:
+    - **DART API 전환**: 불안정한 DataGo API에서 공식 DART API로 재무 데이터 수집 전환 (구현 완료, 테스트 대기)
     - **정합성 검증**: 재무제표의 대차대조표 등식 및 필수 값 검증 로직 탑재.
     - **퀀트 분석 준비**: 수정주가(Split/Dividend Adjusted) 자동 계산 및 `Ta4j` 기반 기술적 지표(RSI, MACD, Bollinger Bands, **Momentum**) 사전 적재.
     - **재무 지표 계산**: PER, PBR, ROE, ROA 등 주요 재무 지표 자동 산출 (93% 성공률).
@@ -142,10 +143,83 @@ docker-compose up -d --build
 
 ### 2) Open DART (금융감독원)
 - **공시 정보 및 재무 사항**: 기업별 주요 공시 및 상세 재무제표(단일/다중 회사) 데이터.
+- **재무제표 API**: `fnlttSinglAcnt.json` 엔드포인트를 통한 단일 회사 재무제표 조회.
+- **Corp Code 매핑**: `corpCode.xml` 다운로드 및 파싱을 통한 Stock Code → Corp Code 변환.
+- **로컬 캐싱**: `~/.stock-msa/dart/` 디렉토리에 Corp Code XML 캐싱.
 
 ---
 
-## 8. 주의 사항
+## 8. DART API 통합 (2026-02-15)
+
+### 개요
+불안정한 DataGo API에서 공식 DART API로 재무 데이터 수집을 전환했습니다.
+
+### 주요 구성요소
+- **DartClient**: DART API 호출 및 Corp Code 매핑
+- **DartFinanceConverter**: DART 계정과목 → CorpFinance 엔티티 변환
+- **Corp Code 캐싱**: XML 다운로드, 파싱, 메모리/파일 캐싱
+- **ReportCode Enum**: 분기별 보고서 코드 타입 안정성 (Q1, SEMI, Q3, ANNUAL)
+
+### 수집 데이터
+**재무상태표 (BS)**:
+- 자산총계, 부채총계, 자본총계
+
+**손익계산서 (IS)**:
+- 매출액, 영업이익, 당기순이익, 감가상각비
+
+**현금흐름표 (CF)**:
+- 영업활동 현금흐름
+- 투자활동 현금흐름
+- 재무활동 현금흐름
+
+**계산 지표**:
+- FCF (잉여현금흐름) = 영업CF - 투자CF
+- EBITDA = 영업이익 + 감가상각비
+
+### 재무 지표
+**가치평가 지표**:
+- PER, PBR, PSR (기존)
+- PCR (Price to Cashflow Ratio)
+- EV/EBITDA
+- FCF Yield (%)
+
+**수익성 지표**:
+- ROE, ROA (기존)
+- Operating Margin (영업이익률, %)
+- Net Margin (순이익률, %)
+
+**성장률 지표**:
+- QoQ (전분기 대비): Revenue, Operating Income, Net Income
+- YoY (전년 동기 대비): Revenue, Operating Income, Net Income
+
+### 분기별 데이터 지원
+**ReportCode Enum**:
+- `Q1` (11013): 1분기 보고서 (3월 31일)
+- `SEMI` (11012): 반기 보고서 (6월 30일)
+- `Q3` (11014): 3분기 보고서 (9월 30일)
+- `ANNUAL` (11011): 연간 보고서 (12월 31일)
+
+**기능**:
+- 기준일자 자동 계산: `reportCode.getBasDt(year)`
+- 이전/다음 분기 조회: `reportCode.getPrevious()`, `reportCode.getNext()`
+- 분기 순서 반환: `reportCode.getQuarter()` (1~4)
+- 타입 안정성: 컴파일 타임 오류 검출
+
+### 데이터 흐름
+1. Corp 서비스에서 전체 종목 코드 조회
+2. Stock Code → Corp Code 변환 (A 접두사 제거)
+3. DART API 호출 (100ms 딜레이, 4개 분기)
+4. 계정과목 파싱 (BS, IS, CF)
+5. FCF, EBITDA 자동 계산
+6. 재무 지표 계산 (16개 지표)
+
+### API 엔드포인트
+- **재무제표**: `https://opendart.fss.or.kr/api/fnlttSinglAcnt.json`
+- **Corp Code**: `https://opendart.fss.or.kr/api/corpCode.xml`
+
+---
+
+## 9. 주의 사항
 - `.env` 파일은 절대 Git에 커밋하지 마세요 (중요 정보 포함).
 - **Stock Code 형식**: 기업 정보는 `A900100` (A 접두사), 주가 데이터는 `900100` (숫자만) 형식을 사용합니다.
 - **서비스 간 통신**: Docker 환경에서는 서비스 이름(예: `stock-price:8083`)을 사용하고, 로컬 개발 시에는 `localhost`를 사용합니다.

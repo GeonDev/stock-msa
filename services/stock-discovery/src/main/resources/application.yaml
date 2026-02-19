@@ -9,9 +9,29 @@ spring:
 
 eureka:
   server:
-    eviction-interval-timer-in-ms: 120000 # 오프라인 서비스 제거 검사 주기 (ms)
-    renewal-percent-threshold: 0.85       # 서비스 갱신 임계값 (자가 보존 모드 활성화 기준)
+    eviction-interval-timer-in-ms: 5000   # 오프라인 서비스 제거 검사 주기 (5초)
+    renewal-percent-threshold: 0.85       # 서비스 갱신 임계값
     renewal-threshold-update-interval-ms: 60000 # 갱신 임계값 업데이트 주기 (ms)
   client:
     register-with-eureka: false # 자기 자신을 유레카에 등록하지 않음
     fetch-registry : false # 유레카로부터 다른 서비스 정보를 가져오지 않음
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+
+eureka:
+  server:
+    enable-self-preservation: false  # 개발 환경: 자가 보호 모드 비활성화
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+eureka:
+  server:
+    enable-self-preservation: true   # 프로덕션: 자가 보호 모드 활성화

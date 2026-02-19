@@ -36,15 +36,36 @@ public class CorpFinanceIndicatorDto {
     @Schema(description = "총자산이익률 (ROA)")
     private BigDecimal roa;
 
-    @Schema(description = "부채비율")
-    private BigDecimal debtRatio;
+    @Schema(description = "주가현금흐름비율 (PCR)")
+    private BigDecimal pcr;
 
-    @Schema(description = "매출액 증가율")
-    private BigDecimal revenueGrowth;
+    @Schema(description = "EV/EBITDA")
+    private BigDecimal evEbitda;
 
-    @Schema(description = "순이익 증가율")
-    private BigDecimal netIncomeGrowth;
+    @Schema(description = "FCF Yield (%)")
+    private BigDecimal fcfYield;
 
-    @Schema(description = "영업이익 증가율")
-    private BigDecimal opIncomeGrowth;
+    @Schema(description = "영업이익률 (%)")
+    private BigDecimal operatingMargin;
+
+    @Schema(description = "순이익률 (%)")
+    private BigDecimal netMargin;
+
+    @Schema(description = "QoQ 매출 성장률 (%)")
+    private BigDecimal qoqRevenueGrowth;
+
+    @Schema(description = "QoQ 영업이익 성장률 (%)")
+    private BigDecimal qoqOpIncomeGrowth;
+
+    @Schema(description = "QoQ 순이익 성장률 (%)")
+    private BigDecimal qoqNetIncomeGrowth;
+
+    @Schema(description = "YoY 매출 성장률 (%)")
+    private BigDecimal yoyRevenueGrowth;
+
+    @Schema(description = "YoY 영업이익 성장률 (%)")
+    private BigDecimal yoyOpIncomeGrowth;
+
+    @Schema(description = "YoY 순이익 성장률 (%)")
+    private BigDecimal yoyNetIncomeGrowth;
 }

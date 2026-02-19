@@ -33,7 +33,60 @@
 - **Phase 1 (완료)**: 데이터 무결성 검증, 수정주가 계산, 기술적 지표 사전 산출 엔진 구축.
 - **Phase 2 (완료)**: `stock-strategy` 서비스 신설, 리밸런싱 시뮬레이션 및 CAGR, MDD 등 퀀트 성과 분석 지표 산출.
 
-## 최근 변경사항 및 수정 (2026-02-12)
+## 최근 변경사항 및 수정 (2026-02-16)
+
+### 1. DART API 전환 완료 ✅
+- **목적**: 불안정한 DataGo API에서 공식 DART API로 재무 데이터 수집 전환
+- **구현 완료**:
+  - `DartClient`: DART API 호출 (단일 메서드로 간소화, 67줄)
+  - `DartFinanceConverter`: DART 계정과목 → CorpFinance 엔티티 변환
+  - `CorpFinanceService`: DataGo fallback 제거, DART 전용
+  - DART Corp Code DB 저장 (`TB_CORP_INFO.dart_corp_code`)
+  - `CorpInfoBatch`: 기업 정보 수집 시 DART Corp Code 자동 매핑
+- **데이터 흐름**:
+  1. DART Corp Code XML 다운로드 및 파싱
+  2. Stock Code → Corp Code 매핑 후 DB 저장
+  3. DART API 호출 (100ms 딜레이, 4개 분기)
+  4. 계정과목 파싱 (BS, IS, CF)
+  5. FCF, EBITDA 자동 계산
+  6. 재무 지표 계산 (16개 지표)
+
+### 2. DART Corp Code DB 저장
+- **변경**: 로컬 캐시 파일 → DB 기반 관리
+- **추가 컬럼**: `TB_CORP_INFO.dart_corp_code VARCHAR(8)` + 인덱스
+- **장점**:
+  - 로컬 파일 의존성 제거
+  - 서비스 재시작 시에도 데이터 유지
+  - 여러 인스턴스 간 데이터 공유
+  - 빠른 조회 (인덱스 활용)
+
+### 3. 코드 간소화 및 정리
+- **DartClient**: 245줄 → 67줄 (73% 감소)
+  - 사용하지 않는 메서드 제거
+  - 단일 책임 원칙 적용
+- **CorpFinanceService**: DataGo API 관련 코드 제거
+  - fallback 로직 제거
+  - 미사용 필드/import 제거
+- **외부 API 관리 통일**: ApplicationConstants로 중앙 관리
+
+### 4. 문서 정리 및 통합
+- **3개 핵심 문서**:
+  - `docs/Testing_and_Verification.md`: 검증 가이드
+  - `docs/Implementation_Status.md`: 구현 현황
+  - `docs/Implementation_Roadmap.md`: 구현 계획
+- **통합 완료**: 9개 파편화된 문서 → 3개 핵심 문서
+- **스티어링 문서**: `.kiro/steering/docs.md` 등록
+
+### 5. 검증 프로세스 개선
+- **재무 데이터 수집**: 단일 기업 테스트 → 전체 배치 실행
+- **테스트 엔드포인트**: `/batch/corp-fin/test?stockCode=A005930&year=2024`
+- **검증 항목**:
+  - DART Corp Code 매핑 성공
+  - 4개 분기 데이터 수집 완료
+  - 재무제표 검증 통과 (VERIFIED)
+  - 재무 지표 계산 완료
+
+### 이전 변경사항 (2026-02-15)
 
 - **API 문서화 강화**: `stock-common` 및 `stock-strategy` 모듈의 모든 DTO에 Swagger(`@Schema`) 어노테이션을 추가하여 필드별 설명과 예시 값을 명시했습니다.
 - **유니버스 필터링 엔진 고도화**:
@@ -46,6 +99,11 @@
     - `TB_CORP_DETAIL` 테이블에 `sector` 컬럼을 추가하는 Flyway 마이그레이션(`V1.1`)을 완료했습니다.
     - **OpenDART 기반 자동 수집**: `induty_code`(한국표준산업분류, KSIC)를 활용한 업종 정보 자동 수집 배치(`SectorUpdateBatch`)를 구현했습니다.
     - **코드 기반 정밀 매핑**: KSIC 중분류 코드(앞 2자리)를 `SectorType`으로 변환하는 매핑 로직을 `stock-common` 모듈에 구축했습니다.
+
+### 5. 서비스 모니터링 및 식별 (New)
+- **루트 엔드포인트 (`/`)**: 모든 서비스에 서비스 이름, 버전(`0.0.1-SNAPSHOT`), 활성 프로파일 정보를 반환하는 엔드포인트를 구현했습니다.
+- **공통 DTO**: `ServiceInfoDto`를 `stock-common` 모듈에 정의하여 모든 서비스에서 일관된 응답 형식을 유지합니다.
+- **운영 편의성**: Docker Healthcheck 및 배포 시 서비스 식별을 용이하게 합니다.
 
 ## 코딩 가이드라인 (Coding Guidelines)
 
@@ -85,4 +143,4 @@ stock-msa/
 
 ---
 
-*마지막 업데이트: 2026-02-12 (Enhanced Filtering & Sector Implementation)*
+*마지막 업데이트: 2026-02-16 (DART API 전환 완료, 코드 정리, 문서 통합)*

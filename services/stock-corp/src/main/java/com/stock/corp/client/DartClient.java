@@ -1,7 +1,7 @@
 package com.stock.corp.client;
 
 import com.stock.common.consts.ApplicationConstants;
-import lombok.RequiredArgsConstructor;
+import com.stock.common.util.DartRateLimiter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -12,17 +12,24 @@ import java.net.URI;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class DartClient {
 
     private final RestClient restClient;
+    private final DartRateLimiter rateLimiter = new DartRateLimiter();
 
     @Value("${dart.api-key}")
     private String apiKey;
 
+    public DartClient(RestClient restClient) {
+        this.restClient = restClient;
+    }
+
     public DartCompanyResponse getCompanyInfo(String corpCode) {
+        // Rate limit 체크 (분당 1,000회)
+        rateLimiter.acquire();
+        
         URI uri = UriComponentsBuilder.newInstance()
-                .scheme("http")
+                .scheme("https")
                 .host(ApplicationConstants.DART_URL)
                 .path(ApplicationConstants.DART_CORP_INFO_URL)
                 .queryParam("crtfc_key", apiKey)

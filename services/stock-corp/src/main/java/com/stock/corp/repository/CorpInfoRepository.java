@@ -5,9 +5,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface CorpInfoRepository extends JpaRepository<CorpInfo, String> {
     List<CorpInfo> findAllByStockCodeIsNotNull();
     List<CorpInfo> findAllByMarket(String market);
+    Optional<CorpInfo> findByStockCode(String stockCode);
 }

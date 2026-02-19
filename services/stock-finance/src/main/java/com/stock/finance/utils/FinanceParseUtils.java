@@ -53,19 +53,11 @@ public class FinanceParseUtils {
                         .corpCode(getTagValue("crno", item))
                         .currency(getTagValue("curCd", item))
                         .opIncome(safeParseBigDecimal(getTagValue("enpBzopPft", item)))
-                        .prevOpIncome(safeParseBigDecimal(getTagValue("frmtrmBzopPft", item)))
-                        .investment(safeParseBigDecimal(getTagValue("enpCptlAmt", item)))
                         .netIncome(safeParseBigDecimal(getTagValue("enpCrtmNpf", item)))
-                        .prevNetIncome(safeParseBigDecimal(getTagValue("frmtrmCrtmNpf", item)))
-                        .incomeBeforeTax(safeParseBigDecimal(getTagValue("iclsPalClcAmt", item)))
                         .revenue(safeParseBigDecimal(getTagValue("enpSaleAmt", item)))
-                        .prevRevenue(safeParseBigDecimal(getTagValue("frmtrmSaleAmt", item)))
                         .totalAsset(safeParseBigDecimal(getTagValue("enpTastAmt", item)))
                         .totalDebt(safeParseBigDecimal(getTagValue("enpTdbtAmt", item)))
                         .totalCapital(safeParseBigDecimal(getTagValue("enpTcptAmt", item)))
-                        .docCode(getTagValue("fnclDcd", item))
-                        .docName(getTagValue("fnclDcdNm", item))
-                        .docDebtRatio(safeParseBigDecimal(getTagValue("fnclDebtRto", item)))
                         .build());
             }
         }
