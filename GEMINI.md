@@ -33,6 +33,45 @@
 - **Phase 1 (완료)**: 데이터 무결성 검증, 수정주가 계산, 기술적 지표 사전 산출 엔진 구축.
 - **Phase 2 (완료)**: `stock-strategy` 서비스 신설, 리밸런싱 시뮬레이션 및 CAGR, MDD 등 퀀트 성과 분석 지표 산출.
 
+## 최근 변경사항 및 수정 (2026-02-19)
+
+### 1. DART API Rate Limiting 구현 ✅
+- **목적**: DART API IP 차단 방지 (분당 1,000회 제한)
+- **구현 완료**:
+  - `DartRateLimiter`: Sliding window 방식의 rate limiter
+  - `stock-corp/DartClient`: 기업 정보 조회 시 rate limiting 적용
+  - `stock-finance/DartClient`: 재무제표 조회 시 rate limiting 적용
+- **특징**:
+  - 분당 정확히 1,000회 이하 보장
+  - Thread-safe (synchronized)
+  - 자동 대기 및 타임스탬프 관리
+  - 1시간 IP 차단 위험 제거
+
+### 2. 코드 품질 개선 (Clean Code)
+- **DartFinanceConverter 리팩토링**:
+  - `convertToCorpFinance` 메서드 분리 (100줄 → 15줄)
+  - `extractBalanceSheet`: 재무상태표 추출
+  - `extractIncomeStatement`: 손익계산서 추출
+  - `extractCashflowStatement`: 현금흐름표 추출
+  - `calculateDerivedMetrics`: FCF, EBITDA 계산
+- **효과**: 가독성, 유지보수성, 테스트 용이성 향상
+
+### 3. Pre-commit Hook 개선
+- **AI 환각 방지 강화**:
+  - Swagger/Lombok 어노테이션 정상 인식
+  - 실제 컴파일 오류만 차단
+  - 코드 스타일 제안은 BLOCK 금지
+- **클린코드 섹션 추가**: `###CLEAN###`
+  - 네이밍, 메서드 길이, 중복 코드, 복잡도 분석
+  - 커밋 차단 없이 개선 제안만 제공
+
+### 4. CorpClient 주석 명확화
+- `getDartCorpCode` 메서드 주석 수정
+- "DB 조회" → "stock-corp 서비스 API 호출 → DB 조회"
+- 실제 동작 흐름 명확히 표현
+
+---
+
 ## 최근 변경사항 및 수정 (2026-02-16)
 
 ### 1. DART API 전환 완료 ✅
@@ -143,4 +182,4 @@ stock-msa/
 
 ---
 
-*마지막 업데이트: 2026-02-16 (DART API 전환 완료, 코드 정리, 문서 통합)*
+*마지막 업데이트: 2026-02-19 (DART Rate Limiting, 코드 품질 개선, Pre-commit Hook 강화)*

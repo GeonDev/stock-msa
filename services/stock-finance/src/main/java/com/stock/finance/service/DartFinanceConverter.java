@@ -26,84 +26,115 @@ public class DartFinanceConverter {
         finance.setCorpCode(corpCode);
         finance.setBizYear(year);
         finance.setReportCode(reportCode);
+        finance.setBasDt(reportCode.getBasDt(Integer.parseInt(year)));
         
-        // bas_dt 설정 (보고서 코드에 따라 자동 계산)
-        LocalDate basDt = reportCode.getBasDt(Integer.parseInt(year));
-        finance.setBasDt(basDt);
+        extractBalanceSheet(accounts, finance);
+        extractIncomeStatement(accounts, finance);
+        extractCashflowStatement(accounts, finance);
+        calculateDerivedMetrics(finance);
         
+        return finance;
+    }
+    
+    /**
+     * 재무상태표 (BS) 데이터 추출
+     */
+    private void extractBalanceSheet(List<DartAccount> accounts, CorpFinance finance) {
         for (DartAccount account : accounts) {
-            String accountNm = account.getAccountNm();
-            if (accountNm == null) {
+            if (!"BS".equals(account.getSjDiv()) || account.getAccountNm() == null) {
                 continue;
             }
             
+            String accountNm = account.getAccountNm();
             BigDecimal amount = parseBigDecimal(account.getThstrmAmount());
             
-            // 재무상태표 (BS)
-            if ("BS".equals(account.getSjDiv())) {
-                if (accountNm.contains("자산총계") || accountNm.equals("자산총계")) {
-                    finance.setTotalAsset(amount);
-                } else if (accountNm.contains("부채총계") || accountNm.equals("부채총계")) {
-                    finance.setTotalDebt(amount);
-                } else if (accountNm.contains("자본총계") || accountNm.equals("자본총계")) {
-                    finance.setTotalCapital(amount);
-                }
+            if (accountNm.contains("자산총계")) {
+                finance.setTotalAsset(amount);
+            } else if (accountNm.contains("부채총계")) {
+                finance.setTotalDebt(amount);
+            } else if (accountNm.contains("자본총계")) {
+                finance.setTotalCapital(amount);
+            }
+        }
+    }
+    
+    /**
+     * 손익계산서 (IS) 데이터 추출
+     */
+    private void extractIncomeStatement(List<DartAccount> accounts, CorpFinance finance) {
+        for (DartAccount account : accounts) {
+            if (!"IS".equals(account.getSjDiv()) || account.getAccountNm() == null) {
+                continue;
             }
             
-            // 손익계산서 (IS)
-            if ("IS".equals(account.getSjDiv())) {
-                if (accountNm.contains("매출액") || accountNm.contains("수익(매출액)")) {
-                    if (finance.getRevenue() == null) {  // 첫 번째 매출액만 사용
-                        finance.setRevenue(amount);
-                    }
-                } else if (accountNm.contains("영업이익") && !accountNm.contains("금융")) {
-                    if (finance.getOpIncome() == null) {
-                        finance.setOpIncome(amount);
-                    }
-                } else if (accountNm.contains("당기순이익") || accountNm.equals("당기순이익")) {
-                    if (finance.getNetIncome() == null) {
-                        finance.setNetIncome(amount);
-                    }
-                } else if (accountNm.contains("감가상각비")) {
-                    if (finance.getDepreciation() == null) {
-                        finance.setDepreciation(amount);
-                    }
-                }
-            }
+            String accountNm = account.getAccountNm();
+            BigDecimal amount = parseBigDecimal(account.getThstrmAmount());
             
-            // 현금흐름표 (CF)
-            if ("CF".equals(account.getSjDiv())) {
-                if (accountNm.contains("영업활동") && accountNm.contains("현금흐름")) {
-                    if (finance.getOperatingCashflow() == null) {
-                        finance.setOperatingCashflow(amount);
-                    }
-                } else if (accountNm.contains("투자활동") && accountNm.contains("현금흐름")) {
-                    if (finance.getInvestingCashflow() == null) {
-                        finance.setInvestingCashflow(amount);
-                    }
-                } else if (accountNm.contains("재무활동") && accountNm.contains("현금흐름")) {
-                    if (finance.getFinancingCashflow() == null) {
-                        finance.setFinancingCashflow(amount);
-                    }
+            if (accountNm.contains("매출액") || accountNm.contains("수익(매출액)")) {
+                if (finance.getRevenue() == null) {
+                    finance.setRevenue(amount);
+                }
+            } else if (accountNm.contains("영업이익") && !accountNm.contains("금융")) {
+                if (finance.getOpIncome() == null) {
+                    finance.setOpIncome(amount);
+                }
+            } else if (accountNm.contains("당기순이익")) {
+                if (finance.getNetIncome() == null) {
+                    finance.setNetIncome(amount);
+                }
+            } else if (accountNm.contains("감가상각비")) {
+                if (finance.getDepreciation() == null) {
+                    finance.setDepreciation(amount);
                 }
             }
         }
-        
-        // FCF 계산 (영업CF - 투자CF)
+    }
+    
+    /**
+     * 현금흐름표 (CF) 데이터 추출
+     */
+    private void extractCashflowStatement(List<DartAccount> accounts, CorpFinance finance) {
+        for (DartAccount account : accounts) {
+            if (!"CF".equals(account.getSjDiv()) || account.getAccountNm() == null) {
+                continue;
+            }
+            
+            String accountNm = account.getAccountNm();
+            BigDecimal amount = parseBigDecimal(account.getThstrmAmount());
+            
+            if (accountNm.contains("영업활동") && accountNm.contains("현금흐름")) {
+                if (finance.getOperatingCashflow() == null) {
+                    finance.setOperatingCashflow(amount);
+                }
+            } else if (accountNm.contains("투자활동") && accountNm.contains("현금흐름")) {
+                if (finance.getInvestingCashflow() == null) {
+                    finance.setInvestingCashflow(amount);
+                }
+            } else if (accountNm.contains("재무활동") && accountNm.contains("현금흐름")) {
+                if (finance.getFinancingCashflow() == null) {
+                    finance.setFinancingCashflow(amount);
+                }
+            }
+        }
+    }
+    
+    /**
+     * 파생 지표 계산 (FCF, EBITDA)
+     */
+    private void calculateDerivedMetrics(CorpFinance finance) {
+        // FCF = 영업CF - 투자CF
         if (finance.getOperatingCashflow() != null && finance.getInvestingCashflow() != null) {
             finance.setFreeCashflow(
                 finance.getOperatingCashflow().add(finance.getInvestingCashflow())
             );
         }
         
-        // EBITDA 계산 (영업이익 + 감가상각비)
+        // EBITDA = 영업이익 + 감가상각비
         if (finance.getOpIncome() != null && finance.getDepreciation() != null) {
             finance.setEbitda(
                 finance.getOpIncome().add(finance.getDepreciation())
             );
         }
-        
-        return finance;
     }
     
     /**
