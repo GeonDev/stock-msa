@@ -35,7 +35,11 @@ public class ApplicationConstants {
 
     public static final String KRX_STOCK_ISSUANCE_URI = "/1160100/service/GetKrxIssuInfoService/getIssuInfo";
 
+    public static final String DART_CORP_CODE_URL = "/api/corpCode.xml";
+
     public static final String DART_CORP_INFO_URL = "/api/company.json";
+
+    public static final String DART_FINANCE_URL = "/api/fnlttSinglAcnt.json";
 
 
 

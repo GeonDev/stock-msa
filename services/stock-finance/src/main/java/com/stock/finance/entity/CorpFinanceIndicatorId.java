@@ -7,13 +7,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.time.LocalDate;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CorpFinanceId implements Serializable {
+public class CorpFinanceIndicatorId implements Serializable {
     private String corpCode;
-    private String bizYear;
+    private LocalDate basDt;
     private ReportCode reportCode;
 }

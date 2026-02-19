@@ -59,17 +59,24 @@ public class StockController {
         }
 
         //공휴일 제외 값, 주말 제외
-        if (!dayOffService.checkIsDayOff(toStringLocalDate(date))) {
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("date", date)
-                    .addString("market", marketType.name())
-                    .addLong("time", System.currentTimeMillis())
-                    .toJobParameters();
-
-            jobLauncher.run(jobRegistry.getJob("stockDataJob"), jobParameters);
+        if (dayOffService.checkIsDayOff(toStringLocalDate(date))) {
+            return ResponseEntity.status(202).body("SKIPPED: " + date + " is a holiday or weekend");
         }
 
-        return ResponseEntity.ok("SET PRICE");
+        // Convert yyyyMMdd to yyyy-MM-dd for ItemReaders
+        LocalDate parsedDate = toStringLocalDate(date);
+        String targetDate = parsedDate.toString(); // yyyy-MM-dd format
+
+        JobParameters jobParameters = new JobParametersBuilder()
+                .addString("date", date)
+                .addString("targetDate", targetDate)
+                .addString("market", marketType.name())
+                .addLong("time", System.currentTimeMillis())
+                .toJobParameters();
+
+        jobLauncher.run(jobRegistry.getJob("stockDataJob"), jobParameters);
+
+        return ResponseEntity.ok("BATCH STARTED: Stock price collection for " + date + " (" + marketType + ")");
     }
 
 

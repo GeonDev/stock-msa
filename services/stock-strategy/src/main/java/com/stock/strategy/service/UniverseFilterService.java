@@ -126,7 +126,6 @@ public class UniverseFilterService {
                     if (customFilter.getMaxPbr() != null && (i.getPbr() == null || i.getPbr().compareTo(customFilter.getMaxPbr()) > 0)) return false;
                     if (customFilter.getMinRoe() != null && (i.getRoe() == null || i.getRoe().compareTo(customFilter.getMinRoe()) < 0)) return false;
                     if (customFilter.getMinPsr() != null && (i.getPsr() == null || i.getPsr().compareTo(customFilter.getMinPsr()) < 0)) return false;
-                    if (customFilter.getMaxDebtRatio() != null && (i.getDebtRatio() == null || i.getDebtRatio().compareTo(customFilter.getMaxDebtRatio()) > 0)) return false;
 
                     return true;
                 })

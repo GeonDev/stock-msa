@@ -1,5 +1,6 @@
 package com.stock.strategy.client;
 
+import com.stock.common.dto.StockIndicatorDto;
 import com.stock.common.dto.StockPriceDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,11 +42,11 @@ public class PriceClient {
                 .body(new ParameterizedTypeReference<List<StockPriceDto>>() {});
     }
 
-    public List<com.stock.common.dto.StockIndicatorDto> getIndicatorsByDateBatch(List<String> stockCodes, String date) {
+    public List<StockIndicatorDto> getIndicatorsByDateBatch(List<String> stockCodes, String date) {
         String stockCodesParam = String.join(",", stockCodes);
         return restClient.get()
                 .uri(priceServiceUrl + "/api/v1/stock/internal/indicators/batch?stockCodes=" + stockCodesParam + "&date=" + date)
                 .retrieve()
-                .body(new ParameterizedTypeReference<List<com.stock.common.dto.StockIndicatorDto>>() {});
+                .body(new ParameterizedTypeReference<List<StockIndicatorDto>>() {});
     }
 }

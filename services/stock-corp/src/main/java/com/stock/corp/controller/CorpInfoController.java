@@ -52,16 +52,18 @@ public class CorpInfoController {
         }
 
         //공휴일 제외 값, 주말 제외
-        if (!dayOffService.checkIsDayOff(toStringLocalDate(date))) {
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("date", date)
-                    .addLong("time", System.currentTimeMillis())
-                    .toJobParameters();
-
-            jobLauncher.run(jobRegistry.getJob("corpDataJob"), jobParameters);
+        if (dayOffService.checkIsDayOff(toStringLocalDate(date))) {
+            return ResponseEntity.status(202).body("SKIPPED: " + date + " is a holiday or weekend");
         }
 
-        return ResponseEntity.ok("SET CORP CODE");
+        JobParameters jobParameters = new JobParametersBuilder()
+                .addString("date", date)
+                .addLong("time", System.currentTimeMillis())
+                .toJobParameters();
+
+        jobLauncher.run(jobRegistry.getJob("corpDataJob"), jobParameters);
+
+        return ResponseEntity.ok("BATCH STARTED: Corp info collection for " + date);
     }
 
     @PostMapping("/corp-detail/cleanup")

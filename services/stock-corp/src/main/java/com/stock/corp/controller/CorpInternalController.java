@@ -33,4 +33,18 @@ public class CorpInternalController {
                 .map(CorpInfoDto::getCorpCode)
                 .collect(Collectors.toSet());
     }
+    
+    @GetMapping("/all-stock-codes")
+    public List<String> getAllStockCodes() {
+        return corpInfoService.getAllValidCorpInfos().stream()
+                .map(CorpInfoDto::getStockCode)
+                .filter(stockCode -> stockCode != null && !stockCode.isEmpty())
+                .collect(Collectors.toList());
+    }
+
+    @GetMapping("/dart-corp-code/{stockCode}")
+    public String getDartCorpCode(@PathVariable String stockCode) {
+        CorpInfo corpInfo = corpInfoService.getCorpInfoByStockCode(stockCode);
+        return corpInfo != null ? corpInfo.getDartCorpCode() : null;
+    }
 }

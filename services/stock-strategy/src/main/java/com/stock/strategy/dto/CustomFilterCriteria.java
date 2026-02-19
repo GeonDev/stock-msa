@@ -32,9 +32,6 @@ public class CustomFilterCriteria {
     @Schema(description = "최소 PSR", example = "0")
     private BigDecimal minPsr;
 
-    @Schema(description = "최대 부채비율 (%)", example = "200")
-    private BigDecimal maxDebtRatio;
-
     @Schema(description = "최소 1개월 모멘텀 (%)", example = "5.0")
     private BigDecimal minMomentum1m;
 

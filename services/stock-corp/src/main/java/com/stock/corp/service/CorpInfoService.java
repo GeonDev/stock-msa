@@ -88,4 +88,8 @@ public class CorpInfoService {
     public List<CorpInfoDto> getCorpsByMarket(String market) {
         return corpInfoMapper.toDtoList(corpInfoRepository.findAllByMarket(market));
     }
+
+    public CorpInfo getCorpInfoByStockCode(String stockCode) {
+        return corpInfoRepository.findByStockCode(stockCode).orElse(null);
+    }
 }
