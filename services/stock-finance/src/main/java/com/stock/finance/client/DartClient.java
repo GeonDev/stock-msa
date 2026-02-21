@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stock.common.consts.ApplicationConstants;
 import com.stock.common.util.DartRateLimiter;
 import com.stock.finance.dto.DartFinancialResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -14,6 +15,7 @@ import java.net.URI;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class DartClient {
     
     private final RestClient restClient;
@@ -22,11 +24,6 @@ public class DartClient {
     
     @Value("${dart.api-key}")
     private String apiKey;
-
-    public DartClient(RestClient restClient, ObjectMapper objectMapper) {
-        this.restClient = restClient;
-        this.objectMapper = objectMapper;
-    }
     
     /**
      * 단일회사 전체 재무제표 조회
