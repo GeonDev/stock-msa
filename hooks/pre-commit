@@ -88,7 +88,7 @@ AI_PROMPT="${CLEAN_INPUT}
 - 예시: feat(corp): OpenDART 업종 수집 배치 구현"
 
 # 5. AI 호출 및 결과 처리
-AI_RESPONSE=$(gemini -m gemini-2.0-flash -p "$AI_PROMPT" 2>/dev/null || echo "ERROR")
+AI_RESPONSE=$(gemini -m gemini-1.5-flash -p "$AI_PROMPT" 2>/dev/null || echo "ERROR")
 
 # 노이즈 제거
 CLEANED_RESPONSE=$(echo "$AI_RESPONSE" | grep -v "Loaded cached credentials" | grep -v "supports tool updates" | sed 's/\*\*//g')

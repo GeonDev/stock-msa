@@ -1,68 +1,39 @@
 package com.stock.common.util;
 
+import com.stock.common.consts.ApplicationConstants;
 import lombok.extern.slf4j.Slf4j;
-
-import java.time.Instant;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * DART API Rate Limiter
- * - 분당 1,000회 제한
- * - Sliding window 방식
+ * - ApplicationConstants.DART_MAX_CALLS_PER_MINUTE 설정을 기반으로 호출 간격을 제어합니다.
  */
 @Slf4j
 public class DartRateLimiter {
+
+    private long lastCallTime = 0;
     
-    private static final int MAX_CALLS_PER_MINUTE = 1000;
-    private static final long ONE_MINUTE_MILLIS = 60_000;
-    
-    private final ConcurrentLinkedQueue<Long> callTimestamps = new ConcurrentLinkedQueue<>();
-    
+    // 분당 호출 횟수를 기반으로 최소 간격 계산 (예: 800회 -> 약 75ms)
+    private static final long MIN_INTERVAL_MILLIS = 60000L / ApplicationConstants.DART_MAX_CALLS_PER_MINUTE;
+
     /**
      * API 호출 전 rate limit 체크 및 대기
+     * 마지막 호출로부터 최소 간격(MIN_INTERVAL_MILLIS)이 지났는지 확인하고, 부족하면 그만큼 대기합니다.
      */
     public synchronized void acquire() {
         long now = System.currentTimeMillis();
-        
-        // 1분 이전 타임스탬프 제거
-        while (!callTimestamps.isEmpty() && now - callTimestamps.peek() > ONE_MINUTE_MILLIS) {
-            callTimestamps.poll();
-        }
-        
-        // 1,000회 초과 시 대기
-        if (callTimestamps.size() >= MAX_CALLS_PER_MINUTE) {
-            long oldestCall = callTimestamps.peek();
-            long waitTime = ONE_MINUTE_MILLIS - (now - oldestCall) + 100; // 100ms 버퍼
-            
-            if (waitTime > 0) {
-                log.warn("DART API rate limit reached. Waiting {}ms", waitTime);
-                try {
-                    Thread.sleep(waitTime);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new RuntimeException("Rate limiter interrupted", e);
-                }
-                
-                // 대기 후 다시 정리
-                now = System.currentTimeMillis();
-                while (!callTimestamps.isEmpty() && now - callTimestamps.peek() > ONE_MINUTE_MILLIS) {
-                    callTimestamps.poll();
-                }
+        long elapsed = now - lastCallTime;
+
+        if (elapsed < MIN_INTERVAL_MILLIS) {
+            long waitTime = MIN_INTERVAL_MILLIS - elapsed;
+            try {
+                Thread.sleep(waitTime);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.error("Rate limiter interrupted", e);
             }
         }
         
-        // 현재 호출 기록
-        callTimestamps.offer(now);
-    }
-    
-    /**
-     * 현재 분당 호출 횟수 조회
-     */
-    public int getCurrentCallCount() {
-        long now = System.currentTimeMillis();
-        while (!callTimestamps.isEmpty() && now - callTimestamps.peek() > ONE_MINUTE_MILLIS) {
-            callTimestamps.poll();
-        }
-        return callTimestamps.size();
+        // 실행 시점을 기록 (대기했을 경우 대기 후의 시점 기준)
+        lastCallTime = System.currentTimeMillis();
     }
 }
