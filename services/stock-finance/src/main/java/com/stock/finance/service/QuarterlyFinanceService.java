@@ -27,7 +27,7 @@ public class QuarterlyFinanceService {
         Map<String, BigDecimal> result = new HashMap<>();
         
         ReportCode reportCode = current.getReportCode();
-        
+
         // 1분기는 누적 = 단독
         if (reportCode == ReportCode.Q1) {
             result.put("revenue", current.getRevenue());
@@ -36,13 +36,13 @@ public class QuarterlyFinanceService {
             result.put("operatingCashflow", current.getOperatingCashflow());
             return result;
         }
-        
+
         // 이전 분기 조회
         ReportCode prevReportCode = reportCode.getPrevious();
         if (prevReportCode == null) {
             return result;
         }
-        
+
         Optional<CorpFinance> prevOpt = corpFinanceRepository.findByCorpCodeAndBizYearAndReportCode(
                 current.getCorpCode(), current.getBizYear(), prevReportCode);
         
@@ -77,7 +77,7 @@ public class QuarterlyFinanceService {
         if (prevReportCode == null) {
             return result;  // 1분기는 이전 분기 없음
         }
-        
+
         Optional<CorpFinance> prevOpt = corpFinanceRepository.findByCorpCodeAndBizYearAndReportCode(
                 current.getCorpCode(), current.getBizYear(), prevReportCode);
         

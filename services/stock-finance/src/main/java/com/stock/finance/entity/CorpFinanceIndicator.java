@@ -9,36 +9,37 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Entity
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@IdClass(CorpFinanceIndicatorId.class)
 @Table(name = "TB_CORP_FINANCE_INDICATOR")
 public class CorpFinanceIndicator {
 
     @Id
-    @Column(name = "corp_code")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Long id;
+
+    @Column(name = "corp_code", nullable = false)
     private String corpCode;
 
-    @Id
     @Column(name = "bas_dt")
-    private java.time.LocalDate basDt;
+    private LocalDate basDt;
 
-    @Id
     @Convert(converter = ReportCodeConverter.class)
     @Column(name = "report_code", columnDefinition = "VARCHAR(5)")
     private ReportCode reportCode;
 
+    public void setReportCodeEnum(ReportCode rc) {
+        this.reportCode = rc;
+    }
+
     @OneToOne(fetch = FetchType.LAZY)
-    @MapsId
-    @JoinColumns(value = {
-            @JoinColumn(name = "corp_code", referencedColumnName = "corp_code"),
-            @JoinColumn(name = "bas_dt", referencedColumnName = "bas_dt"),
-            @JoinColumn(name = "report_code", referencedColumnName = "report_code")
-    }, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    @JoinColumn(name = "corp_finance_id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private CorpFinance corpFinance;
 
     /**

@@ -1,6 +1,5 @@
 package com.stock.finance.entity;
 
-
 import com.stock.common.enums.ReportCode;
 import com.stock.common.enums.ValidationStatus;
 import com.stock.finance.converter.ReportCodeConverter;
@@ -9,40 +8,40 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
+import lombok.NoArgsConstructor;
 
-import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-
 
 @Data
 @Entity
 @Builder
 @AllArgsConstructor
-@RequiredArgsConstructor
-@IdClass(CorpFinanceId.class)
-@Table(name = "TB_CORP_FINANCE")
+@NoArgsConstructor
+@Table(name = "TB_CORP_FINANCE",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"corp_code", "biz_year", "report_code"}))
 @Schema(description = "기업 재무 정보")
-public class CorpFinance implements Serializable {
+public class CorpFinance {
 
     @Id
-    @Schema(description = "법인번호", example = "1101110000000")
-    @Column(name = "corp_code")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Long id;
+
+    @Schema(description = "법인번호", example = "A005930")
+    @Column(name = "corp_code", nullable = false)
     String corpCode;
 
-    @Id
-    @Schema(description = "법인세의 과세기간 (사업연도)", example = "2023")
-    @Column(name = "biz_year")
+    @Schema(description = "사업연도", example = "2023")
+    @Column(name = "biz_year", nullable = false, length = 4)
     String bizYear;
 
-    @Id
-    @Convert(converter = ReportCodeConverter.class)
     @Schema(description = "보고서 코드", example = "ANNUAL")
-    @Column(name = "report_code", columnDefinition = "VARCHAR(5)")
+    @Convert(converter = ReportCodeConverter.class)
+    @Column(name = "report_code", nullable = false, columnDefinition = "VARCHAR(5)")
     ReportCode reportCode;
 
-    @Schema(description = "거래 기준 일자", example = "2024-01-01")
+    @Schema(description = "기준일자", example = "2024-01-01")
     @Column(name = "bas_dt")
     LocalDate basDt;
 

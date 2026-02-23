@@ -9,12 +9,13 @@
 - **컨테이너화**: Docker Compose를 통한 인프라 및 전체 서비스의 원클릭 배포.
 - **보안 강화**: 인프라 서비스별 독립 계정 관리 및 Actuator 엔드포인트 보호.
 - **서비스 간 통신**: RestClient 기반의 안정적인 마이크로서비스 간 데이터 연동.
-- **데이터 무결성 (Phase 1 진행 중)**:
-    - **DART API 전환**: 불안정한 DataGo API에서 공식 DART API로 재무 데이터 수집 전환 (구현 완료, 테스트 대기)
-    - **정합성 검증**: 재무제표의 대차대조표 등식 및 필수 값 검증 로직 탑재.
-    - **퀀트 분석 준비**: 수정주가(Split/Dividend Adjusted) 자동 계산 및 `Ta4j` 기반 기술적 지표(RSI, MACD, Bollinger Bands, **Momentum**) 사전 적재.
-    - **재무 지표 계산**: PER, PBR, ROE, ROA 등 주요 재무 지표 자동 산출 (93% 성공률).
-    - **배치 안정성**: Chunk 기반의 표준화된 배치 아키텍처 적용 및 `ApplicationConstants`를 통한 처리 성능 중앙 제어.
+- **데이터 무결성 (Phase 1 완료)**:
+    - **DART API 전환**: 공식 DART API 기반 재무 데이터 수집 (2026-02-23 검증 완료)
+    - **정합성 검증**: 재무제표의 대차대조표 등식 및 필수 값 검증 로직 탑재 (93.7% VERIFIED)
+    - **퀀트 분석 준비**: 수정주가(Split/Dividend Adjusted) 자동 계산 및 `Ta4j` 기반 기술적 지표(RSI, MACD, Bollinger Bands, Momentum) 사전 적재
+    - **재무 지표 계산**: PER, PBR, ROE, ROA 등 16개 재무 지표 자동 산출 (99% 성공률)
+    - **배치 안정성**: Chunk 기반의 표준화된 배치 아키텍처 적용 및 `ApplicationConstants`를 통한 처리 성능 중앙 제어
+    - **분기별 수집**: Q1, 반기, Q3, 연간 보고서 개별 수집 지원 (DART API 일일 한도 대응)
 - **입력값 검증 (2026-02-15 완료)**:
     - **Spring Validation**: `@Valid` 및 `@Validated` 기반 입력값 검증 시스템 구축.
     - **글로벌 예외 처리**: 일관된 에러 응답 형식 제공 (`GlobalExceptionHandler`, `ErrorResponse`).
@@ -149,15 +150,15 @@ docker-compose up -d --build
 
 ---
 
-## 8. DART API 통합 (2026-02-15)
+## 8. DART API 통합 및 재무 지표 계산 (2026-02-23 완료)
 
 ### 개요
-불안정한 DataGo API에서 공식 DART API로 재무 데이터 수집을 전환했습니다.
+불안정한 DataGo API에서 공식 DART API로 재무 데이터 수집을 전환하고, 주가 데이터와 연동하여 재무 지표를 자동 계산합니다.
 
 ### 주요 구성요소
 - **DartClient**: DART API 호출 및 Corp Code 매핑
 - **DartFinanceConverter**: DART 계정과목 → CorpFinance 엔티티 변환
-- **Corp Code 캐싱**: XML 다운로드, 파싱, 메모리/파일 캐싱
+- **CorpFinanceBatch**: 재무 데이터 수집 및 지표 계산 통합 배치
 - **ReportCode Enum**: 분기별 보고서 코드 타입 안정성 (Q1, SEMI, Q3, ANNUAL)
 
 ### 수집 데이터
@@ -167,7 +168,7 @@ docker-compose up -d --build
 **손익계산서 (IS)**:
 - 매출액, 영업이익, 당기순이익, 감가상각비
 
-**현금흐름표 (CF)**:
+**현금흐름표 (CF)** (연간/반기 보고서만):
 - 영업활동 현금흐름
 - 투자활동 현금흐름
 - 재무활동 현금흐름
@@ -176,15 +177,18 @@ docker-compose up -d --build
 - FCF (잉여현금흐름) = 영업CF - 투자CF
 - EBITDA = 영업이익 + 감가상각비
 
-### 재무 지표
+### 재무 지표 (자동 계산)
 **가치평가 지표**:
-- PER, PBR, PSR (기존)
-- PCR (Price to Cashflow Ratio)
+- PER (주가수익비율)
+- PBR (주가순자산비율)
+- PSR (주가매출비율)
+- PCR (주가현금흐름비율)
 - EV/EBITDA
 - FCF Yield (%)
 
 **수익성 지표**:
-- ROE, ROA (기존)
+- ROE (자기자본이익률, %)
+- ROA (총자산이익률, %)
 - Operating Margin (영업이익률, %)
 - Net Margin (순이익률, %)
 
@@ -192,26 +196,53 @@ docker-compose up -d --build
 - QoQ (전분기 대비): Revenue, Operating Income, Net Income
 - YoY (전년 동기 대비): Revenue, Operating Income, Net Income
 
-### 분기별 데이터 지원
+### 분기별 데이터 수집
+**API 엔드포인트**:
+```bash
+# 분기별 개별 수집 (DART API 일일 한도 10,000건 대응)
+POST /batch/corp-fin?date=20241014&reportCode=Q1      # 1분기 (2,694 API 호출)
+POST /batch/corp-fin?date=20241014&reportCode=SEMI    # 반기 (2,694 API 호출)
+POST /batch/corp-fin?date=20241014&reportCode=Q3      # 3분기 (2,694 API 호출)
+POST /batch/corp-fin?date=20241014&reportCode=ANNUAL  # 연간 (2,694 API 호출)
+```
+
 **ReportCode Enum**:
 - `Q1` (11013): 1분기 보고서 (3월 31일)
 - `SEMI` (11012): 반기 보고서 (6월 30일)
 - `Q3` (11014): 3분기 보고서 (9월 30일)
 - `ANNUAL` (11011): 연간 보고서 (12월 31일)
 
-**기능**:
-- 기준일자 자동 계산: `reportCode.getBasDt(year)`
-- 이전/다음 분기 조회: `reportCode.getPrevious()`, `reportCode.getNext()`
-- 분기 순서 반환: `reportCode.getQuarter()` (1~4)
-- 타입 안정성: 컴파일 타임 오류 검출
+### 배치 실행 흐름
+1. **재무 데이터 수집** (`corpFinanceStep`)
+   - DART API에서 재무제표 조회
+   - Stock Code → DART Corp Code 변환
+   - 재무상태표, 손익계산서, 현금흐름표 파싱
+   - 주가 데이터 조회 (stock-price 서비스)
+   - 재무 지표 자동 계산 (PER, PBR, ROE, ROA 등)
+   - DB 저장 (TB_CORP_FINANCE, TB_CORP_FINANCE_INDICATOR)
 
-### 데이터 흐름
-1. Corp 서비스에서 전체 종목 코드 조회
-2. Stock Code → Corp Code 변환 (A 접두사 제거)
-3. DART API 호출 (100ms 딜레이, 4개 분기)
-4. 계정과목 파싱 (BS, IS, CF)
-5. FCF, EBITDA 자동 계산
-6. 재무 지표 계산 (16개 지표)
+2. **재무 데이터 검증** (`validateFinanceStep`)
+   - 대차대조표 등식 검증: 자산 = 부채 + 자본
+   - 필수 필드 검증: 자산, 부채, 자본
+   - 검증 상태 업데이트 (VERIFIED, ERROR_MISSING, ERROR_IDENTITY)
+
+### 데이터 품질 (2026-02-23 기준)
+**Q1 2024 재무 데이터**:
+- 총 수집: 2,495건
+- VERIFIED: 2,337건 (93.7%)
+- ERROR_MISSING: 157건 (6.3%)
+- ERROR_IDENTITY: 1건 (0.04%)
+
+**재무 지표 계산 성공률**:
+- PER: 64.2% (순이익 양수인 경우만)
+- PBR: 99.6%
+- ROE: 99.4%
+- ROA: 99.4%
+
+### 제약사항
+- **현금흐름표**: Q1, Q3 보고서는 DART API에서 제공하지 않음 (연간/반기만 제공)
+- **YoY 성장률**: 전년 동기 데이터가 없으면 계산 불가
+- **PER**: 순이익이 음수이거나 0인 경우 NULL
 
 ### API 엔드포인트
 - **재무제표**: `https://opendart.fss.or.kr/api/fnlttSinglAcnt.json`

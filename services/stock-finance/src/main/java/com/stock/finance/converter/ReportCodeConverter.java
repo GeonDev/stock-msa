@@ -8,7 +8,7 @@ import jakarta.persistence.Converter;
  * ReportCode Enum을 DB VARCHAR로 저장하기 위한 Converter
  * DB에는 "11011", "11012" 등의 코드 값으로 저장됨
  */
-@Converter
+@Converter(autoApply = true)
 public class ReportCodeConverter implements AttributeConverter<ReportCode, String> {
 
     @Override

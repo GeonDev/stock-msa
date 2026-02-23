@@ -5,7 +5,6 @@ import com.stock.finance.client.CorpClient;
 import com.stock.finance.client.DartClient;
 import com.stock.finance.dto.DartFinancialResponse;
 import com.stock.finance.entity.CorpFinanceIndicator;
-import com.stock.finance.repository.CorpFinanceRepository;
 import com.stock.finance.entity.CorpFinance;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,92 +27,35 @@ public class CorpFinanceService {
 
 
     /**
-     * 테스트용: 단일 기업 재무 정보 조회
-     * 
-     * @param stockCode 종목 코드 (A 접두사 포함)
-     * @param year 조회 연도
-     * @return 4개 분기 재무 데이터 리스트
+     * 재무 정보 조회 (DART API)
      */
-    public List<CorpFinance> testSingleCompanyFinance(String stockCode, String year) {
-        List<CorpFinance> result = new ArrayList<>();
-        
-        try {
-            // DB에서 DART 고유번호 조회
-            String corpCode = corpClient.getDartCorpCode(stockCode);
-            if (corpCode == null || corpCode.isEmpty()) {
-                log.warn("DART corp code not found in DB for stock: {}", stockCode);
-                return result;
-            }
-            
-            log.info("Found DART corp code: {} for stock: {}", corpCode, stockCode);
-            
-            // 4개 분기 데이터 조회
-            ReportCode[] reportCodes = {ReportCode.Q1, ReportCode.SEMI, ReportCode.Q3, ReportCode.ANNUAL};
-            
-            for (ReportCode reportCode : reportCodes) {
-                try {
-                    log.info("Fetching {} {} for {}", year, reportCode, stockCode);
-                    
-                    DartFinancialResponse response = dartClient.getFinancialStatement(
-                            corpCode, year, reportCode.getCode(), "CFS");
-                    
-                    if (response != null && response.getList() != null && !response.getList().isEmpty()) {
-                        CorpFinance finance = dartFinanceConverter.convertToCorpFinance(
-                                response.getList(), stockCode, year, reportCode);
-                        
-                        if (finance != null) {
-                            result.add(finance);
-                            log.info("Successfully fetched {} {} - {} accounts", 
-                                year, reportCode, response.getList().size());
-                        }
-                    } else {
-                        log.warn("No data for {} {}", year, reportCode);
-                    }
-                    
-                } catch (Exception e) {
-                    log.error("Failed to fetch {} {}: {}", year, reportCode, e.getMessage());
-                }
-            }
-            
-        } catch (Exception e) {
-            log.error("Failed to test single company finance: {}", stockCode, e);
-        }
-        
-        return result;
+    public List<CorpFinance> getCorpFinance(String bizYear, ReportCode reportCode) throws Exception {
+        return getCorpFinanceFromDart(bizYear, reportCode);
     }
 
     /**
-     * 재무 정보 조회 (DART API)
-     */
-    public List<CorpFinance> getCorpFinance(String bizYear) throws Exception {
-        log.info("Fetching financial data from DART API for year: {}", bizYear);
-        List<CorpFinance> dartData = getCorpFinanceFromDart(bizYear);
-        log.info("Successfully fetched {} records from DART API", dartData.size());
-        return dartData;
-    }
-    
-    /**
      * DART API로 재무 정보 조회
+     * @param reportCode null이면 4개 분기 전체 수집, 지정 시 해당 분기만 수집
      */
-    private List<CorpFinance> getCorpFinanceFromDart(String bizYear) {
+    private List<CorpFinance> getCorpFinanceFromDart(String bizYear, ReportCode reportCode) {
         List<CorpFinance> result = new ArrayList<>();
-        
-        // 1. 전체 상장사 목록 조회 (stock-corp 서비스에서)
+
         List<String> stockCodes = corpClient.getAllStockCodes();
         if (stockCodes == null || stockCodes.isEmpty()) {
             log.warn("No stock codes found from corp service");
             return result;
         }
-        
-        log.info("Fetching financial data for {} companies from DART", stockCodes.size());
-        
-        // 2. 보고서 코드 목록 (4개 분기)
-        ReportCode[] reportCodes = {ReportCode.Q1, ReportCode.SEMI, ReportCode.Q3, ReportCode.ANNUAL};
-        
-        // 3. 각 회사별 재무제표 조회
+
+        ReportCode[] reportCodes = (reportCode != null)
+                ? new ReportCode[]{reportCode}
+                : new ReportCode[]{ReportCode.Q1, ReportCode.SEMI, ReportCode.Q3, ReportCode.ANNUAL};
+
+        log.info("Fetching {} financial data for {} companies from DART",
+                reportCode != null ? reportCode : "ALL quarters", stockCodes.size());
+
         int successCount = 0;
         int failCount = 0;
-        
+
         for (String stockCode : stockCodes) {
             try {
                 // DB에서 DART 고유번호 조회
@@ -122,39 +64,33 @@ public class CorpFinanceService {
                     failCount++;
                     continue;
                 }
-                
-                // 각 분기별 데이터 수집
-                for (ReportCode reportCode : reportCodes) {
+
+                for (ReportCode rc : reportCodes) {
                     try {
                         DartFinancialResponse response = dartClient.getFinancialStatement(
-                                corpCode, bizYear, reportCode.getCode(), "CFS");
-                        
+                                corpCode, bizYear, rc.getCode(), "CFS");
+
                         if (response != null && response.getList() != null && !response.getList().isEmpty()) {
                             CorpFinance finance = dartFinanceConverter.convertToCorpFinance(
-                                    response.getList(), stockCode, bizYear, reportCode);
-                            
+                                    response.getList(), stockCode, bizYear, rc);
                             if (finance != null) {
                                 result.add(finance);
                                 successCount++;
                             }
                         }
-                        
-                        // API 호출 제한 고려 (100ms 딜레이)
-                        Thread.sleep(100);
-                        
+
                     } catch (Exception e) {
-                        log.warn("Failed to fetch DART data: {} - {} - {}", stockCode, bizYear, reportCode);
+                        log.warn("Failed to fetch DART data: {} - {} - {}", stockCode, bizYear, rc);
                     }
                 }
-                
+
             } catch (Exception e) {
                 log.error("Failed to fetch DART data for stock: {}", stockCode, e);
                 failCount++;
             }
         }
-        
+
         log.info("DART API fetch completed: {} success, {} failed", successCount, failCount);
-        
         return result;
     }
     
@@ -243,14 +179,5 @@ public class CorpFinanceService {
         builder.yoyNetIncomeGrowth(yoyGrowth.get("yoyNetIncomeGrowth"));
 
         return builder.build();
-    }
-
-    private BigDecimal calculateGrowthRate(BigDecimal currentValue, BigDecimal previousValue) {
-        if (currentValue == null || previousValue == null || previousValue.compareTo(BigDecimal.ZERO) == 0) {
-            return null;
-        }
-        return currentValue.subtract(previousValue)
-                .divide(previousValue.abs(), 8, java.math.RoundingMode.HALF_UP)
-                .multiply(BigDecimal.valueOf(100));
     }
 }
