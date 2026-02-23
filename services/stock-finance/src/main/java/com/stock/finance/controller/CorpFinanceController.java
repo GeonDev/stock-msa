@@ -41,30 +41,34 @@ public class CorpFinanceController {
 
 
     @PostMapping("/corp-fin")
-    @Operation(summary = "기업 재무 정보 수집", description = "기업의 재무제표(매출, 영업이익 등) 데이터를 수집합니다.")
+    @Operation(summary = "기업 재무 정보 수집", description = "기업의 재무제표 데이터를 수집합니다. reportCode 미입력 시 4개 분기 전체 수집.")
     public ResponseEntity<String> corpFinanceApi(
-            @Parameter(description = "기준 일자 (yyyyMMdd, 미입력 시 전일)") 
+            @Parameter(description = "기준 일자 (yyyyMMdd, 미입력 시 전일)")
             @Pattern(regexp = "^\\d{8}$", message = "날짜 형식은 yyyyMMdd 형식이어야 합니다")
-            @RequestParam(value = "date", required = false) String date) throws Exception {
+            @RequestParam(value = "date", required = false) String date,
+            @Parameter(description = "분기 코드 (Q1, SEMI, Q3, ANNUAL), 미입력 시 전체 수집")
+            @RequestParam(value = "reportCode", required = false) String reportCode) throws Exception {
 
         if (!StringUtils.hasText(date)) {
-            //금융위원회 데이터는 당일 데이터 조회 불가
             date = toLocalDateString(LocalDate.now().minusDays(1));
         }
 
-        //공휴일 제외 값, 주말 제외
         if (dayOffService.checkIsDayOff(toStringLocalDate(date))) {
             return ResponseEntity.status(202).body("SKIPPED: " + date + " is a holiday or weekend");
         }
 
-        JobParameters jobParameters = new JobParametersBuilder()
+        JobParametersBuilder builder = new JobParametersBuilder()
                 .addString("date", date)
-                .addLong("time", System.currentTimeMillis())
-                .toJobParameters();
+                .addLong("time", System.currentTimeMillis());
 
-        jobLauncher.run(jobRegistry.getJob("corpFinanceJob"), jobParameters);
+        if (StringUtils.hasText(reportCode)) {
+            builder.addString("reportCode", reportCode.toUpperCase());
+        }
 
-        return ResponseEntity.ok("BATCH STARTED: Corp finance collection for " + date);
+        jobLauncher.run(jobRegistry.getJob("corpFinanceJob"), builder.toJobParameters());
+
+        String target = StringUtils.hasText(reportCode) ? reportCode.toUpperCase() : "ALL";
+        return ResponseEntity.ok("BATCH STARTED: Corp finance [" + target + "] for " + date);
     }
 
 
@@ -96,38 +100,5 @@ public class CorpFinanceController {
         }
 
         return ResponseEntity.ok("RECOVERY STARTED for " + startYear + " - " + endYear);
-    }
-
-    @PostMapping("/corp-fin/test")
-    @Operation(summary = "[테스트] 단일 기업 재무 정보 조회", 
-               description = "특정 기업 1개의 재무제표를 DART API로 조회합니다. 로직 검증 및 디버깅용.")
-    public ResponseEntity<?> testSingleCorpFinance(
-            @Parameter(description = "종목 코드 (6자리, A 접두사 포함)", example = "A005930") 
-            @Pattern(regexp = "^A\\d{6}$", message = "종목 코드는 A + 6자리 숫자 형식이어야 합니다")
-            @RequestParam String stockCode,
-            @Parameter(description = "조회 연도 (yyyy)", example = "2024") 
-            @Min(value = 2000, message = "연도는 2000년 이상이어야 합니다")
-            @Max(value = 2100, message = "연도는 2100년 이하여야 합니다")
-            @RequestParam int year) {
-        
-        try {
-            log.info("Testing DART API for single company: {} (year: {})", stockCode, year);
-            
-            var result = corpFinanceService.testSingleCompanyFinance(stockCode, String.valueOf(year));
-            
-            if (result.isEmpty()) {
-                return ResponseEntity.ok()
-                    .body(String.format("No financial data found for %s (%d). " +
-                        "Possible reasons: 1) Not yet published, 2) Invalid corp code, 3) API limit exceeded", 
-                        stockCode, year));
-            }
-            
-            return ResponseEntity.ok(result);
-            
-        } catch (Exception e) {
-            log.error("Failed to test single company finance: {} ({})", stockCode, year, e);
-            return ResponseEntity.internalServerError()
-                .body("Error: " + e.getMessage());
-        }
     }
 }

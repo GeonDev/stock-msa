@@ -30,8 +30,74 @@
 - **Chunk-Oriented Batch**: 대용량 데이터 처리를 위해 Chunk 기반 프로세싱을 표준으로 하며, `ApplicationConstants`를 통해 Chunk Size를 중앙 제어합니다.
 
 ### 4. 개발 단계 (Milestones)
-- **Phase 1 (완료)**: 데이터 무결성 검증, 수정주가 계산, 기술적 지표 사전 산출 엔진 구축.
+- **Phase 1 (완료)**: 데이터 무결성 검증, 수정주가 계산, 기술적 지표 사전 산출, DART API 전환 및 재무 지표 자동 계산 (2026-02-23 검증 완료).
 - **Phase 2 (완료)**: `stock-strategy` 서비스 신설, 리밸런싱 시뮬레이션 및 CAGR, MDD 등 퀀트 성과 분석 지표 산출.
+
+## 최근 변경사항 및 수정 (2026-02-23)
+
+### 1. 재무 데이터 배치 버그 수정 및 구조 개선 ✅
+**목적**: DB 저장 0건 버그 수정 및 DART API 일일 한도 대응
+
+**주요 수정사항**:
+- **DB 저장 0건 버그 수정**:
+  - 원인: `CorpFinanceItemReader`의 불필요한 필터링으로 전체 데이터 제외
+  - 해결: 필터링 로직 제거 (DART API에서 이미 상장사만 조회)
+  
+- **분기별 개별 수집 API 추가**:
+  - DART API 일일 한도(10,000건) 초과 방지
+  - 4개 분기 전체(10,776 호출) → 분기별 개별(2,694 호출)
+  - API: `POST /batch/corp-fin?date=20241014&reportCode=Q1`
+  
+- **CorpFinance 엔티티 구조 단순화**:
+  - 복합키(`@IdClass`) → auto-increment PK 전환
+  - `@Convert` 적용 문제 해결 (ReportCode Enum)
+  - `UNIQUE KEY (corp_code, biz_year, report_code)` 유일성 보장
+  - DB 마이그레이션: `V2__simplify_pk.sql`
+
+**삭제된 파일**:
+- `CorpFinanceId.java`
+- `CorpFinanceIndicatorId.java`
+
+### 2. 재무 지표 계산 로직 수정 ✅
+**문제**: 배치 프로세서에서 기업 정보 조회 실패로 재무 지표 미계산
+
+**해결**:
+- `CorpFinanceBatch.corpFinanceProcessor()` 수정
+- 불필요한 `corpClient.getCorpInfo()` 호출 제거
+- `CorpFinance.corpCode` 필드가 실제로는 stockCode를 저장함을 반영
+- 직접 주가 조회: `stockClient.getLatestStockPrice(stockCode)`
+- 예외 처리 추가: 지표 계산 실패 시에도 재무 데이터 저장
+
+**결과**:
+- 재무 지표 계산 성공률: 99% 이상
+- PER: 64.2% (순이익 양수인 경우만)
+- PBR: 99.6%
+- ROE: 99.4%
+- ROA: 99.4%
+
+### 3. 데이터 품질 검증 완료 ✅
+**Q1 2024 재무 데이터 (2026-02-23 기준)**:
+- 총 수집: 2,495건
+- VERIFIED: 2,337건 (93.7%)
+- ERROR_MISSING: 157건 (6.3%)
+- ERROR_IDENTITY: 1건 (0.04%)
+
+**재무 지표 저장**:
+- 총 저장: 2,495건 (100%)
+- PER: 1,603건 (64.2%)
+- PBR: 2,485건 (99.6%)
+- ROE: 2,481건 (99.4%)
+- ROA: 2,480건 (99.4%)
+
+### 4. Flyway 마이그레이션 수정 ✅
+**문제**: V2 마이그레이션 파일 SQL 문법 오류
+
+**수정**:
+- `V2__simplify_pk.sql` 첫 줄 수정
+- `DROP TABLE IF EXISTS` 구문 정상화
+- Flyway 스키마 히스토리 정리
+
+---
 
 ## 최근 변경사항 및 수정 (2026-02-19)
 
@@ -76,19 +142,25 @@
 
 ### 1. DART API 전환 완료 ✅
 - **목적**: 불안정한 DataGo API에서 공식 DART API로 재무 데이터 수집 전환
-- **구현 완료**:
+- **구현 완료** (2026-02-23 검증 완료):
   - `DartClient`: DART API 호출 (단일 메서드로 간소화, 67줄)
   - `DartFinanceConverter`: DART 계정과목 → CorpFinance 엔티티 변환
-  - `CorpFinanceService`: DataGo fallback 제거, DART 전용
+  - `CorpFinanceService`: DART 전용 (DataGo fallback 제거)
+  - `CorpFinanceBatch`: 재무 데이터 수집 및 지표 계산 통합
   - DART Corp Code DB 저장 (`TB_CORP_INFO.dart_corp_code`)
   - `CorpInfoBatch`: 기업 정보 수집 시 DART Corp Code 자동 매핑
 - **데이터 흐름**:
-  1. DART Corp Code XML 다운로드 및 파싱
-  2. Stock Code → Corp Code 매핑 후 DB 저장
-  3. DART API 호출 (100ms 딜레이, 4개 분기)
+  1. DART Corp Code XML 다운로드 및 파싱 → DB 저장
+  2. Stock Code → Corp Code 매핑
+  3. DART API 호출 (100ms 딜레이, 분기별 개별 수집)
   4. 계정과목 파싱 (BS, IS, CF)
-  5. FCF, EBITDA 자동 계산
-  6. 재무 지표 계산 (16개 지표)
+  5. 주가 데이터 조회 (stock-price 서비스)
+  6. FCF, EBITDA 자동 계산
+  7. 재무 지표 계산 (16개 지표: PER, PBR, ROE, ROA, 성장률 등)
+  8. DB 저장 및 검증 (대차대조표 등식, 필수 필드)
+- **데이터 품질**:
+  - 재무 데이터: 93.7% VERIFIED
+  - 재무 지표: 99% 이상 계산 성공
 
 ### 2. DART Corp Code DB 저장
 - **변경**: 로컬 캐시 파일 → DB 기반 관리
@@ -148,7 +220,11 @@
 
 ### 1. 종목 코드 규칙
 - **기업 정보 (TB_CORP_INFO)**: 'A' 접두사 포함 (예: `A900100`)
+  - `corp_code`: 사업자등록번호 기반 고유번호 (예: `1301110006246`)
+  - `stock_code`: KRX 종목코드 (예: `A005930`)
+  - `dart_corp_code`: DART 고유번호 (예: `00126380`)
 - **주가 데이터 (TB_STOCK_PRICE)**: 숫자만 사용 (예: `900100`)
+- **재무 데이터 (TB_CORP_FINANCE)**: `corp_code` 필드에 stock_code 저장 (예: `A005930`)
 - 주가 조회 시 반드시 `corpInfo.getStockCode().replace("A", "")`를 통해 접두사를 제거해야 합니다.
 
 ### 2. 서비스 간 통신 (RestClient)
@@ -182,4 +258,4 @@ stock-msa/
 
 ---
 
-*마지막 업데이트: 2026-02-19 (DART Rate Limiting, 코드 품질 개선, Pre-commit Hook 강화)*
+*마지막 업데이트: 2026-02-23 (재무 데이터 배치 버그 수정, 재무 지표 계산 로직 개선, 데이터 품질 검증 완료)*

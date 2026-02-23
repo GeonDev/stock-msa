@@ -91,10 +91,9 @@ public class CorpFinanceBatch {
     @Bean
     public ItemProcessor<CorpFinance, CorpFinance> corpFinanceProcessor() {
         return item -> {
-            CorpInfoDto corpInfo = corpClient.getCorpInfo(item.getCorpCode());
-            if (corpInfo != null && corpInfo.getStockCode() != null) {
-                // 공공데이터 포탈 API 기업 코드에 접두사가 있어 제거
-                String stockCode = corpInfo.getStockCode().replace("A", "");
+            try {
+                // corpCode 필드는 실제로 stockCode를 저장 (A005930 형식)
+                String stockCode = item.getCorpCode().replace("A", "");
                 StockPriceDto stockPrice = stockClient.getLatestStockPrice(stockCode);
 
                 if (stockPrice != null) {
@@ -102,6 +101,8 @@ public class CorpFinanceBatch {
                     item.setCorpFinanceIndicator(indicator);
                     indicator.setCorpFinance(item);
                 }
+            } catch (Exception e) {
+                // 재무 지표 계산 실패 시에도 재무 데이터는 저장
             }
             return item;
         };

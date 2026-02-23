@@ -52,8 +52,8 @@ spring:
   # Datasource
   datasource:
     url: jdbc:mysql://localhost:3308/stock_price?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-    username: price_user
-    password: price_pass
+    username: stock_user
+    password: stock_pass
     batch:
       url: jdbc:mysql://localhost:3309/stock_batch?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
       username: batch_user
@@ -72,8 +72,8 @@ spring:
   # Datasource
   datasource:
     url: ${STOCK_PRICE_DB_URL:jdbc:mysql://localhost:3308/stock_price?serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
-    username: ${PRICE_DB_USER:price_user}
-    password: ${PRICE_DB_PASSWORD:price_pass}
+    username: ${PRICE_DB_USER:stock_user}
+    password: ${PRICE_DB_PASSWORD:stock_pass}
     batch:
       url: ${STOCK_BATCH_DB_URL:jdbc:mysql://localhost:3309/stock_batch?serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
       username: ${BATCH_DB_USER:batch_user}
