@@ -273,6 +273,21 @@ services:
       timeout: 5s
       retries: 5
 
+  # ==========================================
+  # Frontend Application
+  # ==========================================
+  stock-dashboard:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: stock-dashboard
+    ports:
+      - "3000:80"
+    networks:
+      - stock-network
+    depends_on:
+      - stock-gateway
+
 volumes:
   batch-db-volume:
   corp-db-volume:
