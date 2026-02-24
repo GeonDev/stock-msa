@@ -62,4 +62,20 @@ public class BacktestRequest {
     @Valid
     @Schema(description = "가치 투자 전략 설정 (VALUE 전략 사용 시)")
     private ValueStrategyConfig valueStrategyConfig;
+
+    @Schema(description = "슬리피지 모델 타입", example = "FIXED", defaultValue = "NONE")
+    private com.stock.strategy.enums.SlippageType slippageType;
+
+    @DecimalMin(value = "0.0", inclusive = true, message = "고정 슬리피지 비율은 0 이상이어야 합니다")
+    @Schema(description = "고정 슬리피지 비율 (예: 0.002 = 0.2%)", example = "0.002")
+    private BigDecimal fixedSlippageRate;
+
+    @DecimalMin(value = "0.01", inclusive = true, message = "단일 종목 최대 비중은 0.01 이상이어야 합니다")
+    @DecimalMax(value = "1.0", inclusive = true, message = "단일 종목 최대 비중은 1.0 이하여야 합니다")
+    @Schema(description = "단일 종목 최대 비중 제한 (예: 0.2 = 20%)", example = "0.2")
+    private BigDecimal maxWeightPerStock;
+
+    @DecimalMin(value = "0.0", inclusive = true, message = "최대 거래량 비율은 0 이상이어야 합니다")
+    @Schema(description = "최대 거래량 비율 (유동성 제약) (예: 0.05 = 5%)", example = "0.05")
+    private BigDecimal maxVolumeRatio;
 }

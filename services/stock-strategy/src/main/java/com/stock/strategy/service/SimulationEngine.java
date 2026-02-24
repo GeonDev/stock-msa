@@ -20,6 +20,11 @@ import com.stock.strategy.repository.TradeHistoryRepository;
 import com.stock.strategy.strategy.Strategy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.stock.strategy.service.slippage.SlippageModel;
+import com.stock.strategy.service.slippage.NoSlippageModel;
+import com.stock.strategy.service.slippage.FixedSlippageModel;
+import com.stock.strategy.service.slippage.VolumeBasedSlippageModel;
+import com.stock.strategy.enums.SlippageType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,6 +66,17 @@ public class SimulationEngine {
         // 전략 가져오기
         Strategy strategy = strategyFactory.getStrategy(request.getStrategyType());
 
+        // 슬리피지 모델 초기화
+        SlippageModel slippageModel = new NoSlippageModel();
+        if (request.getSlippageType() == SlippageType.FIXED && request.getFixedSlippageRate() != null) {
+            slippageModel = new FixedSlippageModel(request.getFixedSlippageRate());
+        } else if (request.getSlippageType() == SlippageType.VOLUME) {
+            slippageModel = new VolumeBasedSlippageModel(request.getFixedSlippageRate(), new BigDecimal("0.005")); // 기본값
+        }
+
+        // 제약 조건
+        BigDecimal maxWeightPerStock = request.getMaxWeightPerStock() != null ? request.getMaxWeightPerStock() : BigDecimal.ONE;
+
         // 시뮬레이션 실행
         LocalDate currentDate = request.getStartDate();
         while (!currentDate.isAfter(request.getEndDate())) {
@@ -86,7 +102,7 @@ public class SimulationEngine {
                 }
                 
                 // 매매 실행
-                executeOrders(simulationId, currentDate, orders, portfolio, request.getTradingFeeRate(), request.getTaxRate());
+                executeOrders(simulationId, currentDate, orders, portfolio, request.getTradingFeeRate(), request.getTaxRate(), slippageModel, maxWeightPerStock);
             }
 
             // 포트폴리오 평가 (현재가 기준)
@@ -124,9 +140,36 @@ public class SimulationEngine {
     }
 
     private void executeOrders(Long simulationId, LocalDate date, List<TradeOrder> orders, 
-                               Portfolio portfolio, BigDecimal feeRate, BigDecimal taxRate) {
+                               Portfolio portfolio, BigDecimal feeRate, BigDecimal taxRate,
+                               SlippageModel slippageModel, BigDecimal maxWeightPerStock) {
+        BigDecimal totalValueBeforeTrade = portfolio.getTotalValue();
+        BigDecimal maxInvestmentPerStock = totalValueBeforeTrade.multiply(maxWeightPerStock);
+
         for (TradeOrder order : orders) {
-            BigDecimal totalAmount = order.getPrice().multiply(BigDecimal.valueOf(order.getQuantity()));
+            BigDecimal execPrice = slippageModel.calculateExecutionPrice(order.getPrice(), order.getQuantity(), order.getOrderType());
+            int quantity = order.getQuantity();
+
+            if (order.getOrderType() == com.stock.strategy.enums.OrderType.BUY) {
+                // 단일 종목 최대 비중 제한 검사
+                BigDecimal currentHoldingValue = BigDecimal.ZERO;
+                if (portfolio.getHoldings().containsKey(order.getStockCode())) {
+                    currentHoldingValue = portfolio.getHoldings().get(order.getStockCode()).getMarketValue();
+                }
+
+                BigDecimal plannedValue = execPrice.multiply(BigDecimal.valueOf(quantity));
+                if (currentHoldingValue.add(plannedValue).compareTo(maxInvestmentPerStock) > 0) {
+                    BigDecimal allowedAdditionalValue = maxInvestmentPerStock.subtract(currentHoldingValue);
+                    if (allowedAdditionalValue.compareTo(BigDecimal.ZERO) > 0) {
+                        quantity = allowedAdditionalValue.divide(execPrice, 0, RoundingMode.DOWN).intValue();
+                    } else {
+                        quantity = 0;
+                    }
+                }
+            }
+
+            if (quantity <= 0) continue;
+
+            BigDecimal totalAmount = execPrice.multiply(BigDecimal.valueOf(quantity));
             BigDecimal fee = totalAmount.multiply(feeRate).setScale(2, RoundingMode.HALF_UP);
             BigDecimal tax = BigDecimal.ZERO;
 
@@ -135,14 +178,26 @@ public class SimulationEngine {
                     BigDecimal totalCost = totalAmount.add(fee);
                     if (portfolio.getCashBalance().compareTo(totalCost) >= 0) {
                         portfolio.setCashBalance(portfolio.getCashBalance().subtract(totalCost));
-                        portfolio.addHolding(order.getStockCode(), order.getQuantity(), order.getPrice());
+                        portfolio.addHolding(order.getStockCode(), quantity, execPrice);
+                    } else {
+                        // 잔고 부족 시 살 수 있는 만큼 매수 (1주 단위)
+                        quantity = portfolio.getCashBalance().divide(execPrice.multiply(BigDecimal.ONE.add(feeRate)), 0, RoundingMode.DOWN).intValue();
+                        if (quantity > 0) {
+                            totalAmount = execPrice.multiply(BigDecimal.valueOf(quantity));
+                            fee = totalAmount.multiply(feeRate).setScale(2, RoundingMode.HALF_UP);
+                            totalCost = totalAmount.add(fee);
+                            portfolio.setCashBalance(portfolio.getCashBalance().subtract(totalCost));
+                            portfolio.addHolding(order.getStockCode(), quantity, execPrice);
+                        } else {
+                            continue; // 못 삼
+                        }
                     }
                 }
                 case SELL -> {
                     tax = totalAmount.multiply(taxRate).setScale(2, RoundingMode.HALF_UP);
                     BigDecimal netAmount = totalAmount.subtract(fee).subtract(tax);
                     portfolio.setCashBalance(portfolio.getCashBalance().add(netAmount));
-                    portfolio.removeHolding(order.getStockCode(), order.getQuantity());
+                    portfolio.removeHolding(order.getStockCode(), quantity);
                 }
             }
 
@@ -152,8 +207,8 @@ public class SimulationEngine {
                     .tradeDate(date)
                     .stockCode(order.getStockCode())
                     .orderType(order.getOrderType().name())
-                    .quantity(order.getQuantity())
-                    .price(order.getPrice())
+                    .quantity(quantity)
+                    .price(execPrice)
                     .fee(fee)
                     .tax(tax)
                     .build();
