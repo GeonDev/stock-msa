@@ -28,6 +28,24 @@ export const strategyService = {
     const { data } = await api.post('/strategy/backtest/optimize', request);
     return data;
   },
+  getDashboardSummary: async () => {
+    const { data } = await api.get('/strategy/backtest/summary');
+    return data;
+  },
+};
+
+export const corpService = {
+  getUniverseCount: async () => {
+    const { data } = await api.get('/corp/universe/count');
+    return data;
+  },
+};
+
+export const financeService = {
+  getVerificationRate: async () => {
+    const { data } = await api.get('/finance/quarterly/stats/verification');
+    return data;
+  },
 };
 
 export const systemService = {

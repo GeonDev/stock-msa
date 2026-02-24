@@ -20,6 +20,7 @@ import java.util.List;
 
 import com.stock.strategy.dto.CompareStrategiesResponse;
 import com.stock.strategy.dto.GridSearchRequest;
+import com.stock.common.dto.DashboardSummaryDto;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
@@ -56,6 +57,12 @@ public class BacktestController {
     public ResponseEntity<BacktestResponse> optimizeStrategies(@Valid @RequestBody GridSearchRequest request) {
         BacktestResponse response = backtestService.startGridSearch(request);
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "대시보드 요약 정보 조회", description = "메인 대시보드에 표시할 요약 정보를 조회합니다")
+    @GetMapping("/summary")
+    public ResponseEntity<DashboardSummaryDto> getDashboardSummary() {
+        return ResponseEntity.ok(backtestService.getDashboardSummary());
     }
 
     @Operation(summary = "백테스팅 결과 조회", description = "완료된 백테스팅의 성과 지표를 조회합니다")

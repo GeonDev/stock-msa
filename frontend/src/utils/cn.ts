@@ -12,6 +12,7 @@ export function formatCurrency(value: number) {
   }).format(value);
 }
 
-export function formatPercent(value: number) {
+export function formatPercent(value: number | undefined | null) {
+  if (value === undefined || value === null) return '0.00%';
   return `${value > 0 ? '+' : ''}${value.toFixed(2)}%`;
 }
