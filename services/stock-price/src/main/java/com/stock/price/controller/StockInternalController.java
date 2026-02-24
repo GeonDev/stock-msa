@@ -22,6 +22,13 @@ public class StockInternalController {
         return stockService.getPriceByDate(stockCode, date);
     }
 
+    @GetMapping("/prices/{stockCode}")
+    public java.util.List<StockPriceDto> getPriceHistory(
+            @PathVariable String stockCode, 
+            @RequestParam(defaultValue = "365") int days) {
+        return stockService.getPriceHistory(stockCode, days);
+    }
+
     @GetMapping("/prices/batch")
     public java.util.List<StockPriceDto> getPricesByDateBatch(@RequestParam java.util.List<String> stockCodes, @RequestParam String date) {
         return stockService.getPricesByDateBatch(stockCodes, date);

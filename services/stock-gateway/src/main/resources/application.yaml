@@ -21,19 +21,19 @@ spring:
             allowedHeaders: "*"
       routes:
         - id: stock-corp
-          uri: lb://stock-corp
+          uri: lb://STOCK-CORP
           predicates:
             - Path=/api/v1/corp/**
         - id: stock-finance
-          uri: lb://stock-finance
+          uri: lb://STOCK-FINANCE
           predicates:
             - Path=/api/v1/finance/**
         - id: stock-price
-          uri: lb://stock-price
+          uri: lb://STOCK-PRICE
           predicates:
             - Path=/api/v1/stock/**
         - id: stock-strategy
-          uri: lb://stock-strategy
+          uri: lb://STOCK-STRATEGY
           predicates:
             - Path=/api/v1/strategy/**
 

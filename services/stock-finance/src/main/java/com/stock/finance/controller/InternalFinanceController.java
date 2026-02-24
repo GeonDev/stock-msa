@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 @Slf4j
 @RestController
@@ -41,5 +43,22 @@ public class InternalFinanceController {
         return indicatorRepository.findTopByCorpCodeOrderByBasDtDesc(corpCode)
                 .map(mapper::toDto)
                 .orElse(null);
+    }
+
+    @GetMapping("/summary/{corpCode}")
+    @Operation(summary = "종목 재무 요약 조회", description = "특정 종목의 주요 재무 지표 요약을 조회합니다.")
+    public Map<String, Object> getFinanceSummary(@PathVariable String corpCode) {
+        return indicatorRepository.findTopByCorpCodeOrderByBasDtDesc(corpCode)
+                .map(i -> {
+                    Map<String, Object> summary = new HashMap<>();
+                    summary.put("per", i.getPer());
+                    summary.put("pbr", i.getPbr());
+                    summary.put("roe", i.getRoe());
+                    summary.put("roa", i.getRoa());
+                    summary.put("marketCap", null); // Market cap is typically in price service or corp service
+                    summary.put("dividendYield", null);
+                    return summary;
+                })
+                .orElse(new HashMap<>());
     }
 }

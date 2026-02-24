@@ -96,4 +96,14 @@ public class CorpInfoService {
     public long getUniverseCount() {
         return corpInfoRepository.count();
     }
+
+    public List<CorpInfoDto> searchCorps(String query) {
+        return corpInfoMapper.toDtoList(corpInfoRepository.findTop10ByCorpNameContainingOrStockCodeContaining(query, query));
+    }
+
+    public CorpInfoDto getCorpDetail(String stockCode) {
+        return corpInfoRepository.findByStockCode(stockCode)
+                .map(corpInfoMapper::toDto)
+                .orElse(null);
+    }
 }

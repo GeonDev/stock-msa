@@ -13,7 +13,7 @@ export const useBacktestResult = (simulationId: number | null) => {
     queryKey: ['backtestResult', simulationId],
     queryFn: () => strategyService.getBacktestResult(simulationId!),
     enabled: !!simulationId,
-    refetchInterval: (query) => {
+    refetchInterval: (query: any) => {
       // Poll if result is not found yet (assuming backend creates it after completion)
       return query.state.data ? false : 3000;
     },
