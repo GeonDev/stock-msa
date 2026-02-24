@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+@theme {
+  --color-robin-bg: #000000;
+  --color-robin-card: #111111;
+  --color-robin-green: #00C805;
+  --color-robin-green-hover: #00E605;
+  --color-robin-red: #FF5000;
+  --color-robin-red-hover: #FF6611;
+  --color-robin-text: #FFFFFF;
+  --color-robin-text-muted: #8E8E93;
+  --color-robin-border: #2C2C2E;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-robin-bg);
+    color: var(--color-robin-text);
+  }
+}
