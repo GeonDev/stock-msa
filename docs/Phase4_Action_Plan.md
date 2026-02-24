@@ -22,7 +22,15 @@
 - **라우팅**: React Router v6
 - **인프라**: Nginx (Alpine 기반 Docker 컨테이너)
 
-### 2.2 시스템 연동 구조
+### 2.2 UI/UX 디자인 원칙 (Robinhood-Style)
+본 대시보드는 로빈후드(Robinhood) 앱과 유사한 직관적이고 미니멀한 모던 금융 UI를 지향합니다.
+- **다크 모드 기본 (Dark Mode First)**: 깊은 블랙 배경(`bg-black` 또는 `bg-zinc-950`)을 사용하여 데이터 집중도를 높이고 눈의 피로를 최소화.
+- **색상 대비 (High Contrast)**: 상승장(수익)은 네온 그린(`text-green-400`), 하락장(손실)은 네온 레드(`text-red-500`)를 강렬하게 사용하여 즉각적인 상태 인지.
+- **미니멀리즘 (Minimalism)**: 불필요한 테두리(Borders), 섀도우, 복잡한 그리드 라인을 제거하고 여백(Margin/Padding)을 통해 요소를 구분.
+- **타이포그래피 (Typography)**: 총 자산, 누적 수익률 등 핵심 데이터는 매우 크고 굵은 폰트(Hero Typography)로 최상단에 배치하여 임팩트 부여.
+- **인터랙션 (Smooth Interaction)**: 차트 호버 시 부드러운 툴팁 전환, 탭 이동 시 애니메이션(Framer Motion 연계 고려) 적용.
+
+### 2.3 시스템 연동 구조
 - 프론트엔드 컨테이너(`stock-dashboard`: 3000 포트)는 오직 정적 파일 서빙만 담당합니다.
 - 클라이언트 브라우저는 API 요청 시 API Gateway(`http://localhost:8080/api/v1/...`)를 거쳐 백엔드 마이크로서비스(`stock-corp`, `stock-price`, `stock-finance`, `stock-strategy`)와 통신합니다.
 
@@ -33,17 +41,18 @@
 ### 3.1 대시보드 홈 (Dashboard Home)
 - **목표**: 시스템 전체의 요약 정보 제공
 - **화면 구성**:
-  - KOSPI/KOSDAQ 주요 지수 미니 차트 (Lightweight Charts)
-  - 최근 수집된 데이터(주가, 재무) 건수 및 검증 통과율(VERIFIED %) 요약 카드
-  - 최근 실행된 백테스트 결과 Top 3 (CAGR 기준) 요약 테이블
+  - **Hero Section**: 초대형 폰트로 현재 전체 백테스트 평균 수익률 또는 코스피 지수 렌더링 (그린/레드 컬러 테마 즉각 반영).
+  - KOSPI/KOSDAQ 주요 지수 미니 스파크라인(Sparkline) 차트 (그리드 라인 없는 심플한 라인).
+  - 최근 수집된 데이터(주가, 재무) 건수 및 검증 통과율(VERIFIED %) 요약 카드 (미니멀 카드 레이아웃).
+  - 최근 실행된 백테스트 결과 Top 3 요약 테이블.
 
 ### 3.2 단일 백테스팅 시뮬레이터 (Backtesting Simulator)
 - **목표**: 사용자가 전략 파라미터를 입력하고 실행 결과를 시각적으로 분석
 - **화면 구성**:
-  - **입력 폼 (Left Panel)**: 전략 선택(Value, Momentum, MultiFactor 등), 기간, 자본금, 슬리피지/제약조건, 세부 파라미터(Z-Score 가중치 등) 입력
-  - **결과 요약 (Top Panel)**: CAGR, MDD, Sharpe Ratio, 총 수익금, 승률 등 핵심 지표 (KPI) 카드
-  - **자산 변동 차트 (Main Chart)**: 벤치마크(KOSPI) 대비 포트폴리오 누적 수익률 라인 차트 (Recharts)
-  - **포트폴리오 스냅샷 (Bottom Panel)**: 특정 리밸런싱 일자의 보유 종목 및 비중 파이 차트, 거래 내역(Trade History) 데이터 그리드
+  - **결과 요약 (Top Panel)**: 로빈후드 스타일의 거대한 총 자산(Final Value) 및 수익률(CAGR) 타이포그래피.
+  - **자산 변동 차트 (Main Chart)**: 배경 그리드가 생략되고, 오직 포트폴리오의 자산 궤적만 부드러운 라인(또는 Area)으로 그려지는 차트. 호버 시 십자선(Crosshair)과 툴팁 노출.
+  - **입력 폼 (Side/Bottom Panel)**: 슬라이더(Slider)나 깔끔한 토글(Toggle) 스위치 형태의 shadcn/ui 컴포넌트를 적극 활용하여 직관적인 파라미터(자본금, 제약조건 등) 조작.
+  - **포트폴리오 스냅샷**: 특정 일자의 보유 종목 및 비중 파이 차트, 거래 내역 데이터 그리드 (테두리 없는 깔끔한 테이블).
 
 ### 3.3 전략 비교 및 최적화 분석 (Strategy Comparison & Grid Search)
 - **목표**: 여러 시뮬레이션 결과를 비교하고 최적의 파라미터를 탐색
