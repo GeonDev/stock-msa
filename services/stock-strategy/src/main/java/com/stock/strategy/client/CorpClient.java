@@ -31,4 +31,12 @@ public class CorpClient {
                 .retrieve()
                 .body(CorpInfoDto.class);
     }
+
+    public List<CorpInfoDto> getCorpsBatch(List<String> stockCodes) {
+        String stockCodesParam = String.join(",", stockCodes);
+        return restClient.get()
+                .uri(corpServiceUrl + "/api/v1/corp/internal/batch?stockCodes=" + stockCodesParam)
+                .retrieve()
+                .body(new ParameterizedTypeReference<List<CorpInfoDto>>() {});
+    }
 }

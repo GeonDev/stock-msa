@@ -97,6 +97,15 @@ public class SimulationEngine {
                 if (strategy instanceof com.stock.strategy.strategy.ValueStrategy && request.getValueStrategyConfig() != null) {
                     orders = ((com.stock.strategy.strategy.ValueStrategy) strategy).rebalance(
                             currentDate, portfolio, universe, request.getValueStrategyConfig());
+                } else if (strategy instanceof com.stock.strategy.strategy.MultiFactorStrategy && request.getMultiFactorConfig() != null) {
+                    orders = ((com.stock.strategy.strategy.MultiFactorStrategy) strategy).rebalance(
+                            currentDate, portfolio, universe, request.getMultiFactorConfig());
+                } else if (strategy instanceof com.stock.strategy.strategy.SectorRotationStrategy && request.getSectorRotationConfig() != null) {
+                    orders = ((com.stock.strategy.strategy.SectorRotationStrategy) strategy).rebalance(
+                            currentDate, portfolio, universe, request.getSectorRotationConfig());
+                } else if (strategy instanceof com.stock.strategy.strategy.AssetAllocationStrategy && request.getAssetAllocationConfig() != null) {
+                    orders = ((com.stock.strategy.strategy.AssetAllocationStrategy) strategy).rebalance(
+                            currentDate, portfolio, universe, request.getAssetAllocationConfig(), request.getStrategyType());
                 } else {
                     orders = strategy.rebalance(currentDate, portfolio, universe);
                 }

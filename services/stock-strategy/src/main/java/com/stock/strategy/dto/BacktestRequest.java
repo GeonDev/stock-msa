@@ -1,5 +1,8 @@
 package com.stock.strategy.dto;
 
+import com.stock.common.dto.MultiFactorConfig;
+import com.stock.common.dto.SectorRotationConfig;
+import com.stock.common.dto.AssetAllocationConfig;
 import com.stock.common.dto.ValueStrategyConfig;
 import com.stock.strategy.enums.RebalancingPeriod;
 import com.stock.strategy.enums.StrategyType;
@@ -62,6 +65,18 @@ public class BacktestRequest {
     @Valid
     @Schema(description = "가치 투자 전략 설정 (VALUE 전략 사용 시)")
     private ValueStrategyConfig valueStrategyConfig;
+
+    @Valid
+    @Schema(description = "멀티팩터 스코어링 전략 설정 (MULTI_FACTOR 전략 사용 시)")
+    private MultiFactorConfig multiFactorConfig;
+
+    @Valid
+    @Schema(description = "섹터 로테이션 전략 설정 (SECTOR_ROTATION 전략 사용 시)")
+    private SectorRotationConfig sectorRotationConfig;
+
+    @Valid
+    @Schema(description = "자산 배분 전략 설정 (DUAL_MOMENTUM, RISK_PARITY 전략 사용 시)")
+    private AssetAllocationConfig assetAllocationConfig;
 
     @Schema(description = "슬리피지 모델 타입", example = "FIXED", defaultValue = "NONE")
     private com.stock.strategy.enums.SlippageType slippageType;
