@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.stock.common.dto.ValueStrategyConfig;
+import com.stock.common.dto.DashboardSummaryDto;
 import com.stock.strategy.dto.CompareStrategiesResponse;
 import com.stock.strategy.dto.GridSearchRequest;
 import com.stock.strategy.entity.BacktestResult;
@@ -21,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -120,6 +122,32 @@ public class BacktestService {
                 .bestCagrSimulationId(bestCagrId)
                 .bestSharpeSimulationId(bestSharpeId)
                 .lowestMddSimulationId(lowestMddId)
+                .build();
+    }
+
+    public DashboardSummaryDto getDashboardSummary() {
+        List<BacktestResult> results = resultRepository.findAll();
+        
+        double avgReturn = results.stream()
+                .map(BacktestResult::getTotalReturn)
+                .filter(java.util.Objects::nonNull)
+                .mapToDouble(BigDecimal::doubleValue)
+                .average()
+                .orElse(0.0);
+
+        List<DashboardSummaryDto.BacktestSummaryDto> topStrategies = results.stream()
+                .sorted(Comparator.comparing(BacktestResult::getCagr, Comparator.nullsLast(Comparator.reverseOrder())))
+                .limit(5)
+                .map(r -> DashboardSummaryDto.BacktestSummaryDto.builder()
+                        .name("Strategy #" + r.getSimulationId())
+                        .cagr(r.getCagr() != null ? r.getCagr().doubleValue() : 0.0)
+                        .mdd(r.getMdd() != null ? r.getMdd().doubleValue() : 0.0)
+                        .build())
+                .collect(Collectors.toList());
+
+        return DashboardSummaryDto.builder()
+                .avgReturnYtd(avgReturn)
+                .topStrategies(topStrategies)
                 .build();
     }
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Layers, Loader2, Trophy, Search, RefreshCw } from 'lucide-react';
-import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
+import { Layers, Loader2, Trophy, Search, RefreshCw, LineChart as ChartIcon } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 import { useCompareStrategies } from '../hooks/useBacktest';
 import { formatPercent } from '../utils/cn';
 
@@ -31,7 +31,7 @@ export default function StrategyCompare() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8E8E93]" size={18} />
             <input 
               type="text" 
-              placeholder="e.g. 10,11,12" 
+              placeholder="e.g. 1,2,3" 
               value={resultIdsInput}
               onChange={(e) => setResultIdsInput(e.target.value)}
               className="w-full bg-[#111111] border border-[#2C2C2E] rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-[#00C805]"
@@ -93,9 +93,40 @@ export default function StrategyCompare() {
             </div>
           </div>
 
-          {/* Grid Search Rankings Table */}
-          <div>
-            <div className="flex justify-between items-center mb-4">
+          {/* Metrics Comparison Chart */}
+          <div className="bg-[#111111] p-6 rounded-3xl border border-[#2C2C2E]">
+            <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+              <ChartIcon size={20} className="text-[#00C805]" /> Performance Overview
+            </h3>
+            <div className="h-[400px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={data.results}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#2C2C2E" vertical={false} />
+                  <XAxis 
+                    dataKey="simulationId" 
+                    stroke="#8E8E93" 
+                    fontSize={12} 
+                    tickLine={false} 
+                    axisLine={false}
+                    tickFormatter={(id) => `#${id}`}
+                  />
+                  <YAxis stroke="#8E8E93" fontSize={12} tickLine={false} axisLine={false} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#111', border: '1px solid #2C2C2E', borderRadius: '16px' }}
+                    itemStyle={{ fontWeight: 'bold' }}
+                  />
+                  <Legend />
+                  <Line type="monotone" dataKey="cagr" name="CAGR (%)" stroke="#00C805" strokeWidth={3} dot={{ r: 6 }} activeDot={{ r: 8 }} />
+                  <Line type="monotone" dataKey="winRate" name="Win Rate (%)" stroke="#3B82F6" strokeWidth={2} dot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="sharpeRatio" name="Sharpe Ratio" stroke="#F59E0B" strokeWidth={2} dot={{ r: 4 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Rankings Table */}
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
               <h3 className="text-xl font-bold">Optimization Rankings</h3>
               <button onClick={() => refetch()} className="text-[#8E8E93] hover:text-white p-2">
                 <RefreshCw size={16} />
@@ -117,7 +148,7 @@ export default function StrategyCompare() {
                 </thead>
                 <tbody className="divide-y divide-[#2C2C2E]/50">
                   {data.results
-                    .sort((a: any, b: any) => b.cagr - a.cagr) // 기본 CAGR 내림차순 정렬
+                    .sort((a: any, b: any) => b.cagr - a.cagr)
                     .map((row: any, idx: number) => {
                       const isBestCagr = row.simulationId === data.bestCagrSimulationId;
                       return (

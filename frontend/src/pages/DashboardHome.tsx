@@ -1,5 +1,7 @@
 import React from 'react';
 import { TrendingUp, Activity, Server, FileCheck } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { strategyService, corpService, financeService, systemService } from '../services/api';
 
 const StatCard = ({ title, value, subtitle, trend, isPositive }: any) => (
   <div className="bg-[#111111] p-6 rounded-2xl border border-[#2C2C2E] hover:border-[#00C805] transition-colors">
@@ -17,6 +19,27 @@ const StatCard = ({ title, value, subtitle, trend, isPositive }: any) => (
 );
 
 export default function DashboardHome() {
+  const { data: summary } = useQuery({
+    queryKey: ['dashboardSummary'],
+    queryFn: strategyService.getDashboardSummary,
+  });
+
+  const { data: universeCount } = useQuery({
+    queryKey: ['universeCount'],
+    queryFn: corpService.getUniverseCount,
+  });
+
+  const { data: verificationRate } = useQuery({
+    queryKey: ['verificationRate'],
+    queryFn: financeService.getVerificationRate,
+  });
+
+  // Check health of one service as proxy for system status
+  const { data: gatewayInfo } = useQuery({
+    queryKey: ['systemStatus'],
+    queryFn: () => systemService.getServiceInfo(''), // root
+  });
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <header>
@@ -26,28 +49,27 @@ export default function DashboardHome() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard 
-          title="Avg Strategy Return (YTD)" 
-          value="+14.2%" 
-          subtitle="Across 12 optimized strategies"
-          trend="2.4%"
-          isPositive={true}
+          title="Avg Strategy Return" 
+          value={`${summary?.avgReturnYtd?.toFixed(1) || '0.0'}%`} 
+          subtitle="Average across all simulations"
+          trend={summary?.avgReturnYtd > 0 ? "Normal" : ""}
+          isPositive={summary?.avgReturnYtd >= 0}
         />
         <StatCard 
           title="Total Universe" 
-          value="2,694" 
+          value={universeCount?.toLocaleString() || '0'} 
           subtitle="KOSPI, KOSDAQ, KONEX"
         />
         <StatCard 
           title="Data Verification" 
-          value="93.7%" 
+          value={`${verificationRate?.toFixed(1) || '0.0'}%`} 
           subtitle="DART Financials Verified"
-          trend="0.5%"
           isPositive={true}
         />
         <StatCard 
           title="System Status" 
-          value="Healthy" 
-          subtitle="All microservices online"
+          value={gatewayInfo ? "Healthy" : "Connecting..."} 
+          subtitle={gatewayInfo ? `${gatewayInfo.serviceName} v${gatewayInfo.version}` : "Checking services..."}
         />
       </div>
 
@@ -57,23 +79,18 @@ export default function DashboardHome() {
             <TrendingUp className="text-[#00C805]" /> Top Strategies
           </h3>
           <div className="space-y-4">
-            {/* Mock Data */}
-            {[
-              { name: 'Multi-Factor (Value+Mom)', cagr: '24.5%', mdd: '-12.4%' },
-              { name: 'Dual Momentum', cagr: '18.2%', mdd: '-8.1%' },
-              { name: 'Sector Rotation', cagr: '15.4%', mdd: '-15.2%' },
-            ].map((s, i) => (
+            {summary?.topStrategies?.map((s: any, i: number) => (
               <div key={i} className="flex justify-between items-center p-4 bg-black rounded-xl border border-[#2C2C2E]">
                 <div>
                   <p className="font-bold">{s.name}</p>
-                  <p className="text-sm text-[#8E8E93]">MDD: {s.mdd}</p>
+                  <p className="text-sm text-[#8E8E93]">MDD: {s.mdd.toFixed(1)}%</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-bold text-[#00C805]">{s.cagr}</p>
+                  <p className="text-lg font-bold text-[#00C805]">+{s.cagr.toFixed(1)}%</p>
                   <p className="text-xs text-[#8E8E93]">CAGR</p>
                 </div>
               </div>
-            ))}
+            )) || <p className="text-[#8E8E93] text-center py-10">No strategies executed yet.</p>}
           </div>
         </div>
 

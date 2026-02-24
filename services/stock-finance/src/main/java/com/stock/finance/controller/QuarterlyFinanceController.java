@@ -4,6 +4,7 @@ import com.stock.common.enums.ReportCode;
 import com.stock.finance.entity.CorpFinance;
 import com.stock.finance.repository.CorpFinanceRepository;
 import com.stock.finance.service.QuarterlyFinanceService;
+import com.stock.finance.service.CorpFinanceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -18,13 +19,14 @@ import java.util.Map;
 
 @Slf4j
 @RestController
-@RequestMapping("/quarterly")
+@RequestMapping("/api/v1/finance/quarterly")
 @RequiredArgsConstructor
 @Tag(name = "Quarterly Finance", description = "분기별 재무 정보 API")
 public class QuarterlyFinanceController {
     
     private final CorpFinanceRepository corpFinanceRepository;
     private final QuarterlyFinanceService quarterlyFinanceService;
+    private final CorpFinanceService corpFinanceService;
     
     @GetMapping("/{corpCode}/{year}")
     @Operation(summary = "연도별 전체 분기 조회")
@@ -89,5 +91,11 @@ public class QuarterlyFinanceController {
                 .map(quarterlyFinanceService::calculateYoYGrowth)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/stats/verification")
+    @Operation(summary = "재무 데이터 검증 통과율 조회")
+    public ResponseEntity<Double> getVerificationRate() {
+        return ResponseEntity.ok(corpFinanceService.getVerificationRate());
     }
 }

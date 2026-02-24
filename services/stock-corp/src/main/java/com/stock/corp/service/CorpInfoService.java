@@ -92,4 +92,8 @@ public class CorpInfoService {
     public CorpInfo getCorpInfoByStockCode(String stockCode) {
         return corpInfoRepository.findByStockCode(stockCode).orElse(null);
     }
+
+    public long getUniverseCount() {
+        return corpInfoRepository.count();
+    }
 }

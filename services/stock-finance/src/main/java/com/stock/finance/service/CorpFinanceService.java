@@ -6,6 +6,7 @@ import com.stock.finance.client.DartClient;
 import com.stock.finance.dto.DartFinancialResponse;
 import com.stock.finance.entity.CorpFinanceIndicator;
 import com.stock.finance.entity.CorpFinance;
+import com.stock.finance.repository.CorpFinanceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class CorpFinanceService {
     private final DartFinanceConverter dartFinanceConverter;
     private final CorpClient corpClient;
     private final QuarterlyFinanceService quarterlyFinanceService;
+    private final CorpFinanceRepository corpFinanceRepository;
 
 
     /**
@@ -179,5 +181,16 @@ public class CorpFinanceService {
         builder.yoyNetIncomeGrowth(yoyGrowth.get("yoyNetIncomeGrowth"));
 
         return builder.build();
+    }
+
+    public double getVerificationRate() {
+        List<CorpFinance> all = corpFinanceRepository.findAll();
+        if (all.isEmpty()) return 0.0;
+        
+        long verified = all.stream()
+                .filter(f -> "VERIFIED".equals(f.getValidationStatus()))
+                .count();
+        
+        return (double) verified / all.size() * 100.0;
     }
 }
