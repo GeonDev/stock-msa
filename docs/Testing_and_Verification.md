@@ -41,9 +41,17 @@
 - [ ] VERIFIED 비율 90%+ 목표
 - [ ] 재무 지표 계산 성공률 90%+ 목표
 
-### Phase 2: 백테스팅 검증
-- [ ] Momentum / Value / Quality 전략 실행
-- [ ] 수익률 계산 정확성
+### Phase 2: 백테스팅 엔진 검증
+- [ ] 단일 전략(Value 등) 정상 실행 및 지표(CAGR, MDD, Sharpe) 검증
+- [ ] 거래 비용(슬리피지, 수수료, 세금) 모델링 정확성 검증 (오차율 0%)
+- [ ] 거래 제약(단일 종목 최대 비중 20%, 최소 단위 1주) 동작 검증
+- [ ] 전략 비교 API(Compare) 및 그리드 서치(Optimize) 병렬 수행 검증
+
+### Phase 3: 고급 전략 검증
+- [ ] Z-Score 기반 멀티팩터 정규화 및 스코어링 정확도 검증
+- [ ] 섹터 로테이션 모멘텀 기반 상위 종목 교체 동작 검증
+- [ ] 듀얼 모멘텀 발동 시 하락장에서 현금 100% 보유 전환 확인
+- [ ] 리스크 패리티 (Inverse Volatility) 기반 포트폴리오 비중 차등 분배 확인
 
 ---
 
@@ -264,3 +272,108 @@ Spring Cloud Gateway는 Reactive(Netty) 기반이므로 `spring-boot-starter-und
 #### DART API 013 에러
 - 일부 기업은 해당 분기 데이터 미발표 → 정상
 - 전체 수집 실패 시 코드 버그 의심
+
+---
+
+## 백테스팅 및 전략 검증 시나리오 (Phase 2, 3)
+
+수집된 데이터(`TB_STOCK_PRICE`, `TB_CORP_FINANCE`, `TB_STOCK_INDICATOR`)를 기반으로 백테스팅 엔진과 고급 전략들이 올바르게 동작하는지 확인합니다.
+
+### Step 5. 단일 전략 백테스팅 검증 (Value + 고정 슬리피지)
+- **목적**: 거래 비용 및 매매 제약조건의 정확도 확인
+
+```bash
+curl -X POST "http://localhost:8084/api/v1/strategy/backtest" \
+     -H "Content-Type: application/json" \
+     -d '{
+           "strategyType": "VALUE",
+           "startDate": "2023-01-01",
+           "endDate": "2023-12-31",
+           "initialCapital": 10000000,
+           "rebalancingPeriod": "MONTHLY",
+           "tradingFeeRate": 0.0015,
+           "taxRate": 0.002,
+           "slippageType": "FIXED",
+           "fixedSlippageRate": 0.002,
+           "maxWeightPerStock": 0.2,
+           "valueStrategyConfig": {
+             "topN": 20,
+             "perWeight": 0.3,
+             "pbrWeight": 0.3,
+             "roeWeight": 0.4
+           }
+         }'
+```
+- **검증**: 응답받은 `simulationId`를 통해 DB(`TB_BACKTEST_RESULT`) 및 Trade History 조회를 통해 슬리피지와 20% 최대 비중 제한이 적용되었는지 확인.
+
+### Step 6. 고급 전략 검증 (Multi-Factor Z-Score)
+- **목적**: Z-Score 기반 통계적 정규화 및 가중치 합산 전략 작동 확인
+
+```bash
+curl -X POST "http://localhost:8084/api/v1/strategy/backtest" \
+     -H "Content-Type: application/json" \
+     -d '{
+           "strategyType": "MULTI_FACTOR",
+           "startDate": "2023-01-01",
+           "endDate": "2023-12-31",
+           "initialCapital": 10000000,
+           "rebalancingPeriod": "MONTHLY",
+           "tradingFeeRate": 0.0015,
+           "taxRate": 0.002,
+           "multiFactorConfig": {
+             "topN": 20,
+             "valueWeight": 0.4,
+             "momentumWeight": 0.3,
+             "qualityWeight": 0.3
+           }
+         }'
+```
+- **검증**: `TB_FACTOR_SCORE` 테이블에서 `score_date` 별 각 종목의 `total_score` 및 Z-score(음수/양수) 분배 확인.
+
+### Step 7. 동적 자산배분 검증 (Dual Momentum)
+- **목적**: 시장의 전체 평균 모멘텀이 하락세일 때 현금 비중 100%로 회피하는 동작 확인
+
+```bash
+curl -X POST "http://localhost:8084/api/v1/strategy/backtest" \
+     -H "Content-Type: application/json" \
+     -d '{
+           "strategyType": "DUAL_MOMENTUM",
+           "startDate": "2022-01-01",
+           "endDate": "2022-12-31",
+           "initialCapital": 10000000,
+           "rebalancingPeriod": "MONTHLY",
+           "tradingFeeRate": 0.0015,
+           "taxRate": 0.002,
+           "assetAllocationConfig": {
+             "useDualMomentum": true,
+             "maxRiskAssetWeight": 1.0
+           }
+         }'
+```
+- **검증**: 2022년 하락장 기간 동안 특정 달의 포트폴리오 스냅샷(`TB_PORTFOLIO_SNAPSHOT`) 조회 시 주식 보유량이 0이고 `cash_balance`가 자산의 100%인지 확인.
+
+### Step 8. 그리드 서치 및 전략 비교 (최적화)
+- **목적**: 파라미터 조합 순회 자동화 및 결과 랭킹 매기기
+
+```bash
+# 1. 그리드 서치 실행 (Top N: 10, 20 / Weight: 0.5 스텝)
+curl -X POST "http://localhost:8084/api/v1/strategy/backtest/optimize" \
+     -H "Content-Type: application/json" \
+     -d '{
+           "minTopN": 10,
+           "maxTopN": 20,
+           "stepTopN": 10,
+           "weightStep": 0.5,
+           "baseRequest": {
+             "strategyType": "VALUE",
+             "startDate": "2023-01-01",
+             "endDate": "2023-12-31",
+             "initialCapital": 10000000,
+             "rebalancingPeriod": "MONTHLY",
+             "tradingFeeRate": 0.0015,
+             "taxRate": 0.002
+           }
+         }'
+```
+- **검증**: 실행 후 `TB_BACKTEST_RESULT`에서 `is_optimized = true` 인 다수의 결과가 생성되었는지 확인.
+- 생성된 결과의 ID들(예: 10,11,12)을 모아 `/api/v1/strategy/backtest/compare?resultIds=10,11,12` 로 호출하여 `bestCagrSimulationId`, `lowestMddSimulationId` 등의 도출 결과를 검증.
