@@ -16,7 +16,7 @@ public class RootController {
     @Value("${spring.profiles.active:default}")
     private String activeProfiles;
 
-    @GetMapping("/")
+    @GetMapping({"/", "/api/v1/system/info"})
     public Mono<ResponseEntity<ServiceInfoDto>> getServiceInfo() {
         return Mono.just(ResponseEntity.ok(ServiceInfoDto.builder()
                 .serviceName(serviceName)

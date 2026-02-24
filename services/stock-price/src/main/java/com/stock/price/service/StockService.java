@@ -47,7 +47,7 @@ public class StockService {
 
         String decodedServiceKey = URLDecoder.decode(serviceKey, StandardCharsets.UTF_8);
 
-        while (totalPage >= pageNum){
+        while (totalPage >= pageNum) {
 
             UriComponents uri = UriComponentsBuilder
                     .newInstance()
@@ -70,8 +70,8 @@ public class StockService {
 
             try {
                 ApiBody<StockPrice> result = parseStockPriceFromXml(responseBody);
-                log.debug("pageNum : {} totalPage : {}" , pageNum, totalPage);
-                if(pageNum == 1){
+                log.debug("pageNum : {} totalPage : {}", pageNum, totalPage);
+                if (pageNum == 1) {
                     totalPage = (int) Math.ceil((double) result.getTotalCount() / ApplicationConstants.PAGE_SIZE);
                 }
                 priceList.addAll(result.getItemList());
@@ -91,84 +91,40 @@ public class StockService {
                 .orElse(null);
     }
 
-        public StockPriceDto getPriceByDate(String stockCode, String date) {
+    public StockPriceDto getPriceByDate(String stockCode, String date) {
 
-            LocalDate localDate = DateUtils.toStringLocalDate(date);
+        LocalDate localDate = DateUtils.toStringLocalDate(date);
 
-            return stockPriceRepository.findByStockCodeAndBasDt(stockCode.replace("A", ""), localDate)
+        return stockPriceRepository.findByStockCodeAndBasDt(stockCode.replace("A", ""), localDate)
+                .map(stockPriceMapper::toDto)
+                .orElse(null);
+    }
 
-                    .map(stockPriceMapper::toDto)
+    public List<StockPriceDto> getPricesByDateBatch(List<String> stockCodes, String date) {
 
-                    .orElse(null);
+        LocalDate localDate = DateUtils.toStringLocalDate(date);
+        List<String> codes = stockCodes.stream().map(c -> c.replace("A", "")).toList();
 
-        }
+        return stockPriceRepository.findByStockCodeInAndBasDt(codes, localDate).stream()
+                .map(stockPriceMapper::toDto)
+                .toList();
+    }
 
-    
+    public List<com.stock.common.dto.StockIndicatorDto> getIndicatorsByDateBatch(List<String> stockCodes, String date) {
+        LocalDate localDate = DateUtils.toStringLocalDate(date);
+        List<String> codes = stockCodes.stream().map(c -> c.replace("A", "")).toList();
+        return stockIndicatorRepository.findByStockCodesAndBasDt(codes, localDate).stream()
+                .map(stockIndicatorMapper::toDto)
+                .toList();
+    }
 
-            public List<StockPriceDto> getPricesByDateBatch(List<String> stockCodes, String date) {
-
-    
-
-                LocalDate localDate = DateUtils.toStringLocalDate(date);
-
-    
-
-                List<String> codes = stockCodes.stream().map(c -> c.replace("A", "")).toList();
-
-    
-
-                return stockPriceRepository.findByStockCodeInAndBasDt(codes, localDate).stream()
-
-    
-
-                        .map(stockPriceMapper::toDto)
-
-    
-
-                        .toList();
-
-    
-
-            }
-
-    
-
-        
-
-    
-
-            public List<com.stock.common.dto.StockIndicatorDto> getIndicatorsByDateBatch(List<String> stockCodes, String date) {
-
-    
-
-                LocalDate localDate = DateUtils.toStringLocalDate(date);
-
-    
-
-                List<String> codes = stockCodes.stream().map(c -> c.replace("A", "")).toList();
-
-    
-
-                return stockIndicatorRepository.findByStockCodesAndBasDt(codes, localDate).stream()
-
-    
-
-                        .map(stockIndicatorMapper::toDto)
-
-    
-
-                        .toList();
-
-    
-
-            }
-
-    
-
-        }
-
-    
-
-        
-
-    
+    public List<StockPriceDto> getPriceHistory(String stockCode, int days) {
+        String code = stockCode.replace("A", "");
+        // Simplified implementation: returning all available for the code for now
+        // or we could use Pageable to limit if needed.
+        return stockPriceRepository.findByStockCodeOrderByBasDtAsc(code).stream()
+                .filter(p -> p.getBasDt().isAfter(LocalDate.now().minusDays(days)))
+                .map(stockPriceMapper::toDto)
+                .toList();
+    }
+}

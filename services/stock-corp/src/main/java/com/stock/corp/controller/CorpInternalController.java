@@ -47,4 +47,14 @@ public class CorpInternalController {
         CorpInfo corpInfo = corpInfoService.getCorpInfoByStockCode(stockCode);
         return corpInfo != null ? corpInfo.getDartCorpCode() : null;
     }
+
+    @GetMapping("/corp-detail/{stockCode}")
+    public CorpInfoDto getCorpDetail(@PathVariable String stockCode) {
+        return corpInfoService.getCorpDetail(stockCode);
+    }
+
+    @GetMapping("/search")
+    public List<CorpInfoDto> searchCorps(@RequestParam String query) {
+        return corpInfoService.searchCorps(query);
+    }
 }

@@ -12,4 +12,5 @@ public interface CorpInfoRepository extends JpaRepository<CorpInfo, String> {
     List<CorpInfo> findAllByStockCodeIsNotNull();
     List<CorpInfo> findAllByMarket(String market);
     Optional<CorpInfo> findByStockCode(String stockCode);
+    List<CorpInfo> findTop10ByCorpNameContainingOrStockCodeContaining(String corpName, String stockCode);
 }
