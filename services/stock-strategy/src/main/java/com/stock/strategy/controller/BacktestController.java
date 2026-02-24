@@ -18,6 +18,11 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.stock.strategy.dto.CompareStrategiesResponse;
+import com.stock.strategy.dto.GridSearchRequest;
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 @Tag(name = "Backtest", description = "백테스팅 API")
 @RestController
 @RequestMapping("/api/v1/strategy/backtest")
@@ -32,6 +37,24 @@ public class BacktestController {
     @PostMapping
     public ResponseEntity<BacktestResponse> startBacktest(@Valid @RequestBody BacktestRequest request) {
         BacktestResponse response = backtestService.startBacktest(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "전략 비교", description = "여러 백테스트 결과를 비교합니다")
+    @GetMapping("/compare")
+    public ResponseEntity<CompareStrategiesResponse> compareStrategies(@RequestParam String resultIds) {
+        List<Long> ids = Arrays.stream(resultIds.split(","))
+                .map(String::trim)
+                .map(Long::valueOf)
+                .collect(Collectors.toList());
+        CompareStrategiesResponse response = backtestService.compareStrategies(ids);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "그리드 서치 최적화", description = "최적의 파라미터를 탐색합니다")
+    @PostMapping("/optimize")
+    public ResponseEntity<BacktestResponse> optimizeStrategies(@Valid @RequestBody GridSearchRequest request) {
+        BacktestResponse response = backtestService.startGridSearch(request);
         return ResponseEntity.ok(response);
     }
 

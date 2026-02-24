@@ -50,4 +50,10 @@ public class BacktestResult {
 
     @Column(name = "profitable_trades")
     private Integer profitableTrades;
+
+    @Column(name = "is_optimized")
+    private Boolean isOptimized;
+
+    @Column(name = "slippage_type", length = 20)
+    private String slippageType;
 }
