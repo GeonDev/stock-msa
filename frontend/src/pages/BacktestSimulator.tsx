@@ -50,7 +50,7 @@ export default function BacktestSimulator() {
     }
   }, [result]);
 
-  const chartData = snapshots?.map(s => ({
+  const chartData = snapshots?.map((s: any) => ({
     date: s.snapshotDate,
     value: s.totalValue,
   })) || [];
@@ -208,7 +208,7 @@ export default function BacktestSimulator() {
                 contentStyle={{ backgroundColor: '#111', border: '1px solid #2C2C2E', borderRadius: '16px', padding: '12px' }}
                 itemStyle={{ color: '#fff', fontWeight: 'bold' }}
                 labelStyle={{ color: '#8E8E93', marginBottom: '4px' }}
-                formatter={(val: number) => [formatCurrency(val), 'Value']}
+                formatter={(val: number | undefined) => [val !== undefined ? formatCurrency(val) : '', 'Value']}
               />
               <Area 
                 type="monotone" 
