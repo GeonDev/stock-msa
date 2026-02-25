@@ -11,14 +11,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "Corp Info Public", description = "기업 정보 조회 공용 API")
 @RestController
-@RequestMapping("/api/v1/corp")
+@RequestMapping("/universe")
 @RequiredArgsConstructor
 public class CorpPublicController {
 
     private final CorpInfoService corpInfoService;
 
     @Operation(summary = "전체 유니버스 종목 수 조회")
-    @GetMapping("/universe/count")
+    @GetMapping("/count")
     public ResponseEntity<Long> getUniverseCount() {
         return ResponseEntity.ok(corpInfoService.getUniverseCount());
     }

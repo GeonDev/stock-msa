@@ -120,10 +120,30 @@ public class StockService {
 
     public List<StockPriceDto> getPriceHistory(String stockCode, int days) {
         String code = stockCode.replace("A", "");
-        // Simplified implementation: returning all available for the code for now
-        // or we could use Pageable to limit if needed.
-        return stockPriceRepository.findByStockCodeOrderByBasDtAsc(code).stream()
-                .filter(p -> p.getBasDt().isAfter(LocalDate.now().minusDays(days)))
+        
+        // 데이터가 최신이 아닐 수 있으므로, 해당 종목의 가장 최근 날짜를 기준으로 가져옴
+        LocalDate lastDate = stockPriceRepository.findFirstByStockCodeOrderByBasDtDesc(code)
+                .map(StockPrice::getBasDt)
+                .orElse(LocalDate.now());
+        
+        LocalDate startDate = lastDate.minusDays(days);
+        LocalDate endDate = lastDate.plusDays(1);
+        
+        log.debug("Fetching price history for {} from {} to {}", code, startDate, endDate);
+        
+        return stockPriceRepository.findByStockCodeAndBasDtBetweenOrderByBasDtAsc(
+                code, startDate, endDate).stream()
+                .map(stockPriceMapper::toDto)
+                .toList();
+    }
+
+    public List<StockPriceDto> getPriceHistory(String stockCode, String startDate, String endDate) {
+        String code = stockCode.replace("A", "");
+        LocalDate start = DateUtils.toStringLocalDate(startDate);
+        LocalDate end = DateUtils.toStringLocalDate(endDate);
+
+        return stockPriceRepository.findByStockCodeAndBasDtBetweenOrderByBasDtAsc(
+                code, start, end).stream()
                 .map(stockPriceMapper::toDto)
                 .toList();
     }

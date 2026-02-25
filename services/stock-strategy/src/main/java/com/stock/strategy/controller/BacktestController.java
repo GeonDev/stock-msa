@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 
 @Tag(name = "Backtest", description = "백테스팅 API")
 @RestController
-@RequestMapping("/api/v1/strategy/backtest")
+@RequestMapping("/backtest")
 @RequiredArgsConstructor
 public class BacktestController {
 

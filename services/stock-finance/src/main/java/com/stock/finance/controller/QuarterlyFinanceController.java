@@ -19,7 +19,7 @@ import java.util.Map;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/finance/quarterly")
+@RequestMapping("/quarterly")
 @RequiredArgsConstructor
 @Tag(name = "Quarterly Finance", description = "분기별 재무 정보 API")
 public class QuarterlyFinanceController {
