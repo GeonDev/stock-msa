@@ -1,5 +1,6 @@
 package com.stock.common.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,6 +26,7 @@ public class StockPriceDto {
     private String marketCode;
 
     @Schema(description = "기준 일자", example = "2024-02-12")
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate basDt;
 
     @Schema(description = "거래량", example = "15000000")

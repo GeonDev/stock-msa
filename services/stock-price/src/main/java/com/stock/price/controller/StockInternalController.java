@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/stock/internal")
+@RequestMapping("/internal")
 public class StockInternalController {
 
     private final StockService stockService;
@@ -25,7 +25,12 @@ public class StockInternalController {
     @GetMapping("/prices/{stockCode}")
     public java.util.List<StockPriceDto> getPriceHistory(
             @PathVariable String stockCode, 
-            @RequestParam(defaultValue = "365") int days) {
+            @RequestParam(name = "days", defaultValue = "365") int days,
+            @RequestParam(name = "startDate", required = false) String startDate,
+            @RequestParam(name = "endDate", required = false) String endDate) {
+        if (startDate != null && endDate != null) {
+            return stockService.getPriceHistory(stockCode, startDate, endDate);
+        }
         return stockService.getPriceHistory(stockCode, days);
     }
 

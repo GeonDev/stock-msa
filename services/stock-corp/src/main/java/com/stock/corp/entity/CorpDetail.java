@@ -23,20 +23,20 @@ public class CorpDetail implements Serializable {
 
     @Id
     @Column(name = "corp_code")
-    String corpCode;
+    private String corpCode;
 
     @Enumerated(EnumType.STRING)
-    CorpNational national;
+    private CorpNational national;
 
     @Enumerated(EnumType.STRING)
-    CorpState state;
+    private CorpState state;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "corp_type")
-    CorpCurrency corpType;
+    private CorpCurrency corpType;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "sector")
-    com.stock.common.enums.SectorType sector;
+    private com.stock.common.enums.SectorType sector;
 
 }

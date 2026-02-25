@@ -19,23 +19,23 @@ public class StockPrice {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long Id;
+    private Long id;
 
     // 단축코드
     @Column(name = "stock_code")
-    String stockCode;
+    private String stockCode;
 
     //주식시장 구분
     @Column(name = "market_code")
-    String marketCode;
+    private String marketCode;
 
     //기준일
     @Column(name = "bas_dt")
-    LocalDate basDt;
+    private LocalDate basDt;
 
     //수정 종가
     @Column(name = "adj_close_price")
-    BigDecimal adjClosePrice;
+    private BigDecimal adjClosePrice;
 
     //체결수량의 누적 합계
     @Column(name = "volume")

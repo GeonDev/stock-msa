@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/corp/internal")
+@RequestMapping("/internal")
 public class CorpInternalController {
 
     private final CorpInfoService corpInfoService;

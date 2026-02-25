@@ -36,7 +36,7 @@ rm -f "$REPORT_FILE" "$TMP_MSG_FILE"
 touch "$REPORT_FILE"
 
 # 2. 분석 대상 파일 필터링
-VALID_EXTENSIONS="java|sql|xml|html|ftl|properties|yml|yaml"
+VALID_EXTENSIONS="java|sql|xml|html|ftl|properties|yml|yaml|js|ts|tsx|json"
 STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E "\.($VALID_EXTENSIONS)$" || true)
 
 if [[ -z "$STAGED_FILES" ]]; then
@@ -88,10 +88,24 @@ AI_PROMPT="${CLEAN_INPUT}
 - 예시: feat(corp): OpenDART 업종 수집 배치 구현"
 
 # 5. AI 호출 및 결과 처리
-AI_RESPONSE=$(gemini -m gemini-1.5-flash -p "$AI_PROMPT" 2>/dev/null || echo "ERROR")
+# 모델명을 명시하지 않고 기본 모델 사용 (호환성 및 용량 문제 회피)
+AI_RESPONSE=$(gemini -p "$AI_PROMPT" 2>&1 || echo "ERROR: AI_CALL_FAILED")
 
-# 노이즈 제거
-CLEANED_RESPONSE=$(echo "$AI_RESPONSE" | grep -v "Loaded cached credentials" | grep -v "supports tool updates" | sed 's/\*\*//g')
+if [[ "$AI_RESPONSE" == "ERROR: AI_CALL_FAILED" ]]; then
+    echo "${RED}❌ [ERROR] Gemini AI 호출 실패${NC}"
+    echo "네트워크 상태나 API 설정을 확인해주세요."
+    exit 1
+fi
+
+# 용량 초과(429) 에러 발생 시 커밋을 차단하지 않고 경고 후 통과
+if echo "$AI_RESPONSE" | grep -q "status: 429"; then
+    echo "${CYAN}⚠️ [WARN] Gemini API 용량 초과 (429) - 리뷰 없이 진행합니다.${NC}"
+    echo "# 🤖 Gemini 리뷰 일시 중단\n\n현재 API 용량 초과로 인해 리뷰를 수행할 수 없습니다. 나중에 다시 시도해주세요." > "$REPORT_FILE"
+    exit 0
+fi
+
+# 노이즈 제거 (시스템 메시지 등 제외)
+CLEANED_RESPONSE=$(echo "$AI_RESPONSE" | grep -v "Loaded cached credentials" | grep -v "supports tool updates" | grep -v "Listening for changes" | grep -v "Server " | sed 's/\*\*//g')
 
 parse_section() {
     local tag="$1"

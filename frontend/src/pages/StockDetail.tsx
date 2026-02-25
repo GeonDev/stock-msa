@@ -135,7 +135,8 @@ export default function StockDetail() {
                 { label: '30D', value: 30 },
                 { label: '1Y', value: 365 },
                 { label: '2Y', value: 730 },
-                { label: '5Y', value: 1825 }
+                { label: '5Y', value: 1825 },
+                { label: 'ALL', value: 3650 }
               ].map((d) => (
                 <button
                   key={d.label}

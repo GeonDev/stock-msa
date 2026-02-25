@@ -30,20 +30,20 @@ public class CorpFinance {
 
     @Schema(description = "법인번호", example = "A005930")
     @Column(name = "corp_code", nullable = false)
-    String corpCode;
+    private String corpCode;
 
     @Schema(description = "사업연도", example = "2023")
     @Column(name = "biz_year", nullable = false, length = 4)
-    String bizYear;
+    private String bizYear;
 
     @Schema(description = "보고서 코드", example = "ANNUAL")
     @Convert(converter = ReportCodeConverter.class)
     @Column(name = "report_code", nullable = false, columnDefinition = "VARCHAR(5)")
-    ReportCode reportCode;
+    private ReportCode reportCode;
 
     @Schema(description = "기준일자", example = "2024-01-01")
     @Column(name = "bas_dt")
-    LocalDate basDt;
+    private LocalDate basDt;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "validation_status")
@@ -51,55 +51,55 @@ public class CorpFinance {
 
     @Schema(description = "통화 코드", example = "KRW")
     @Column(name = "currency")
-    String currency;
+    private String currency;
 
     @Schema(description = "영업이익")
     @Column(name = "op_income")
-    BigDecimal opIncome;
+    private BigDecimal opIncome;
 
     @Schema(description = "순이익")
     @Column(name = "net_income")
-    BigDecimal netIncome;
+    private BigDecimal netIncome;
 
     @Schema(description = "매출액")
     @Column(name = "revenue")
-    BigDecimal revenue;
+    private BigDecimal revenue;
 
     @Schema(description = "기업 총 자산")
     @Column(name = "total_asset")
-    BigDecimal totalAsset;
+    private BigDecimal totalAsset;
 
     @Schema(description = "기업 총 부채")
     @Column(name = "total_debt")
-    BigDecimal totalDebt;
+    private BigDecimal totalDebt;
 
     @Schema(description = "총 자본")
     @Column(name = "total_capital")
-    BigDecimal totalCapital;
+    private BigDecimal totalCapital;
 
     @Schema(description = "영업활동 현금흐름")
     @Column(name = "operating_cashflow")
-    BigDecimal operatingCashflow;
+    private BigDecimal operatingCashflow;
 
     @Schema(description = "투자활동 현금흐름")
     @Column(name = "investing_cashflow")
-    BigDecimal investingCashflow;
+    private BigDecimal investingCashflow;
 
     @Schema(description = "재무활동 현금흐름")
     @Column(name = "financing_cashflow")
-    BigDecimal financingCashflow;
+    private BigDecimal financingCashflow;
 
     @Schema(description = "잉여현금흐름 (FCF = 영업CF - 투자CF)")
     @Column(name = "free_cashflow")
-    BigDecimal freeCashflow;
+    private BigDecimal freeCashflow;
 
     @Schema(description = "EBITDA (법인세/이자/감가상각비 차감 전 영업이익)")
     @Column(name = "ebitda")
-    BigDecimal ebitda;
+    private BigDecimal ebitda;
 
     @Schema(description = "감가상각비")
     @Column(name = "depreciation")
-    BigDecimal depreciation;
+    private BigDecimal depreciation;
 
     @OneToOne(mappedBy = "corpFinance", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Schema(description = "재무 지표 정보")
