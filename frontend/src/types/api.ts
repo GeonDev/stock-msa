@@ -34,6 +34,7 @@ export interface BacktestRequest {
   slippageType: string;
   fixedSlippageRate?: number;
   maxWeightPerStock?: number;
+  maxVolumeRatio?: number;
   universeFilter?: any;
   valueStrategyConfig?: any;
   multiFactorConfig?: any;

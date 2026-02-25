@@ -5,7 +5,8 @@ import {
   IChartApi, 
   CandlestickSeries, 
   AreaSeries, 
-  LineSeries 
+  LineSeries,
+  HistogramSeries
 } from 'lightweight-charts';
 import { PriceData, calculateMA } from '../utils/chartUtils';
 import { useSettingsStore } from '../hooks/useSettingsStore';
@@ -72,6 +73,29 @@ export default function StockChart({ data, mainColor }: StockChartProps) {
           });
           areaSeries.setData(data.map((d: any) => ({ time: d.time, value: d.close })));
         }
+
+        // Volume Series
+        const volumeSeries = chart.addSeries(HistogramSeries, {
+          color: '#26a69a',
+          priceFormat: {
+            type: 'volume',
+          },
+          priceScaleId: 'volume',
+        });
+
+        chart.priceScale('volume').applyOptions({
+          scaleMargins: {
+            top: 0.8,
+            bottom: 0,
+          },
+        });
+
+        const volumeData = data.map((d: any) => ({
+          time: d.time,
+          value: d.value,
+          color: d.close >= d.open ? (isDark ? '#00C80588' : '#16a34a88') : (isDark ? '#FF500088' : '#dc262688'),
+        }));
+        volumeSeries.setData(volumeData as any);
 
         // Moving Averages
         const maConfigs = [
