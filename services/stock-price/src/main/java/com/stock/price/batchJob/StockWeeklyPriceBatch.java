@@ -21,7 +21,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Configuration
@@ -73,9 +76,39 @@ public class StockWeeklyPriceBatch {
         return items -> {
             for (List<StockWeeklyPrice> weeklyPrices : items) {
                 if (weeklyPrices != null && !weeklyPrices.isEmpty()) {
-                    stockWeeklyPriceRepository.saveAll(weeklyPrices);
+                    String stockCode = weeklyPrices.get(0).getStockCode();
+                    
+                    // 해당 종목의 기존 데이터를 한 번에 로드 (전체 조회가 아닌 종목 단위로 최적화)
+                    Map<String, StockWeeklyPrice> existingMap = new HashMap<>();
+                    stockWeeklyPriceRepository.findByStockCodeInAndEndDateBetween(
+                            List.of(stockCode), LocalDate.of(1900,1,1), LocalDate.of(2099,12,31))
+                            .forEach(p -> existingMap.put(p.getStartDate() + "_" + p.getEndDate(), p));
+
+                    for (StockWeeklyPrice newPrice : weeklyPrices) {
+                        String key = newPrice.getStartDate() + "_" + newPrice.getEndDate();
+                        StockWeeklyPrice existing = existingMap.get(key);
+                        
+                        if (existing != null) {
+                            updateWeeklyPriceData(existing, newPrice);
+                            stockWeeklyPriceRepository.save(existing);
+                        } else {
+                            stockWeeklyPriceRepository.save(newPrice);
+                        }
+                    }
                 }
             }
         };
+    }
+
+    private void updateWeeklyPriceData(StockWeeklyPrice existing, StockWeeklyPrice newData) {
+        existing.setMarketCode(newData.getMarketCode());
+        existing.setStartPrice(newData.getStartPrice());
+        existing.setEndPrice(newData.getEndPrice());
+        existing.setHighPrice(newData.getHighPrice());
+        existing.setLowPrice(newData.getLowPrice());
+        existing.setVolume(newData.getVolume());
+        existing.setVolumePrice(newData.getVolumePrice());
+        existing.setStockTotalCnt(newData.getStockTotalCnt());
+        existing.setMarketTotalAmt(newData.getMarketTotalAmt());
     }
 }

@@ -29,15 +29,28 @@ const BatchButton = ({ label, onClick, isLoading }: any) => (
 
 export default function Settings() {
   const { theme, setTheme, defaults, setDefaults } = useSettingsStore();
-  const [batchDate, setBatchDate] = useState('20241014');
+  
+  // Batch Parameters States
+  const [priceStartDate, setPriceStartDate] = useState('20241014');
+  const [priceEndDate, setPriceEndDate] = useState('20241014');
+  const [financeStartYear, setFinanceStartYear] = useState('2023');
+  const [financeEndYear, setFinanceEndYear] = useState('2023');
+  const [financeDate, setFinanceDate] = useState('20241014');
 
   // Service Health Queries
   const { data: gatewayStatus } = useQuery({ queryKey: ['health', 'gateway'], queryFn: () => systemService.getServiceInfo() });
 
   // Batch Mutations
-  const corpBatch = useMutation({ mutationFn: corpService.runCorpInfoBatch });
-  const priceBatch = useMutation({ mutationFn: (market: string) => priceService.runPriceBatch(market, batchDate) });
-  const financeBatch = useMutation({ mutationFn: (code: string) => financeService.runFinanceBatch(batchDate, code) });
+  const corpBatch = useMutation({ mutationFn: (date: string) => corpService.runCorpInfoBatch(date) });
+  const priceRecoveryMutation = useMutation({ 
+    mutationFn: () => priceService.runPriceRecovery(priceStartDate, priceEndDate) 
+  });
+  const financeRecoveryMutation = useMutation({ 
+    mutationFn: () => financeService.runFinanceRecovery(financeStartYear, financeEndYear) 
+  });
+  const financeBatch = useMutation({ 
+    mutationFn: (code: string) => financeService.runFinanceBatch(financeDate, code) 
+  });
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
@@ -93,36 +106,88 @@ export default function Settings() {
 
         {/* Batch Control */}
         <SettingSection title="Batch Control Center" icon={Database}>
-          <div className="mb-6 space-y-2">
-            <label className="text-xs font-bold text-zinc-500 dark:text-[#8E8E93] uppercase tracking-wider">Target Date (yyyyMMdd)</label>
-            <input 
-              type="text" 
-              value={batchDate}
-              onChange={(e) => setBatchDate(e.target.value)}
-              className="w-full bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-[#2C2C2E] rounded-xl p-3 focus:border-green-500 outline-none transition-colors font-mono"
-            />
-          </div>
-          
-          <div className="space-y-6">
+          <div className="space-y-8">
+            
+            {/* Infrastructure */}
             <div className="space-y-3">
-              <label className="text-xs font-bold text-zinc-500 dark:text-[#8E8E93] uppercase">Infrastructure</label>
+              <label className="text-xs font-bold text-zinc-500 dark:text-[#8E8E93] uppercase tracking-wider">Infrastructure Sync (Date: {financeDate})</label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <BatchButton label="Corp Info Sync" onClick={() => corpBatch.mutate(batchDate)} isLoading={corpBatch.isPending} />
+                <BatchButton label="Corp Info Sync" onClick={() => corpBatch.mutate(financeDate)} isLoading={corpBatch.isPending} />
                 <BatchButton label="Sector Update" onClick={() => corpService.runSectorUpdateBatch()} />
               </div>
             </div>
 
-            <div className="space-y-3">
-              <label className="text-xs font-bold text-zinc-500 dark:text-[#8E8E93] uppercase">Stock Price</label>
-              <div className="grid grid-cols-3 gap-2">
-                <BatchButton label="KOSPI" onClick={() => priceBatch.mutate('KOSPI')} isLoading={priceBatch.isPending && priceBatch.variables === 'KOSPI'} />
-                <BatchButton label="KOSDAQ" onClick={() => priceBatch.mutate('KOSDAQ')} isLoading={priceBatch.isPending && priceBatch.variables === 'KOSDAQ'} />
-                <BatchButton label="KONEX" onClick={() => priceBatch.mutate('KONEX')} isLoading={priceBatch.isPending && priceBatch.variables === 'KONEX'} />
+            {/* Price Recovery */}
+            <div className="space-y-4 pt-4 border-t border-zinc-100 dark:border-[#2C2C2E]">
+              <label className="text-xs font-bold text-zinc-500 dark:text-[#8E8E93] uppercase">Stock Price Recovery (Range)</label>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold text-zinc-400 block mb-1">START DATE (yyyyMMdd)</label>
+                  <input 
+                    type="text" 
+                    value={priceStartDate}
+                    onChange={(e) => setPriceStartDate(e.target.value)}
+                    className="w-full bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-[#2C2C2E] rounded-xl p-2 text-sm focus:border-green-500 outline-none transition-colors font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-zinc-400 block mb-1">END DATE (yyyyMMdd)</label>
+                  <input 
+                    type="text" 
+                    value={priceEndDate}
+                    onChange={(e) => setPriceEndDate(e.target.value)}
+                    className="w-full bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-[#2C2C2E] rounded-xl p-2 text-sm focus:border-green-500 outline-none transition-colors font-mono"
+                  />
+                </div>
               </div>
+              <BatchButton 
+                label="Run Full Price & Aggregate Recovery" 
+                onClick={() => priceRecoveryMutation.mutate()} 
+                isLoading={priceRecoveryMutation.isPending} 
+              />
             </div>
 
-            <div className="space-y-3">
-              <label className="text-xs font-bold text-zinc-500 dark:text-[#8E8E93] uppercase">Finance (DART)</label>
+            {/* Finance Bulk Recovery */}
+            <div className="space-y-4 pt-4 border-t border-zinc-100 dark:border-[#2C2C2E]">
+              <label className="text-xs font-bold text-zinc-500 dark:text-[#8E8E93] uppercase">Finance Bulk Recovery (Year Range)</label>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold text-zinc-400 block mb-1">START YEAR (yyyy)</label>
+                  <input 
+                    type="text" 
+                    value={financeStartYear}
+                    onChange={(e) => setFinanceStartYear(e.target.value)}
+                    className="w-full bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-[#2C2C2E] rounded-xl p-2 text-sm focus:border-green-500 outline-none transition-colors font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-zinc-400 block mb-1">END YEAR (yyyy)</label>
+                  <input 
+                    type="text" 
+                    value={financeEndYear}
+                    onChange={(e) => setFinanceEndYear(e.target.value)}
+                    className="w-full bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-[#2C2C2E] rounded-xl p-2 text-sm focus:border-green-500 outline-none transition-colors font-mono"
+                  />
+                </div>
+              </div>
+              <BatchButton 
+                label="Run DART Finance Bulk Recovery" 
+                onClick={() => financeRecoveryMutation.mutate()} 
+                isLoading={financeRecoveryMutation.isPending} 
+              />
+            </div>
+
+            {/* Finance Single Recovery */}
+            <div className="space-y-4 pt-4 border-t border-zinc-100 dark:border-[#2C2C2E]">
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-bold text-zinc-500 dark:text-[#8E8E93] uppercase">Finance Single Sync (Date: {financeDate})</label>
+                <input 
+                  type="text" 
+                  value={financeDate}
+                  onChange={(e) => setFinanceDate(e.target.value)}
+                  className="w-28 bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-[#2C2C2E] rounded-lg p-1 text-xs focus:border-green-500 outline-none font-mono"
+                />
+              </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 <BatchButton label="Q1" onClick={() => financeBatch.mutate('Q1')} isLoading={financeBatch.isPending && financeBatch.variables === 'Q1'} />
                 <BatchButton label="SEMI" onClick={() => financeBatch.mutate('SEMI')} isLoading={financeBatch.isPending && financeBatch.variables === 'SEMI'} />
@@ -130,6 +195,7 @@ export default function Settings() {
                 <BatchButton label="ANNUAL" onClick={() => financeBatch.mutate('ANNUAL')} isLoading={financeBatch.isPending && financeBatch.variables === 'ANNUAL'} />
               </div>
             </div>
+
           </div>
         </SettingSection>
 

@@ -75,6 +75,10 @@ export const financeService = {
     const { data } = await api.post(url);
     return data;
   },
+  runFinanceRecovery: async (startYear: string, endYear: string) => {
+    const { data } = await api.post(`/finance/batch/corp-fin/recovery?startYear=${startYear}&endYear=${endYear}`);
+    return data;
+  },
 };
 
 export const priceService = {
@@ -84,6 +88,10 @@ export const priceService = {
   },
   runPriceBatch: async (market: string, date: string) => {
     const { data } = await api.post(`/stock/batch/price?market=${market}&date=${date}`);
+    return data;
+  },
+  runPriceRecovery: async (startDate: string, endDate: string) => {
+    const { data } = await api.post(`/stock/batch/price/recovery?startDate=${startDate}&endDate=${endDate}`);
     return data;
   },
   runIndicatorBatch: async (date: string) => {
