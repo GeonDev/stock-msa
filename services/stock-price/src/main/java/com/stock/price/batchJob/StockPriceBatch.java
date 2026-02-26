@@ -31,7 +31,10 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.LocalDate;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import com.stock.common.utils.DateUtils;
 
 @Slf4j
 @Configuration
@@ -82,11 +85,20 @@ public class StockPriceBatch {
     }
 
     @Bean
+    public Job stockPriceRecoveryJob(Step weeklyStockDataStep, Step monthlyStockDataStep) {
+        return new JobBuilder("stockPriceRecoveryJob", jobRepository)
+                .start(stockDataStep()) // 1. 일별 데이터 수집/업데이트
+                .next(weeklyStockDataStep) // 2. 주간 데이터 집계/업데이트
+                .next(monthlyStockDataStep) // 3. 월간 데이터 집계/업데이트
+                .build();
+    }
+
+    @Bean
     public Step stockDataStep() {
         return new StepBuilder("stockDataStep", jobRepository)
                 .<StockPrice, StockPrice>chunk(ApplicationConstants.STOCK_PRICE_CHUNK_SIZE, platformTransactionManager)
                 .reader(stockApiItemReader())
-                .processor(stockItemProcessor())
+                .processor(stockItemProcessor(null))
                 .writer(stockItemWriter())
                 .build();
     }
@@ -153,8 +165,50 @@ public class StockPriceBatch {
     }
 
     @Bean
-    public ItemProcessor<StockPrice, StockPrice> stockItemProcessor() {
-        return item -> item;
+    @StepScope
+    public ItemProcessor<StockPrice, StockPrice> stockItemProcessor(
+            @Value("#{jobParameters['date']}") String jobDate) {
+        
+        return new ItemProcessor<StockPrice, StockPrice>() {
+            private Map<String, StockPrice> existingMap = null;
+
+            @Override
+            public StockPrice process(StockPrice item) {
+                if (existingMap == null) {
+                    existingMap = new HashMap<>();
+                    LocalDate date = DateUtils.toStringLocalDate(jobDate);
+                    // 해당 날짜의 전체 시세 데이터를 한 번에 로드
+                    List<StockPrice> existingList = stockPriceRepository.findByBasDt(date);
+                    for (StockPrice p : existingList) {
+                        existingMap.put(p.getStockCode(), p);
+                    }
+                    log.info("Pre-loaded {} existing prices for date {}", existingMap.size(), jobDate);
+                }
+
+                // 메모리 맵에서 즉시 조회
+                StockPrice existing = existingMap.get(item.getStockCode());
+                if (existing != null) {
+                    updateStockPriceData(existing, item);
+                    return existing;
+                }
+                return item;
+            }
+        };
+    }
+
+    private void updateStockPriceData(StockPrice existing, StockPrice newData) {
+        existing.setMarketCode(newData.getMarketCode());
+        existing.setAdjClosePrice(newData.getAdjClosePrice());
+        existing.setVolume(newData.getVolume());
+        existing.setVolumePrice(newData.getVolumePrice());
+        existing.setStartPrice(newData.getStartPrice());
+        existing.setEndPrice(newData.getEndPrice());
+        existing.setHighPrice(newData.getHighPrice());
+        existing.setLowPrice(newData.getLowPrice());
+        existing.setDailyRange(newData.getDailyRange());
+        existing.setDailyRatio(newData.getDailyRatio());
+        existing.setStockTotalCnt(newData.getStockTotalCnt());
+        existing.setMarketTotalAmt(newData.getMarketTotalAmt());
     }
 
     @Bean

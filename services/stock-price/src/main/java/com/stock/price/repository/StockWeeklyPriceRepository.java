@@ -6,8 +6,10 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface StockWeeklyPriceRepository extends JpaRepository<StockWeeklyPrice, Long> {
     List<StockWeeklyPrice> findByStockCodeInAndEndDateBetween(List<String> stockCodes, LocalDate startDate, LocalDate endDate);
+    Optional<StockWeeklyPrice> findByStockCodeAndStartDateAndEndDate(String stockCode, LocalDate startDate, LocalDate endDate);
 }

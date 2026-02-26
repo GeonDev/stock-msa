@@ -17,6 +17,8 @@ public interface CorpFinanceRepository extends JpaRepository<CorpFinance, Long> 
 
     Optional<CorpFinance> findByCorpCodeAndBizYearAndReportCode(String corpCode, String bizYear, ReportCode reportCode);
 
+    List<CorpFinance> findByBizYear(String bizYear);
+
     Optional<CorpFinance> findTop1ByCorpCodeAndBizYearAndReportCodeLessThanOrderByReportCodeDesc(
             String corpCode, String bizYear, ReportCode reportCode);
 

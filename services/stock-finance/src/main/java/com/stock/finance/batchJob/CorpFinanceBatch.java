@@ -22,9 +22,16 @@ import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.data.RepositoryItemWriter;
 import org.springframework.batch.item.data.builder.RepositoryItemWriterBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
+
+import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import com.stock.common.utils.DateUtils;
 
 import static com.stock.common.consts.ApplicationConstants.STOCK_FINANCE_CHUNK_SIZE;
 
@@ -64,7 +71,7 @@ public class CorpFinanceBatch {
         return new StepBuilder("corpFinanceStep", jobRepository)
                 .<CorpFinance, CorpFinance>chunk(STOCK_FINANCE_CHUNK_SIZE, platformTransactionManager)
                 .reader(corpFinanceItemReader())
-                .processor(corpFinanceProcessor())
+                .processor(corpFinanceProcessor(null))
                 .writer(corpFinanceWriter())
                 .build();
     }
@@ -89,23 +96,90 @@ public class CorpFinanceBatch {
     }
 
     @Bean
-    public ItemProcessor<CorpFinance, CorpFinance> corpFinanceProcessor() {
-        return item -> {
-            try {
-                // corpCode 필드는 실제로 stockCode를 저장 (A005930 형식)
-                String stockCode = item.getCorpCode().replace("A", "");
-                StockPriceDto stockPrice = stockClient.getLatestStockPrice(stockCode);
+    @StepScope
+    public ItemProcessor<CorpFinance, CorpFinance> corpFinanceProcessor(
+            @Value("#{jobParameters['date']}") String jobDate) {
+        
+        return new ItemProcessor<CorpFinance, CorpFinance>() {
+            private Map<String, CorpFinance> existingMap = null;
 
-                if (stockPrice != null) {
-                    CorpFinanceIndicator indicator = corpFinanceService.calculateIndicators(item, stockPrice.getMarketTotalAmt());
-                    item.setCorpFinanceIndicator(indicator);
-                    indicator.setCorpFinance(item);
+            @Override
+            public CorpFinance process(CorpFinance item) {
+                if (existingMap == null) {
+                    existingMap = new HashMap<>();
+                    LocalDate date = DateUtils.toStringLocalDate(jobDate);
+                    String bizYear = String.valueOf(date.getYear());
+                    
+                    List<CorpFinance> existingList = corpFinanceRepository.findByBizYear(bizYear);
+                    for (CorpFinance f : existingList) {
+                        existingMap.put(f.getCorpCode() + "_" + f.getReportCode(), f);
+                    }
                 }
-            } catch (Exception e) {
-                // 재무 지표 계산 실패 시에도 재무 데이터는 저장
+
+                CorpFinance existing = existingMap.get(item.getCorpCode() + "_" + item.getReportCode());
+
+                if (existing != null) {
+                    updateFinanceData(existing, item);
+                    item = existing;
+                }
+
+                try {
+                    // corpCode 필드는 실제로 stockCode를 저장 (A005930 형식)
+                    String stockCode = item.getCorpCode().replace("A", "");
+                    StockPriceDto stockPrice = stockClient.getLatestStockPrice(stockCode);
+
+                    if (stockPrice != null) {
+                        CorpFinanceIndicator indicator = corpFinanceService.calculateIndicators(item, stockPrice.getMarketTotalAmt());
+                        
+                        if (item.getCorpFinanceIndicator() != null) {
+                            updateIndicatorData(item.getCorpFinanceIndicator(), indicator);
+                        } else {
+                            item.setCorpFinanceIndicator(indicator);
+                            indicator.setCorpFinance(item);
+                        }
+                    }
+                } catch (Exception e) {
+                    // 재무 지표 계산 실패 시에도 재무 데이터는 저장
+                }
+                return item;
             }
-            return item;
         };
+    }
+
+    private void updateFinanceData(CorpFinance existing, CorpFinance newData) {
+        existing.setBasDt(newData.getBasDt());
+        existing.setCurrency(newData.getCurrency());
+        existing.setOpIncome(newData.getOpIncome());
+        existing.setNetIncome(newData.getNetIncome());
+        existing.setRevenue(newData.getRevenue());
+        existing.setTotalAsset(newData.getTotalAsset());
+        existing.setTotalDebt(newData.getTotalDebt());
+        existing.setTotalCapital(newData.getTotalCapital());
+        existing.setOperatingCashflow(newData.getOperatingCashflow());
+        existing.setInvestingCashflow(newData.getInvestingCashflow());
+        existing.setFinancingCashflow(newData.getFinancingCashflow());
+        existing.setFreeCashflow(newData.getFreeCashflow());
+        existing.setEbitda(newData.getEbitda());
+        existing.setDepreciation(newData.getDepreciation());
+    }
+
+    private void updateIndicatorData(CorpFinanceIndicator existing, CorpFinanceIndicator newData) {
+        existing.setRoe(newData.getRoe());
+        existing.setRoa(newData.getRoa());
+        existing.setPer(newData.getPer());
+        existing.setPbr(newData.getPbr());
+        existing.setPsr(newData.getPsr());
+        existing.setPcr(newData.getPcr());
+        existing.setFcfYield(newData.getFcfYield());
+        existing.setEvEbitda(newData.getEvEbitda());
+        existing.setOperatingMargin(newData.getOperatingMargin());
+        existing.setNetMargin(newData.getNetMargin());
+        existing.setQoqRevenueGrowth(newData.getQoqRevenueGrowth());
+        existing.setQoqOpIncomeGrowth(newData.getQoqOpIncomeGrowth());
+        existing.setQoqNetIncomeGrowth(newData.getQoqNetIncomeGrowth());
+        existing.setYoyRevenueGrowth(newData.getYoyRevenueGrowth());
+        existing.setYoyOpIncomeGrowth(newData.getYoyOpIncomeGrowth());
+        existing.setYoyNetIncomeGrowth(newData.getYoyNetIncomeGrowth());
     }
 
 
