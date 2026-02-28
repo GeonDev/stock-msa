@@ -6,8 +6,7 @@ import com.stock.corp.repository.CorpInfoRepository;
 import com.stock.corp.service.CorpInfoService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.batch.core.Job;
-import org.springframework.batch.core.Step;
+import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
@@ -16,6 +15,7 @@ import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.data.RepositoryItemWriter;
 import org.springframework.batch.item.data.builder.RepositoryItemWriterBuilder;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -38,9 +38,27 @@ public class CorpInfoBatch {
     private final PlatformTransactionManager platformTransactionManager;
     private final CorpInfoService corpInfoService;
     private final RestClient restClient;
+    private final CacheManager cacheManager;
 
     @Value("${dart.api-key}")
     private String dartApiKey;
+
+
+    @Bean
+    public Job corpDataJob() {
+        return new JobBuilder("corpDataJob", jobRepository)
+                .start(corpDataStep())
+                .listener(new JobExecutionListener() {
+                    @Override
+                    public void afterJob(JobExecution jobExecution) {
+                        if (jobExecution.getStatus() == BatchStatus.COMPLETED) {
+                            cacheManager.getCache("corpCache").clear();
+                            log.info("corpCache evicted after corpDataJob completion");
+                        }
+                    }
+                })
+                .build();
+    }
 
     // DART Corp Code 캐시 (배치 실행 중 공유)
     private final Map<String, String> dartCorpCodeCache = new HashMap<>();
@@ -50,14 +68,6 @@ public class CorpInfoBatch {
     @StepScope
     public CorpInfoItemReader corpInfoItemReader() {
         return new CorpInfoItemReader(corpInfoService);
-    }
-
-
-    @Bean
-    public Job corpDataJob() {
-        return new JobBuilder("corpDataJob", jobRepository)
-                .start(corpDataStep())
-                .build();
     }
 
     @Bean

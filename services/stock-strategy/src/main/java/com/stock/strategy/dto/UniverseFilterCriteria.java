@@ -3,6 +3,8 @@ package com.stock.strategy.dto;
 import com.stock.common.enums.StockMarket;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,6 +29,16 @@ public class UniverseFilterCriteria {
     @Min(value = 0, message = "최대 시가총액은 0 이상이어야 합니다")
     @Schema(description = "최대 시가총액 (억 원 단위)", example = "1000000")
     private Long maxMarketCap;
+
+    @DecimalMin(value = "0.0", message = "최소 시가총액 분위수는 0 이상이어야 합니다")
+    @DecimalMax(value = "100.0", message = "최소 시가총액 분위수는 100 이하여야 합니다")
+    @Schema(description = "최소 시가총액 분위수 (0-100, 0: 가장 작은 종목)", example = "0")
+    private Double minMarketCapPercentile;
+
+    @DecimalMin(value = "0.0", message = "최대 시가총액 분위수는 0 이상이어야 합니다")
+    @DecimalMax(value = "100.0", message = "최대 시가총액 분위수는 100 이하여야 합니다")
+    @Schema(description = "최대 시가총액 분위수 (0-100, 100: 가장 큰 종목)", example = "20")
+    private Double maxMarketCapPercentile;
 
     @Schema(description = "제외 업종 리스트", example = "[\"금융\", \"지주사\"]")
     private List<String> excludeSectors;

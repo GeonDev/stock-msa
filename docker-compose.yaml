@@ -16,6 +16,12 @@ services:
     env_file: .env
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATA_REDIS_HOST=stock-redis
+      - JAVA_OPTS=-Xmx128m -Xms128m
+    deploy:
+      resources:
+        limits:
+          memory: 256M
     networks:
       - stock-network
     healthcheck:
@@ -34,8 +40,14 @@ services:
     env_file: .env
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATA_REDIS_HOST=stock-redis
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://${EUREKA_USER}:${EUREKA_PASSWORD}@stock-discovery:8761/eureka
       - SPRING_APPLICATION_JSON={"eureka":{"client":{"service-url":{"defaultZone":"http://${EUREKA_USER}:${EUREKA_PASSWORD}@stock-discovery:8761/eureka"}}}}
+      - JAVA_OPTS=-Xmx128m -Xms128m
+    deploy:
+      resources:
+        limits:
+          memory: 256M
     networks:
       - stock-network
     depends_on:
@@ -55,6 +67,7 @@ services:
     env_file: .env
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATA_REDIS_HOST=stock-redis
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://${EUREKA_USER}:${EUREKA_PASSWORD}@stock-discovery:8761/eureka
       - SPRING_APPLICATION_JSON={"eureka":{"client":{"service-url":{"defaultZone":"http://${EUREKA_USER}:${EUREKA_PASSWORD}@stock-discovery:8761/eureka"}}}}
       # Main DB Connection
@@ -65,6 +78,11 @@ services:
       - SPRING_DATASOURCE_BATCH_URL=${STOCK_BATCH_DB_URL}
       - SPRING_DATASOURCE_BATCH_USERNAME=${BATCH_DB_USER}
       - SPRING_DATASOURCE_BATCH_PASSWORD=${BATCH_DB_PASSWORD}
+      - JAVA_OPTS=-Xmx384m -Xms384m
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     networks:
       - stock-network
     depends_on:
@@ -85,6 +103,7 @@ services:
     env_file: .env
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATA_REDIS_HOST=stock-redis
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://${EUREKA_USER}:${EUREKA_PASSWORD}@stock-discovery:8761/eureka
       - SPRING_APPLICATION_JSON={"eureka":{"client":{"service-url":{"defaultZone":"http://${EUREKA_USER}:${EUREKA_PASSWORD}@stock-discovery:8761/eureka"}}}}
       # Main DB Connection
@@ -95,6 +114,11 @@ services:
       - SPRING_DATASOURCE_BATCH_URL=${STOCK_BATCH_DB_URL}
       - SPRING_DATASOURCE_BATCH_USERNAME=${BATCH_DB_USER}
       - SPRING_DATASOURCE_BATCH_PASSWORD=${BATCH_DB_PASSWORD}
+      - JAVA_OPTS=-Xmx384m -Xms384m
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     networks:
       - stock-network
     depends_on:
@@ -115,6 +139,7 @@ services:
     env_file: .env
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATA_REDIS_HOST=stock-redis
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://${EUREKA_USER}:${EUREKA_PASSWORD}@stock-discovery:8761/eureka
       - SPRING_APPLICATION_JSON={"eureka":{"client":{"service-url":{"defaultZone":"http://${EUREKA_USER}:${EUREKA_PASSWORD}@stock-discovery:8761/eureka"}}}}
       # Main DB Connection
@@ -125,6 +150,11 @@ services:
       - SPRING_DATASOURCE_BATCH_URL=${STOCK_BATCH_DB_URL}
       - SPRING_DATASOURCE_BATCH_USERNAME=${BATCH_DB_USER}
       - SPRING_DATASOURCE_BATCH_PASSWORD=${BATCH_DB_PASSWORD}
+      - JAVA_OPTS=-Xmx384m -Xms384m
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     networks:
       - stock-network
     depends_on:
@@ -145,6 +175,7 @@ services:
     env_file: .env
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATA_REDIS_HOST=stock-redis
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://${EUREKA_USER}:${EUREKA_PASSWORD}@stock-discovery:8761/eureka
       - SPRING_APPLICATION_JSON={"eureka":{"client":{"service-url":{"defaultZone":"http://${EUREKA_USER}:${EUREKA_PASSWORD}@stock-discovery:8761/eureka"}}}}
       # Main DB Connection
@@ -155,6 +186,11 @@ services:
       - SPRING_DATASOURCE_BATCH_URL=${STOCK_BATCH_DB_URL}
       - SPRING_DATASOURCE_BATCH_USERNAME=${BATCH_DB_USER}
       - SPRING_DATASOURCE_BATCH_PASSWORD=${BATCH_DB_PASSWORD}
+      - JAVA_OPTS=-Xmx384m -Xms384m
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     networks:
       - stock-network
     depends_on:
@@ -177,11 +213,20 @@ services:
       MYSQL_USER: ${CORP_DB_USER}
       MYSQL_PASSWORD: ${CORP_DB_PASSWORD}
       MYSQL_ROOT_HOST: "%"
+    deploy:
+      resources:
+        limits:
+          memory: 384M
     ports:
       - "3306:3306"
     volumes:
       - corp-db-volume:/var/lib/mysql
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    command: 
+      - --character-set-server=utf8mb4 
+      - --collation-server=utf8mb4_unicode_ci
+      - --performance_schema=OFF
+      - --innodb_buffer_pool_size=64M
+      - --max_connections=50
     networks:
       - stock-network
     healthcheck:
@@ -199,11 +244,20 @@ services:
       MYSQL_USER: ${FINANCE_DB_USER}
       MYSQL_PASSWORD: ${FINANCE_DB_PASSWORD}
       MYSQL_ROOT_HOST: "%"
+    deploy:
+      resources:
+        limits:
+          memory: 384M
     ports:
       - "3307:3306"
     volumes:
       - finance-db-volume:/var/lib/mysql
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    command: 
+      - --character-set-server=utf8mb4 
+      - --collation-server=utf8mb4_unicode_ci
+      - --performance_schema=OFF
+      - --innodb_buffer_pool_size=64M
+      - --max_connections=50
     networks:
       - stock-network
     healthcheck:
@@ -221,11 +275,20 @@ services:
       MYSQL_USER: ${PRICE_DB_USER}
       MYSQL_PASSWORD: ${PRICE_DB_PASSWORD}
       MYSQL_ROOT_HOST: "%"
+    deploy:
+      resources:
+        limits:
+          memory: 384M
     ports:
       - "3308:3306"
     volumes:
       - price-db-volume:/var/lib/mysql
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    command: 
+      - --character-set-server=utf8mb4 
+      - --collation-server=utf8mb4_unicode_ci
+      - --performance_schema=OFF
+      - --innodb_buffer_pool_size=64M
+      - --max_connections=50
     networks:
       - stock-network
     healthcheck:
@@ -243,11 +306,20 @@ services:
       MYSQL_USER: ${BATCH_DB_USER}
       MYSQL_PASSWORD: ${BATCH_DB_PASSWORD}
       MYSQL_ROOT_HOST: "%"
+    deploy:
+      resources:
+        limits:
+          memory: 384M
     ports:
       - "3309:3306"
     volumes:
       - batch-db-volume:/var/lib/mysql
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    command: 
+      - --character-set-server=utf8mb4 
+      - --collation-server=utf8mb4_unicode_ci
+      - --performance_schema=OFF
+      - --innodb_buffer_pool_size=64M
+      - --max_connections=50
     networks:
       - stock-network
     healthcheck:
@@ -265,11 +337,20 @@ services:
       MYSQL_USER: ${STRATEGY_DB_USER}
       MYSQL_PASSWORD: ${STRATEGY_DB_PASSWORD}
       MYSQL_ROOT_HOST: "%"
+    deploy:
+      resources:
+        limits:
+          memory: 384M
     ports:
       - "3310:3306"
     volumes:
       - strategy-db-volume:/var/lib/mysql
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    command: 
+      - --character-set-server=utf8mb4 
+      - --collation-server=utf8mb4_unicode_ci
+      - --performance_schema=OFF
+      - --innodb_buffer_pool_size=64M
+      - --max_connections=50
     networks:
       - stock-network
     healthcheck:
@@ -286,12 +367,32 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: stock-dashboard
+    deploy:
+      resources:
+        limits:
+          memory: 64M
     ports:
       - "3000:80"
     networks:
       - stock-network
     depends_on:
       - stock-gateway
+
+  # ==========================================
+  # Caching Service
+  # ==========================================
+  stock-redis:
+    image: redis:alpine
+    container_name: stock-redis
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+    ports:
+      - "6379:6379"
+    networks:
+      - stock-network
 
 volumes:
   batch-db-volume:

@@ -3,6 +3,7 @@ package com.stock.strategy.client;
 import com.stock.common.dto.CorpInfoDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -18,6 +19,7 @@ public class CorpClient {
     @Value("${services.stock-corp.url:http://localhost:8081}")
     private String corpServiceUrl;
 
+    @Cacheable(value = "corpCache", key = "'market:' + #market + ':date:' + #date")
     public List<CorpInfoDto> getCorpsByMarket(String market, String date) {
         return restClient.get()
                 .uri(corpServiceUrl + "/api/v1/corp/internal/corps?market=" + market + "&date=" + date)
@@ -25,6 +27,7 @@ public class CorpClient {
                 .body(new ParameterizedTypeReference<List<CorpInfoDto>>() {});
     }
 
+    @Cacheable(value = "corpCache", key = "'corpCode:' + #corpCode")
     public CorpInfoDto getCorpInfo(String corpCode) {
         return restClient.get()
                 .uri(corpServiceUrl + "/api/v1/corp/internal/" + corpCode)

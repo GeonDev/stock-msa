@@ -84,20 +84,7 @@ public class CorpFinanceController {
             @Max(value = 2100, message = "종료 연도는 2100년 이하여야 합니다")
             @RequestParam(value = "endYear") int endYear) throws Exception {
 
-        for (int year = startYear; year <= endYear; year++) {
-            // 각 연도별로 배치 실행 (날짜는 해당 연도의 1월 1일로 설정하여 Reader에서 연도 추출)
-            String dateParam = year + "0101";
-            
-            log.info("Starting recovery batch for year: {}", year);
-            
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("date", dateParam)
-                    .addLong("time", System.currentTimeMillis())
-                    .addString("recovery", "true") // 복구 작업임을 표시
-                    .toJobParameters();
-
-            jobLauncher.run(jobRegistry.getJob("corpFinanceJob"), jobParameters);
-        }
+        corpFinanceService.recoverCorpFinance(startYear, endYear);
 
         return ResponseEntity.ok("RECOVERY STARTED for " + startYear + " - " + endYear);
     }

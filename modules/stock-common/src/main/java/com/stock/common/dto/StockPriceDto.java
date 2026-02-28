@@ -58,4 +58,10 @@ public class StockPriceDto {
 
     @Schema(description = "시가총액", example = "432809234875000")
     private BigDecimal marketTotalAmt;
+
+    @Schema(description = "시가총액 순위", example = "1")
+    private Integer marketCapRank;
+
+    @Schema(description = "시가총액 분위수 (0-100, 100: 가장 큰 종목)", example = "99.8")
+    private BigDecimal marketCapPercentile;
 }
