@@ -24,6 +24,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.TaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.LocalDate;
@@ -47,6 +49,17 @@ public class StockPriceBatch {
     private final CorpEventService corpEventService;
     private final AdjustedPriceService adjustedPriceService;
     private final CacheManager cacheManager;
+
+    @Bean
+    public TaskExecutor batchTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(8);
+        executor.setMaxPoolSize(16);
+        executor.setQueueCapacity(100);
+        executor.setThreadNamePrefix("Batch-Thread-");
+        executor.initialize();
+        return executor;
+    }
 
 
     @Bean
@@ -87,6 +100,7 @@ public class StockPriceBatch {
                         if (jobExecution.getStatus() == BatchStatus.COMPLETED) {
                             cacheManager.getCache("priceCache").clear();
                             cacheManager.getCache("latestPriceCache").clear();
+                            cacheManager.getCache("historyPriceCache").clear();
                             // 전략 서비스의 유니버스 캐시도 함께 제거 (공용 레디스 사용)
                             if (cacheManager.getCache("universeCache") != null) {
                                 cacheManager.getCache("universeCache").clear();
@@ -111,6 +125,7 @@ public class StockPriceBatch {
                         if (jobExecution.getStatus() == BatchStatus.COMPLETED) {
                             cacheManager.getCache("priceCache").clear();
                             cacheManager.getCache("latestPriceCache").clear();
+                            cacheManager.getCache("historyPriceCache").clear();
                             if (cacheManager.getCache("universeCache") != null) {
                                 cacheManager.getCache("universeCache").clear();
                             }
@@ -128,6 +143,7 @@ public class StockPriceBatch {
                 .reader(stockApiItemReader())
                 .processor(stockItemProcessor(null))
                 .writer(stockItemWriter())
+                .taskExecutor(batchTaskExecutor())
                 .build();
     }
 
@@ -157,6 +173,7 @@ public class StockPriceBatch {
                         }
                     }
                 })
+                .taskExecutor(batchTaskExecutor())
                 .build();
     }
 
@@ -174,6 +191,7 @@ public class StockPriceBatch {
                         }
                     }
                 })
+                .taskExecutor(batchTaskExecutor())
                 .build();
     }
 
@@ -184,6 +202,7 @@ public class StockPriceBatch {
                 .reader(stockIndicatorItemReader())
                 .processor(indicatorItemProcessor())
                 .writer(stockItemWriter())
+                .taskExecutor(batchTaskExecutor())
                 .build();
     }
 

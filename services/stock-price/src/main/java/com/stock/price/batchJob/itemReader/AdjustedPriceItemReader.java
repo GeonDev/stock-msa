@@ -20,7 +20,7 @@ public class AdjustedPriceItemReader implements ItemReader<String> {
     private String targetDate;
 
     @Override
-    public String read() throws Exception {
+    public synchronized String read() throws Exception {
         if (!dataFetched) {
             LocalDate date = (targetDate != null) ? LocalDate.parse(targetDate) : LocalDate.now();
             List<String> stockCodes = stockPriceRepository.findDistinctStockCodeByBasDtBetween(date, date);

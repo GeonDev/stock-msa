@@ -15,7 +15,7 @@ public class WeeklyStockCodeItemReader implements ItemReader<String> {
     private boolean dataFetched = false;
 
     @Override
-    public String read() throws Exception {
+    public synchronized String read() throws Exception {
         if (!dataFetched) {
             List<String> stockCodes = stockPriceRepository.findDistinctStockCodes();
             

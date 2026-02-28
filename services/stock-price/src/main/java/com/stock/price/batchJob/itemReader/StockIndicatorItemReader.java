@@ -21,7 +21,7 @@ public class StockIndicatorItemReader implements ItemReader<StockPrice> {
     private String targetDate;
 
     @Override
-    public StockPrice read() throws Exception {
+    public synchronized StockPrice read() throws Exception {
         if (!dataFetched) {
             LocalDate date = (targetDate != null) ? LocalDate.parse(targetDate) : LocalDate.now();
             List<StockPrice> stockPrices = stockPriceRepository.findByBasDt(date);

@@ -1,5 +1,6 @@
 package com.stock.price.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,6 +22,7 @@ public class StockIndicator implements Serializable  {
     @Column(name = "stock_price_id")
     private Long id;
 
+    @JsonIgnore
     @OneToOne(fetch = FetchType.LAZY)
     @MapsId
     @JoinColumn(name = "stock_price_id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
