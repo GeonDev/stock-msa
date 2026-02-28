@@ -19,6 +19,8 @@ import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.TaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.LocalDate;
@@ -36,6 +38,17 @@ public class StockMonthlyPriceBatch {
     private final StockPriceRepository stockPriceRepository;
     private final PriceCalculationService priceCalculationService;
     private final StockMonthlyPriceRepository stockMonthlyPriceRepository;
+
+    @Bean
+    public TaskExecutor monthlyBatchTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(8);
+        executor.setMaxPoolSize(16);
+        executor.setQueueCapacity(100);
+        executor.setThreadNamePrefix("MonthlyBatch-Thread-");
+        executor.initialize();
+        return executor;
+    }
 
     @Bean
     @StepScope
@@ -57,6 +70,7 @@ public class StockMonthlyPriceBatch {
                 .reader(stockCodeReaderMonthly())
                 .processor(monthlyStockProcessor())
                 .writer(monthlyStockWriter())
+                .taskExecutor(monthlyBatchTaskExecutor())
                 .build();
     }
 

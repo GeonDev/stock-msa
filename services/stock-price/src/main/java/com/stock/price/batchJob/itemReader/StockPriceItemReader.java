@@ -26,7 +26,7 @@ public class StockPriceItemReader implements ItemReader<StockPrice> {
     private String jobMarket;
 
     @Override
-    public StockPrice read() throws Exception {
+    public synchronized StockPrice read() throws Exception {
         if (!dataFetched) {
             List<StockPrice> list = stockService.getStockPrice(StockMarket.valueOf(jobMarket), jobDate);
             if (list != null && !list.isEmpty()) {

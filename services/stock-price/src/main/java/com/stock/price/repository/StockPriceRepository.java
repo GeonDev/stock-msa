@@ -1,6 +1,7 @@
 package com.stock.price.repository;
 
 import com.stock.price.entity.StockPrice;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,8 +13,7 @@ import java.util.Optional;
 
 @Repository
 public interface StockPriceRepository extends JpaRepository<StockPrice, Long> {
-    List<StockPrice> findTop200ByStockCodeAndBasDtBeforeOrderByBasDtDesc(String stockCode, LocalDate basDt);
-
+    @Cacheable(value = "historyPriceCache", key = "#stockCode + ':' + #basDt.toString()")
     List<StockPrice> findTop300ByStockCodeAndBasDtBeforeOrderByBasDtDesc(String stockCode, LocalDate basDt);
 
     Optional<StockPrice> findFirstByStockCodeOrderByBasDtDesc(String stockCode);
@@ -29,8 +29,6 @@ public interface StockPriceRepository extends JpaRepository<StockPrice, Long> {
 
     @Query("SELECT DISTINCT s.stockCode FROM StockPrice s")
     List<String> findDistinctStockCodes();
-
-    List<StockPrice> findByStockCodeInAndBasDtBetween(List<String> stockCodes, LocalDate startDate, LocalDate endDate);
 
     List<StockPrice> findByStockCodeAndBasDtBetweenOrderByBasDtAsc(String stockCode, LocalDate startDate, LocalDate endDate);
 

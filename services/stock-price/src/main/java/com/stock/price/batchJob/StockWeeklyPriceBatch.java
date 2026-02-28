@@ -19,6 +19,8 @@ import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.TaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.LocalDate;
@@ -36,6 +38,17 @@ public class StockWeeklyPriceBatch {
     private final StockPriceRepository stockPriceRepository;
     private final PriceCalculationService priceCalculationService;
     private final StockWeeklyPriceRepository stockWeeklyPriceRepository;
+
+    @Bean
+    public TaskExecutor weeklyBatchTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(8);
+        executor.setMaxPoolSize(16);
+        executor.setQueueCapacity(100);
+        executor.setThreadNamePrefix("WeeklyBatch-Thread-");
+        executor.initialize();
+        return executor;
+    }
 
     @Bean
     @StepScope
@@ -57,6 +70,7 @@ public class StockWeeklyPriceBatch {
                 .reader(stockCodeReaderWeekly())
                 .processor(weeklyStockProcessor())
                 .writer(weeklyStockWriter())
+                .taskExecutor(weeklyBatchTaskExecutor())
                 .build();
     }
 

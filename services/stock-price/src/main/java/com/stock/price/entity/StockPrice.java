@@ -1,5 +1,6 @@
 package com.stock.price.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -85,6 +86,7 @@ public class StockPrice {
     @Column(name = "market_cap_percentile")
     private BigDecimal marketCapPercentile;
 
+    @JsonIgnore
     @OneToOne(mappedBy = "stockPrice", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @lombok.ToString.Exclude
     @lombok.EqualsAndHashCode.Exclude

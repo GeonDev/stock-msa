@@ -26,7 +26,8 @@ public class RedisConfig {
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(config)
                 .withCacheConfiguration("latestPriceCache", config.entryTtl(Duration.ofMinutes(10)))
-                .withCacheConfiguration("priceCache", config.entryTtl(Duration.ofHours(24)))
+                .withCacheConfiguration("priceCache", config.entryTtl(Duration.ofHours(6)))
+                .withCacheConfiguration("historyPriceCache", config.entryTtl(Duration.ofHours(6)))
                 .build();
     }
 }
