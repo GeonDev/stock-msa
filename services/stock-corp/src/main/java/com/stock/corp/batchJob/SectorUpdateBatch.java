@@ -10,8 +10,7 @@ import com.stock.corp.repository.CorpDetailRepository;
 import com.stock.corp.repository.CorpInfoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.batch.core.Job;
-import org.springframework.batch.core.Step;
+import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.annotation.JobScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
@@ -21,6 +20,7 @@ import org.springframework.batch.item.data.RepositoryItemReader;
 import org.springframework.batch.item.data.RepositoryItemWriter;
 import org.springframework.batch.item.data.builder.RepositoryItemReaderBuilder;
 import org.springframework.batch.item.data.builder.RepositoryItemWriterBuilder;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.Sort;
@@ -38,11 +38,21 @@ public class SectorUpdateBatch {
     private final CorpInfoRepository corpInfoRepository;
     private final CorpDetailRepository corpDetailRepository;
     private final DartClient dartClient;
+    private final CacheManager cacheManager;
 
     @Bean
     public Job sectorUpdateJob() {
         return new JobBuilder("sectorUpdateJob", jobRepository)
                 .start(sectorUpdateStep())
+                .listener(new JobExecutionListener() {
+                    @Override
+                    public void afterJob(JobExecution jobExecution) {
+                        if (jobExecution.getStatus() == BatchStatus.COMPLETED) {
+                            cacheManager.getCache("corpCache").clear();
+                            log.info("corpCache evicted after sectorUpdateJob completion");
+                        }
+                    }
+                })
                 .build();
     }
 

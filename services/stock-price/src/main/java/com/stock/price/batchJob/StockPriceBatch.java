@@ -7,15 +7,11 @@ import com.stock.price.batchJob.itemReader.StockIndicatorItemReader;
 import com.stock.price.batchJob.itemReader.StockPriceItemReader;
 import com.stock.price.entity.StockPrice;
 import com.stock.price.repository.StockPriceRepository;
-import com.stock.price.service.AdjustedPriceService;
-import com.stock.price.service.CorpEventService;
-import com.stock.price.service.StockService;
-import com.stock.price.service.TechnicalIndicatorService;
+import com.stock.price.service.*;
 import jakarta.persistence.EntityManagerFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.batch.core.Job;
-import org.springframework.batch.core.Step;
+import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
@@ -25,6 +21,7 @@ import org.springframework.batch.item.data.RepositoryItemWriter;
 import org.springframework.batch.item.data.builder.RepositoryItemWriterBuilder;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -46,8 +43,10 @@ public class StockPriceBatch {
     private final PlatformTransactionManager platformTransactionManager;
     private final StockService stockService;
     private final TechnicalIndicatorService technicalIndicatorService;
+    private final MarketCapRankService marketCapRankService;
     private final CorpEventService corpEventService;
     private final AdjustedPriceService adjustedPriceService;
+    private final CacheManager cacheManager;
 
 
     @Bean
@@ -78,9 +77,24 @@ public class StockPriceBatch {
     public Job stockDataJob() {
         return new JobBuilder("stockDataJob", jobRepository)
                 .start(stockDataStep())
+                .next(calculateRankStep())
                 .next(corpEventStep())
                 .next(calculateAdjPriceStep())
                 .next(calculateIndicatorStep())
+                .listener(new JobExecutionListener() {
+                    @Override
+                    public void afterJob(JobExecution jobExecution) {
+                        if (jobExecution.getStatus() == BatchStatus.COMPLETED) {
+                            cacheManager.getCache("priceCache").clear();
+                            cacheManager.getCache("latestPriceCache").clear();
+                            // 전략 서비스의 유니버스 캐시도 함께 제거 (공용 레디스 사용)
+                            if (cacheManager.getCache("universeCache") != null) {
+                                cacheManager.getCache("universeCache").clear();
+                            }
+                            log.info("Price and Universe caches evicted after stockDataJob completion");
+                        }
+                    }
+                })
                 .build();
     }
 
@@ -88,8 +102,22 @@ public class StockPriceBatch {
     public Job stockPriceRecoveryJob(Step weeklyStockDataStep, Step monthlyStockDataStep) {
         return new JobBuilder("stockPriceRecoveryJob", jobRepository)
                 .start(stockDataStep()) // 1. 일별 데이터 수집/업데이트
+                .next(calculateRankStep())
                 .next(weeklyStockDataStep) // 2. 주간 데이터 집계/업데이트
                 .next(monthlyStockDataStep) // 3. 월간 데이터 집계/업데이트
+                .listener(new JobExecutionListener() {
+                    @Override
+                    public void afterJob(JobExecution jobExecution) {
+                        if (jobExecution.getStatus() == BatchStatus.COMPLETED) {
+                            cacheManager.getCache("priceCache").clear();
+                            cacheManager.getCache("latestPriceCache").clear();
+                            if (cacheManager.getCache("universeCache") != null) {
+                                cacheManager.getCache("universeCache").clear();
+                            }
+                            log.info("Price and Universe caches evicted after stockPriceRecoveryJob completion");
+                        }
+                    }
+                })
                 .build();
     }
 
@@ -100,6 +128,18 @@ public class StockPriceBatch {
                 .reader(stockApiItemReader())
                 .processor(stockItemProcessor(null))
                 .writer(stockItemWriter())
+                .build();
+    }
+
+    @Bean
+    public Step calculateRankStep() {
+        return new StepBuilder("calculateRankStep", jobRepository)
+                .tasklet((contribution, chunkContext) -> {
+                    String jobDate = (String) chunkContext.getStepContext().getJobParameters().get("date");
+                    LocalDate date = DateUtils.toStringLocalDate(jobDate);
+                    marketCapRankService.calculateAndSaveMarketCapRanks(date);
+                    return RepeatStatus.FINISHED;
+                }, platformTransactionManager)
                 .build();
     }
 

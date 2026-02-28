@@ -9,6 +9,11 @@ import com.stock.finance.entity.CorpFinance;
 import com.stock.finance.repository.CorpFinanceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.JobParametersBuilder;
+import org.springframework.batch.core.configuration.JobRegistry;
+import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -26,6 +31,8 @@ public class CorpFinanceService {
     private final CorpClient corpClient;
     private final QuarterlyFinanceService quarterlyFinanceService;
     private final CorpFinanceRepository corpFinanceRepository;
+    private final JobLauncher jobLauncher;
+    private final JobRegistry jobRegistry;
 
 
     /**
@@ -33,6 +40,28 @@ public class CorpFinanceService {
      */
     public List<CorpFinance> getCorpFinance(String bizYear, ReportCode reportCode) throws Exception {
         return getCorpFinanceFromDart(bizYear, reportCode);
+    }
+
+    @Async
+    public void recoverCorpFinance(int startYear, int endYear) {
+        for (int year = startYear; year <= endYear; year++) {
+            // 각 연도별로 배치 실행 (날짜는 해당 연도의 1월 1일로 설정하여 Reader에서 연도 추출)
+            String dateParam = year + "0101";
+            
+            log.info("Starting recovery batch for year: {}", year);
+            
+            try {
+                JobParameters jobParameters = new JobParametersBuilder()
+                        .addString("date", dateParam)
+                        .addLong("time", System.currentTimeMillis())
+                        .addString("recovery", "true") // 복구 작업임을 표시
+                        .toJobParameters();
+
+                jobLauncher.run(jobRegistry.getJob("corpFinanceJob"), jobParameters);
+            } catch (Exception e) {
+                log.error("Failed to start recovery batch for year {}: {}", year, e.getMessage());
+            }
+        }
     }
 
     /**

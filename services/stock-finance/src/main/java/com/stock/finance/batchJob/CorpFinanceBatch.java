@@ -13,8 +13,8 @@ import com.stock.finance.client.StockClient;
 import com.stock.finance.service.CorpFinanceService;
 import com.stock.finance.service.FinanceValidationService;
 import lombok.AllArgsConstructor;
-import org.springframework.batch.core.Job;
-import org.springframework.batch.core.Step;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
@@ -23,6 +23,7 @@ import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.data.RepositoryItemWriter;
 import org.springframework.batch.item.data.builder.RepositoryItemWriterBuilder;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -35,6 +36,7 @@ import com.stock.common.utils.DateUtils;
 
 import static com.stock.common.consts.ApplicationConstants.STOCK_FINANCE_CHUNK_SIZE;
 
+@Slf4j
 @Configuration
 @AllArgsConstructor
 public class CorpFinanceBatch {
@@ -46,6 +48,7 @@ public class CorpFinanceBatch {
     private final PlatformTransactionManager platformTransactionManager;
     private final CorpFinanceService corpFinanceService;
     private final FinanceValidationService financeValidationService;
+    private final CacheManager cacheManager;
 
     @Bean
     @StepScope
@@ -63,6 +66,20 @@ public class CorpFinanceBatch {
         return new JobBuilder("corpFinanceJob", jobRepository)
                 .start(corpFinanceStep())
                 .next(validateFinanceStep())
+                .listener(new JobExecutionListener() {
+                    @Override
+                    public void afterJob(JobExecution jobExecution) {
+                        if (jobExecution.getStatus() == BatchStatus.COMPLETED) {
+                            cacheManager.getCache("financeCache").clear();
+                            cacheManager.getCache("indicatorCache").clear();
+                            // 전략 서비스의 유니버스 캐시도 함께 제거 (공용 레디스 사용)
+                            if (cacheManager.getCache("universeCache") != null) {
+                                cacheManager.getCache("universeCache").clear();
+                            }
+                            log.info("Finance and Universe caches evicted after corpFinanceJob completion");
+                        }
+                    }
+                })
                 .build();
     }
 
@@ -140,6 +157,7 @@ public class CorpFinanceBatch {
                     }
                 } catch (Exception e) {
                     // 재무 지표 계산 실패 시에도 재무 데이터는 저장
+                    log.warn("Finance Indicator fail");
                 }
                 return item;
             }

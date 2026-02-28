@@ -12,6 +12,7 @@ import com.stock.price.repository.StockPriceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponents;
@@ -85,12 +86,14 @@ public class StockService {
     }
 
 
+    @Cacheable(value = "latestPriceCache", key = "#stockCode")
     public StockPriceDto getLatestStockPrice(String stockCode) {
         return stockPriceRepository.findFirstByStockCodeOrderByBasDtDesc(stockCode.replace("A", ""))
                 .map(stockPriceMapper::toDto)
                 .orElse(null);
     }
 
+    @Cacheable(value = "priceCache", key = "#stockCode + ':' + #date")
     public StockPriceDto getPriceByDate(String stockCode, String date) {
 
         LocalDate localDate = DateUtils.toStringLocalDate(date);

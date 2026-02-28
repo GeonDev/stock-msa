@@ -11,14 +11,12 @@ import com.stock.strategy.dto.CustomFilterCriteria;
 import com.stock.strategy.dto.UniverseFilterCriteria;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -30,6 +28,7 @@ public class UniverseFilterService {
     private final PriceClient priceClient;
     private final FinanceClient financeClient;
 
+    @Cacheable(value = "universeCache", key = "#baseDate.toString() + ':' + #criteria.hashCode()")
     public List<String> filter(LocalDate baseDate, UniverseFilterCriteria criteria) {
         if (criteria == null) {
             return new ArrayList<>();
@@ -49,19 +48,27 @@ public class UniverseFilterService {
 
             log.info("Initial universe size for {}: {}", market, stockCodes.size());
 
-            // 2. 업종 필터링
+            // 2. 주가 및 시가총액/거래량 필터링 (분위수 필터링 포함)
+            // 시가총액 분위수 필터링은 전체 시장 대비로 계산하기 위해 업종 필터링 전에 수행
+            stockCodes = filterByPrice(stockCodes, dateStr, criteria);
+            log.info("After Price/MarketCap filtering: {}", stockCodes.size());
+
+            // 3. 업종 필터링
             if (criteria.getExcludeSectors() != null && !criteria.getExcludeSectors().isEmpty()) {
                 Set<String> excludeSectors = Set.copyOf(criteria.getExcludeSectors());
-                stockCodes = corps.stream()
-                        .filter(corp -> corp.getSector() == null || !excludeSectors.contains(corp.getSector().name())) 
-                        .map(corp -> corp.getStockCode().replace("A", ""))
+                // 현재 남은 stockCodes 중 업종 필터에 걸리지 않는 것만 유지
+                Map<String, CorpInfoDto> corpMap = corps.stream()
+                        .collect(Collectors.toMap(c -> c.getStockCode().replace("A", ""), c -> c, (a, b) -> a));
+                
+                stockCodes = stockCodes.stream()
+                        .filter(code -> {
+                            CorpInfoDto corp = corpMap.get(code);
+                            return corp == null || corp.getSector() == null || !excludeSectors.contains(corp.getSector().name());
+                        })
                         .collect(Collectors.toList());
+                log.info("After Sector filtering: {}", stockCodes.size());
             }
             
-            // 3. 주가 및 시가총액/거래량 필터링
-            stockCodes = filterByPrice(stockCodes, dateStr, criteria);
-            log.info("After Price filtering: {}", stockCodes.size());
-
             // 4. 상세 지표 필터링 (재무 및 모멘텀)
             if (criteria.getCustomFilter() != null) {
                 stockCodes = filterByCustomCriteria(stockCodes, dateStr, criteria.getCustomFilter());
@@ -77,12 +84,33 @@ public class UniverseFilterService {
     }
 
     private List<String> filterByPrice(List<String> stockCodes, String dateStr, UniverseFilterCriteria criteria) {
-        if (criteria.getMinMarketCap() == null && criteria.getMaxMarketCap() == null && criteria.getMinTradingVolume() == null) {
+        if (criteria.getMinMarketCap() == null && criteria.getMaxMarketCap() == null && 
+            criteria.getMinTradingVolume() == null &&
+            criteria.getMinMarketCapPercentile() == null && criteria.getMaxMarketCapPercentile() == null) {
             return stockCodes;
         }
 
         List<StockPriceDto> prices = priceClient.getPricesByDateBatch(stockCodes, dateStr);
-        return prices.stream()
+        if (prices.isEmpty()) return new ArrayList<>();
+
+        List<StockPriceDto> filteredPrices = prices;
+
+        // 시가총액 분위수 필터링 (배치에서 미리 계산된 값 사용)
+        if (criteria.getMinMarketCapPercentile() != null || criteria.getMaxMarketCapPercentile() != null) {
+            double minP = criteria.getMinMarketCapPercentile() != null ? criteria.getMinMarketCapPercentile() : 0.0;
+            double maxP = criteria.getMaxMarketCapPercentile() != null ? criteria.getMaxMarketCapPercentile() : 100.0;
+            
+            filteredPrices = filteredPrices.stream()
+                    .filter(p -> {
+                        if (p.getMarketCapPercentile() == null) return false;
+                        double val = p.getMarketCapPercentile().doubleValue();
+                        return val >= minP && val <= maxP;
+                    })
+                    .collect(Collectors.toList());
+        }
+
+        // 절대값 필터링
+        return filteredPrices.stream()
                 .filter(p -> {
                     if (criteria.getMinMarketCap() != null) {
                         BigDecimal minCap = BigDecimal.valueOf(criteria.getMinMarketCap()).multiply(new BigDecimal("100000000")); // 억 원 단위

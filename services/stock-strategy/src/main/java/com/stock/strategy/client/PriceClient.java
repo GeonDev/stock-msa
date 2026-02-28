@@ -4,6 +4,7 @@ import com.stock.common.dto.StockIndicatorDto;
 import com.stock.common.dto.StockPriceDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -27,6 +28,7 @@ public class PriceClient {
                 .body(new ParameterizedTypeReference<List<StockPriceDto>>() {});
     }
 
+    @Cacheable(value = "priceCache", key = "'stockCode:' + #stockCode + ':date:' + #date")
     public StockPriceDto getPriceByDate(String stockCode, String date) {
         return restClient.get()
                 .uri(priceServiceUrl + "/api/v1/stock/internal/price/" + stockCode + "/" + date)

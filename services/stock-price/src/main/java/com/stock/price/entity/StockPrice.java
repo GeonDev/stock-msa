@@ -77,6 +77,14 @@ public class StockPrice {
     @Column(name = "market_total_amt")
     private BigDecimal marketTotalAmt;
 
+    // 시가총액 순위 (시장별)
+    @Column(name = "market_cap_rank")
+    private Integer marketCapRank;
+
+    // 시가총액 분위수 (시장별, 0-100)
+    @Column(name = "market_cap_percentile")
+    private BigDecimal marketCapPercentile;
+
     @OneToOne(mappedBy = "stockPrice", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @lombok.ToString.Exclude
     @lombok.EqualsAndHashCode.Exclude

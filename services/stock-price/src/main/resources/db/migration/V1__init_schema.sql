@@ -13,7 +13,9 @@ CREATE TABLE TB_STOCK_PRICE (
     daily_range DECIMAL(25, 4),
     daily_ratio DECIMAL(25, 4),
     stock_total_cnt DECIMAL(25, 4),
-    market_total_amt DECIMAL(25, 4)
+    market_total_amt DECIMAL(25, 4),
+    market_cap_rank INTEGER,
+    market_cap_percentile DECIMAL(5, 2)
 );
 
 CREATE TABLE TB_STOCK_INDICATOR (

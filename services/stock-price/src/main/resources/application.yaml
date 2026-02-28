@@ -28,6 +28,12 @@ spring:
     jdbc:
       initialize-schema: always
 
+  # Redis
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: 6379
+
 data-go:
   service-key: ${DATA_GO_SERVICE_KEY}
 

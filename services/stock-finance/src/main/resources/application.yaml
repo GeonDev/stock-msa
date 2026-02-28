@@ -30,6 +30,12 @@ spring:
     jdbc:
       initialize-schema: always
 
+  # Redis
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: 6379
+
 dart:
   api-key: ${DART_API_KEY}
 

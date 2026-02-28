@@ -10,6 +10,7 @@ import com.stock.corp.repository.CorpInfoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponents;
@@ -81,14 +82,17 @@ public class CorpInfoService {
                 .orElse(null);
     }
 
+    @Cacheable(value = "corpCache", key = "'all'")
     public List<CorpInfoDto> getAllValidCorpInfos() {
         return corpInfoMapper.toDtoList(corpInfoRepository.findAllByStockCodeIsNotNull());
     }
 
+    @Cacheable(value = "corpCache", key = "'market:' + #market")
     public List<CorpInfoDto> getCorpsByMarket(String market) {
         return corpInfoMapper.toDtoList(corpInfoRepository.findAllByMarket(market));
     }
 
+    @Cacheable(value = "corpCache", key = "'stockCode:' + #stockCode")
     public CorpInfo getCorpInfoByStockCode(String stockCode) {
         return corpInfoRepository.findByStockCode(stockCode).orElse(null);
     }

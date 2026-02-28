@@ -35,6 +35,7 @@ export default function Settings() {
   const [priceEndDate, setPriceEndDate] = useState('20241014');
   const [financeStartYear, setFinanceStartYear] = useState('2023');
   const [financeEndYear, setFinanceEndYear] = useState('2023');
+  const [financeYear, setFinanceYear] = useState('2024');
   const [financeDate, setFinanceDate] = useState('20241014');
 
   // Service Health Queries
@@ -49,7 +50,7 @@ export default function Settings() {
     mutationFn: () => financeService.runFinanceRecovery(financeStartYear, financeEndYear) 
   });
   const financeBatch = useMutation({ 
-    mutationFn: (code: string) => financeService.runFinanceBatch(financeDate, code) 
+    mutationFn: (code: string) => financeService.runFinanceBatch(financeYear, code) 
   });
 
   return (
@@ -180,12 +181,12 @@ export default function Settings() {
             {/* Finance Single Recovery */}
             <div className="space-y-4 pt-4 border-t border-zinc-100 dark:border-[#2C2C2E]">
               <div className="flex justify-between items-center">
-                <label className="text-xs font-bold text-zinc-500 dark:text-[#8E8E93] uppercase">Finance Single Sync (Date: {financeDate})</label>
+                <label className="text-xs font-bold text-zinc-500 dark:text-[#8E8E93] uppercase">Finance Single Sync (Year: {financeYear})</label>
                 <input 
                   type="text" 
-                  value={financeDate}
-                  onChange={(e) => setFinanceDate(e.target.value)}
-                  className="w-28 bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-[#2C2C2E] rounded-lg p-1 text-xs focus:border-green-500 outline-none font-mono"
+                  value={financeYear}
+                  onChange={(e) => setFinanceYear(e.target.value)}
+                  className="w-20 bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-[#2C2C2E] rounded-lg p-1 text-xs focus:border-green-500 outline-none font-mono"
                 />
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
