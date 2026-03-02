@@ -96,7 +96,7 @@ public class CorpFinanceBatch {
     @Bean
     public Step validateFinanceStep() {
         return new StepBuilder("validateFinanceStep", jobRepository)
-                .<CorpFinance, CorpFinance>chunk(100, platformTransactionManager)
+                .<CorpFinance, CorpFinance>chunk(STOCK_FINANCE_CHUNK_SIZE, platformTransactionManager)
                 .reader(validateFinanceItemReader())
                 .processor(validateFinanceProcessor())
                 .writer(corpFinanceWriter())

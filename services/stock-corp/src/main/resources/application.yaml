@@ -13,13 +13,16 @@ spring:
     locations: classpath:db/migration
   
   # JPA
-  jpa:
-    open-in-view: false
-    hibernate:
-      ddl-auto: validate
-    properties:
+    jpa:
+      open-in-view: false
       hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
+        ddl-auto: validate
+      properties:
+        hibernate:
+          dialect: org.hibernate.dialect.MySQLDialect
+          jdbc.batch_size: 1000
+          order_inserts: true
+          order_updates: true
 
   # Batch
   batch:
@@ -60,11 +63,11 @@ spring:
 
   # Datasource
   datasource:
-    url: jdbc:mysql://localhost:3306/stock_corp?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    url: jdbc:mysql://localhost:3306/stock_corp?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&rewriteBatchedStatements=true
     username: corp_user
     password: corp_pass
     batch:
-      url: jdbc:mysql://localhost:3309/stock_batch?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      url: jdbc:mysql://localhost:3309/stock_batch?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&rewriteBatchedStatements=true
       username: batch_user
       password: batch_pass
 
@@ -80,11 +83,11 @@ spring:
 
   # Datasource
   datasource:
-    url: ${STOCK_CORP_DB_URL:jdbc:mysql://localhost:3306/stock_corp?serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
+    url: ${STOCK_CORP_DB_URL:jdbc:mysql://localhost:3306/stock_corp?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&rewriteBatchedStatements=true}
     username: ${CORP_DB_USER:corp_user}
     password: ${CORP_DB_PASSWORD:corp_pass}
     batch:
-      url: ${STOCK_BATCH_DB_URL:jdbc:mysql://localhost:3309/stock_batch?serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
+      url: ${STOCK_BATCH_DB_URL:jdbc:mysql://localhost:3309/stock_batch?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&rewriteBatchedStatements=true}
       username: ${BATCH_DB_USER:batch_user}
       password: ${BATCH_DB_PASSWORD:batch_pass}
 
