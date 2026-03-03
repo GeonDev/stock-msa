@@ -22,9 +22,13 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.web.client.RestClient;
 
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.ZipInputStream;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamReader;
 
 import static com.stock.common.consts.ApplicationConstants.*;
 
@@ -109,29 +113,27 @@ public class CorpInfoBatch {
         try {
             log.info("Downloading DART corp code list...");
 
-            // ZIP 파일 다운로드
-            byte[] zipData = restClient.get()
+            // 네트워크 스트림을 직접 ZipInputStream으로 연결하여 메모리 점유 최소화
+            restClient.get()
                     .uri(uriBuilder -> uriBuilder
                             .scheme("https")
                             .host(DART_URL)
                             .path(DART_CORP_CODE_URL)
                             .queryParam("crtfc_key", dartApiKey)
                             .build())
-                    .retrieve()
-                    .body(byte[].class);
-
-            if (zipData == null) {
-                log.error("Failed to download DART corp code list");
-                return;
-            }
-
-            // ZIP 압축 해제 및 파싱
-            try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(zipData))) {
-                if (zis.getNextEntry() != null) {
-                    String xmlContent = new String(zis.readAllBytes());
-                    parseCorpCodeXml(xmlContent);
-                }
-            }
+                    .exchange((request, response) -> {
+                        if (response.getStatusCode().is2xxSuccessful()) {
+                            try (InputStream is = response.getBody();
+                                 ZipInputStream zis = new ZipInputStream(is)) {
+                                if (zis.getNextEntry() != null) {
+                                    parseCorpCodeXml(zis);
+                                }
+                            }
+                        } else {
+                            log.error("Failed to download DART corp code list. Status: {}", response.getStatusCode());
+                        }
+                        return null; // Body 추출 없이 스트림 처리 종료
+                    });
 
             log.info("Loaded {} DART corp codes", dartCorpCodeCache.size());
 
@@ -141,25 +143,48 @@ public class CorpInfoBatch {
     }
 
     /**
-     * XML 파싱하여 캐시 구축
+     * XML 스트리밍 파싱하여 캐시 구축 (StAX 사용)
      */
-    private void parseCorpCodeXml(String xmlContent) {
-        String[] lines = xmlContent.split("\n");
-        String currentCorpCode = null;
-        String currentStockCode = null;
+    private void parseCorpCodeXml(InputStream is) {
+        try {
+            XMLInputFactory factory = XMLInputFactory.newInstance();
+            // 보안 설정: DTD 및 외부 엔티티 차단
+            factory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
+            factory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
 
-        for (String line : lines) {
-            line = line.trim();
+            XMLStreamReader reader = factory.createXMLStreamReader(is);
+            
+            String currentCorpCode = null;
+            String currentStockCode = null;
+            String tagContent = null;
 
-            if (line.startsWith("<corp_code>")) {
-                currentCorpCode = line.replace("<corp_code>", "").replace("</corp_code>", "").trim();
-            } else if (line.startsWith("<stock_code>")) {
-                currentStockCode = line.replace("<stock_code>", "").replace("</stock_code>", "").trim();
-            } else if (line.startsWith("</list>") && currentCorpCode != null && currentStockCode != null && !currentStockCode.isEmpty()) {
-                dartCorpCodeCache.put(currentStockCode, currentCorpCode);
-                currentCorpCode = null;
-                currentStockCode = null;
+            while (reader.hasNext()) {
+                int event = reader.next();
+                
+                switch (event) {
+                    case XMLStreamConstants.CHARACTERS:
+                        tagContent = reader.getText().trim();
+                        break;
+                    
+                    case XMLStreamConstants.END_ELEMENT:
+                        String tagName = reader.getLocalName();
+                        if ("corp_code".equals(tagName)) {
+                            currentCorpCode = tagContent;
+                        } else if ("stock_code".equals(tagName)) {
+                            currentStockCode = tagContent;
+                        } else if ("list".equals(tagName)) {
+                            if (currentCorpCode != null && currentStockCode != null && !currentStockCode.isEmpty()) {
+                                dartCorpCodeCache.put(currentStockCode, currentCorpCode);
+                            }
+                            currentCorpCode = null;
+                            currentStockCode = null;
+                        }
+                        break;
+                }
             }
+            reader.close();
+        } catch (Exception e) {
+            log.error("Error parsing DART corp code XML", e);
         }
     }
 

@@ -78,11 +78,11 @@ services:
       - SPRING_DATASOURCE_BATCH_URL=${STOCK_BATCH_DB_URL}
       - SPRING_DATASOURCE_BATCH_USERNAME=${BATCH_DB_USER}
       - SPRING_DATASOURCE_BATCH_PASSWORD=${BATCH_DB_PASSWORD}
-      - JAVA_OPTS=-Xmx384m -Xms384m
+      - JAVA_OPTS=-Xmx512m -Xms512m
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 640M
     networks:
       - stock-network
     depends_on:

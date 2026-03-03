@@ -30,13 +30,25 @@ const BatchButton = ({ label, onClick, isLoading }: any) => (
 export default function Settings() {
   const { theme, setTheme, defaults, setDefaults } = useSettingsStore();
   
+  const getYesterdayDate = () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const year = yesterday.getFullYear();
+    const month = String(yesterday.getMonth() + 1).padStart(2, '0');
+    const day = String(yesterday.getDate()).padStart(2, '0');
+    return {
+      fullDate: `${year}${month}${day}`,
+      year: `${year}`
+    };
+  };
+  
   // Batch Parameters States
-  const [priceStartDate, setPriceStartDate] = useState('20241014');
-  const [priceEndDate, setPriceEndDate] = useState('20241014');
-  const [financeStartYear, setFinanceStartYear] = useState('2023');
-  const [financeEndYear, setFinanceEndYear] = useState('2023');
-  const [financeYear, setFinanceYear] = useState('2024');
-  const [financeDate, setFinanceDate] = useState('20241014');
+  const [priceStartDate, setPriceStartDate] = useState(getYesterdayDate().fullDate);
+  const [priceEndDate, setPriceEndDate] = useState(getYesterdayDate().fullDate);
+  const [financeStartYear, setFinanceStartYear] = useState(getYesterdayDate().year);
+  const [financeEndYear, setFinanceEndYear] = useState(getYesterdayDate().year);
+  const [financeYear, setFinanceYear] = useState(getYesterdayDate().year);
+  const [financeDate, setFinanceDate] = useState(getYesterdayDate().fullDate);
 
   // Service Health Queries
   const { data: gatewayStatus } = useQuery({ queryKey: ['health', 'gateway'], queryFn: () => systemService.getServiceInfo() });
@@ -110,8 +122,17 @@ export default function Settings() {
           <div className="space-y-8">
             
             {/* Infrastructure */}
-            <div className="space-y-3">
-              <label className="text-xs font-bold text-zinc-500 dark:text-[#8E8E93] uppercase tracking-wider">Infrastructure Sync (Date: {financeDate})</label>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-bold text-zinc-500 dark:text-[#8E8E93] uppercase tracking-wider">Infrastructure Sync</label>
+                <input 
+                  type="text" 
+                  value={financeDate}
+                  onChange={(e) => setFinanceDate(e.target.value)}
+                  placeholder="yyyyMMdd"
+                  className="w-32 bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-[#2C2C2E] rounded-lg p-1 text-xs focus:border-green-500 outline-none font-mono text-center"
+                />
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <BatchButton label="Corp Info Sync" onClick={() => corpBatch.mutate(financeDate)} isLoading={corpBatch.isPending} />
                 <BatchButton label="Sector Update" onClick={() => corpService.runSectorUpdateBatch()} />
