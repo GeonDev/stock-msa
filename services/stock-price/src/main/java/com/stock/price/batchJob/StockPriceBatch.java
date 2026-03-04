@@ -243,8 +243,8 @@ public class StockPriceBatch {
             List<StockPrice> history = stockPriceRepository.findTop300ByStockCodeAndBasDtBeforeOrderByBasDtDesc(
                     item.getStockCode(), item.getBasDt());
 
-            if (history.size() < 1) {
-                // 이 경고는 너무 자주 발생하므로 주석 처리하거나 빈 리스트일 때만 처리
+            if (history.size() < 300) {
+                log.warn("Insufficient history data for stock: {}. Required: 300, Found: {}", item.getStockCode(), history.size());
                 return null;
             }
 
