@@ -38,8 +38,8 @@ public class CorpFinanceService {
     /**
      * 재무 정보 조회 (DART API)
      */
-    public List<CorpFinance> getCorpFinance(String bizYear, ReportCode reportCode) throws Exception {
-        return getCorpFinanceFromDart(bizYear, reportCode);
+    public List<CorpFinance> getCorpFinance(String bizYear, ReportCode reportCode, String corpCode) throws Exception {
+        return getCorpFinanceFromDart(bizYear, reportCode, corpCode);
     }
 
     @Async
@@ -67,14 +67,41 @@ public class CorpFinanceService {
     /**
      * DART API로 재무 정보 조회
      * @param reportCode null이면 4개 분기 전체 수집, 지정 시 해당 분기만 수집
+     * @param targetCorpCode 특정 기업 코드 (6자리 종목코드 또는 8자리 DART 고유번호)
      */
-    private List<CorpFinance> getCorpFinanceFromDart(String bizYear, ReportCode reportCode) {
+    private List<CorpFinance> getCorpFinanceFromDart(String bizYear, ReportCode reportCode, String targetCorpCode) {
         List<CorpFinance> result = new ArrayList<>();
 
         List<String> stockCodes = corpClient.getAllStockCodes();
         if (stockCodes == null || stockCodes.isEmpty()) {
             log.warn("No stock codes found from corp service");
             return result;
+        }
+
+        // 특정 기업 코드 필터링
+        if (targetCorpCode != null && !targetCorpCode.isBlank()) {
+            if (targetCorpCode.length() == 6) {
+                // 6자리 종목코드인 경우
+                stockCodes = stockCodes.stream()
+                        .filter(code -> code.equals(targetCorpCode))
+                        .toList();
+            } else if (targetCorpCode.length() == 8) {
+                // 8자리 DART 고유번호인 경우 - 모든 종목을 순회하며 DART 코드가 일치하는 것 찾기
+                log.info("Filtering by DART corp code: {}", targetCorpCode);
+                List<String> filteredCodes = new ArrayList<>();
+                for (String code : stockCodes) {
+                    if (targetCorpCode.equals(corpClient.getDartCorpCode(code))) {
+                        filteredCodes.add(code);
+                        break;
+                    }
+                }
+                stockCodes = filteredCodes;
+            }
+            
+            if (stockCodes.isEmpty()) {
+                log.warn("No matching stock found for targetCorpCode: {}", targetCorpCode);
+                return result;
+            }
         }
 
         ReportCode[] reportCodes = (reportCode != null)

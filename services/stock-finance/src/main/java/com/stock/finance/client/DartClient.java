@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stock.common.consts.ApplicationConstants;
 import com.stock.common.util.DartRateLimiter;
 import com.stock.finance.dto.DartFinancialResponse;
+import com.stock.finance.dto.DartListResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,6 +13,8 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 @Slf4j
 @Component
@@ -24,6 +27,38 @@ public class DartClient {
     
     @Value("${dart.api-key}")
     private String apiKey;
+
+    /**
+     * 공시 목록 조회
+     */
+    public DartListResponse getDisclosureList(String bgnDe, String endDe, String pblntfTy) {
+        rateLimiter.acquire();
+
+        UriComponentsBuilder builder = UriComponentsBuilder.newInstance()
+                .scheme("https")
+                .host(ApplicationConstants.DART_URL)
+                .path(ApplicationConstants.DART_LIST_URL)
+                .queryParam("crtfc_key", apiKey)
+                .queryParam("bgn_de", bgnDe)
+                .queryParam("end_de", endDe)
+                .queryParam("page_count", 100);
+
+        if (pblntfTy != null && !pblntfTy.isBlank()) {
+            builder.queryParam("pblntf_ty", pblntfTy);
+        }
+
+        URI uri = builder.build().toUri();
+
+        try {
+            return restClient.get()
+                    .uri(uri)
+                    .retrieve()
+                    .body(DartListResponse.class);
+        } catch (Exception e) {
+            log.error("Failed to fetch DART disclosure list", e);
+            return null;
+        }
+    }
     
     /**
      * 단일회사 전체 재무제표 조회

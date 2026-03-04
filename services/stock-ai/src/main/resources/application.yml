@@ -1,0 +1,63 @@
+spring:
+  application:
+    name: stock-ai
+  profiles:
+    active: local
+
+  datasource:
+    url: ${STOCK_AI_DB_URL:jdbc:postgresql://localhost:5432/stock_ai?useSSL=false}
+    username: ${AI_DB_USER:ai_user}
+    password: ${AI_DB_PASSWORD:ai_pass}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  ai:
+    google:
+      gemini:
+        api-key: ${SPRING_AI_GEMINI_API_KEY}
+        chat:
+          options:
+            model: gemini-1.5-flash
+    vectorstore:
+      pgvector:
+        index-type: HNSW
+        distance-type: COSINE
+        dimensions: 768 # Gemini embedding dimensions (verify if using default)
+
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: 6379
+      password: ${REDIS_PASSWORD:}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://${EUREKA_USER:admin}:${EUREKA_PASSWORD:1234}@${EUREKA_HOST:localhost}:8761/eureka
+
+# OpenDART API
+dart:
+  api-key: ${DART_API_KEY}
+
+# Telegram
+telegram:
+  bot-token: ${TELEGRAM_BOT_TOKEN}
+  chat-id: ${TELEGRAM_CHAT_ID}
+  bot-name: ${TELEGRAM_BOT_NAME}
+
+server:
+  port: 8085
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics

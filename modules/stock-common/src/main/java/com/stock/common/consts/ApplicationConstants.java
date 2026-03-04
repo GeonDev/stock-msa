@@ -41,6 +41,8 @@ public class ApplicationConstants {
 
     public static final String DART_FINANCE_URL = "/api/fnlttSinglAcnt.json";
 
+    public static final String DART_LIST_URL = "/api/list.json";
+
     // DART API 제한 (분당 1,000회이나 안전을 위해 기본값 800 설정)
     public static final int DART_MAX_CALLS_PER_MINUTE = 800;
 }

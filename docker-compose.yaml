@@ -114,11 +114,11 @@ services:
       - SPRING_DATASOURCE_BATCH_URL=${STOCK_BATCH_DB_URL}
       - SPRING_DATASOURCE_BATCH_USERNAME=${BATCH_DB_USER}
       - SPRING_DATASOURCE_BATCH_PASSWORD=${BATCH_DB_PASSWORD}
-      - JAVA_OPTS=-Xmx384m -Xms384m
+      - JAVA_OPTS=-Xmx320m -Xms320m
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 448M
     networks:
       - stock-network
     depends_on:
@@ -150,11 +150,11 @@ services:
       - SPRING_DATASOURCE_BATCH_URL=${STOCK_BATCH_DB_URL}
       - SPRING_DATASOURCE_BATCH_USERNAME=${BATCH_DB_USER}
       - SPRING_DATASOURCE_BATCH_PASSWORD=${BATCH_DB_PASSWORD}
-      - JAVA_OPTS=-Xmx384m -Xms384m
+      - JAVA_OPTS=-Xmx320m -Xms320m
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 448M
     networks:
       - stock-network
     depends_on:
@@ -186,11 +186,11 @@ services:
       - SPRING_DATASOURCE_BATCH_URL=${STOCK_BATCH_DB_URL}
       - SPRING_DATASOURCE_BATCH_USERNAME=${BATCH_DB_USER}
       - SPRING_DATASOURCE_BATCH_PASSWORD=${BATCH_DB_PASSWORD}
-      - JAVA_OPTS=-Xmx384m -Xms384m
+      - JAVA_OPTS=-Xmx320m -Xms320m
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 448M
     networks:
       - stock-network
     depends_on:
@@ -199,6 +199,40 @@ services:
       stock-strategy-db:
         condition: service_healthy
       stock-batch-db:
+        condition: service_healthy
+
+  stock-ai:
+    build:
+      context: .
+      dockerfile: ./services/stock-ai/Dockerfile
+    container_name: stock-ai
+    ports:
+      - "8085:8085"
+    env_file: .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://${EUREKA_USER}:${EUREKA_PASSWORD}@stock-discovery:8761/eureka
+      - SPRING_APPLICATION_JSON={"eureka":{"client":{"service-url":{"defaultZone":"http://${EUREKA_USER}:${EUREKA_PASSWORD}@stock-discovery:8761/eureka"}}}}
+      # AI DB Connection
+      - SPRING_DATASOURCE_URL=${STOCK_AI_DB_URL}
+      - SPRING_DATASOURCE_USERNAME=${AI_DB_USER}
+      - SPRING_DATASOURCE_PASSWORD=${AI_DB_PASSWORD}
+      # Gemini API Key
+      - SPRING_AI_GEMINI_API_KEY=${SPRING_AI_GEMINI_API_KEY}
+      # Telegram
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      - JAVA_OPTS=-Xmx256m -Xms256m
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+    networks:
+      - stock-network
+    depends_on:
+      stock-discovery:
+        condition: service_healthy
+      stock-ai-db:
         condition: service_healthy
 
   # ==========================================
@@ -225,8 +259,8 @@ services:
       - --character-set-server=utf8mb4 
       - --collation-server=utf8mb4_unicode_ci
       - --performance_schema=OFF
-      - --innodb_buffer_pool_size=64M
-      - --max_connections=50
+      - --innodb_buffer_pool_size=96M
+      - --max_connections=40
     networks:
       - stock-network
     healthcheck:
@@ -256,8 +290,8 @@ services:
       - --character-set-server=utf8mb4 
       - --collation-server=utf8mb4_unicode_ci
       - --performance_schema=OFF
-      - --innodb_buffer_pool_size=64M
-      - --max_connections=50
+      - --innodb_buffer_pool_size=96M
+      - --max_connections=40
     networks:
       - stock-network
     healthcheck:
@@ -287,8 +321,8 @@ services:
       - --character-set-server=utf8mb4 
       - --collation-server=utf8mb4_unicode_ci
       - --performance_schema=OFF
-      - --innodb_buffer_pool_size=64M
-      - --max_connections=50
+      - --innodb_buffer_pool_size=96M
+      - --max_connections=40
     networks:
       - stock-network
     healthcheck:
@@ -318,8 +352,8 @@ services:
       - --character-set-server=utf8mb4 
       - --collation-server=utf8mb4_unicode_ci
       - --performance_schema=OFF
-      - --innodb_buffer_pool_size=64M
-      - --max_connections=50
+      - --innodb_buffer_pool_size=96M
+      - --max_connections=40
     networks:
       - stock-network
     healthcheck:
@@ -349,12 +383,42 @@ services:
       - --character-set-server=utf8mb4 
       - --collation-server=utf8mb4_unicode_ci
       - --performance_schema=OFF
-      - --innodb_buffer_pool_size=64M
-      - --max_connections=50
+      - --innodb_buffer_pool_size=96M
+      - --max_connections=40
     networks:
       - stock-network
     healthcheck:
       test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  stock-ai-db:
+    image: pgvector/pgvector:pg16
+    container_name: stock-ai-db
+    environment:
+      POSTGRES_DB: stock_ai
+      POSTGRES_USER: ${AI_DB_USER}
+      POSTGRES_PASSWORD: ${AI_DB_PASSWORD}
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    ports:
+      - "5435:5432"
+    volumes:
+      - ai-db-volume:/var/lib/postgresql/data
+    command:
+      - "-c"
+      - "max_connections=20"
+      - "-c"
+      - "shared_buffers=64MB"
+      - "-c"
+      - "work_mem=4MB"
+    networks:
+      - stock-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${AI_DB_USER} -d stock_ai"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -400,3 +464,4 @@ volumes:
   finance-db-volume:
   price-db-volume:
   strategy-db-volume:
+  ai-db-volume:

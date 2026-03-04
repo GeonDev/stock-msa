@@ -27,6 +27,9 @@ public class CorpFinanceItemReader implements ItemReader<CorpFinance> {
     @Value("#{jobParameters['reportCode']}")
     private String reportCodeParam;
 
+    @Value("#{jobParameters['corpCode']}")
+    private String corpCodeParam;
+
     @Override
     public CorpFinance read() throws Exception {
         if (!dataFetched) {
@@ -37,7 +40,7 @@ public class CorpFinanceItemReader implements ItemReader<CorpFinance> {
                     ? ReportCode.valueOf(reportCodeParam)
                     : null;
 
-            List<CorpFinance> list = corpFinanceService.getCorpFinance(bizYear, reportCode);
+            List<CorpFinance> list = corpFinanceService.getCorpFinance(bizYear, reportCode, corpCodeParam);
             if (list != null && !list.isEmpty()) {
                 corpIterator = list.iterator();
             }

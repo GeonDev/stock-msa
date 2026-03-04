@@ -40,29 +40,37 @@
 
 ## 4. 상세 구현 단계
 
-### 4.1 stock-ai 모듈 초기화 및 인프라 (1주차)
-- **모듈 생성**: `services/stock-ai` 디렉토리 신설 및 `build.gradle` 설정.
-- **Spring AI 통합**: Google Gemini API 연동을 위한 의존성 추가.
-- **Vector DB 스키마 설계**: MySQL 8.4+ 기준으로 공시 본문 임베딩 저장을 위한 `VECTOR` 컬럼 테이블 정의.
-- **보안 관리 (Secrets)**:
+### 4.1 stock-ai 모듈 초기화 및 인프라 (1주차) [완료]
+- [x] **모듈 생성**: `services/stock-ai` 디렉토리 신설 및 `build.gradle` 설정.
+- [x] **Spring AI 통합**: Google Gemini API 연동을 위한 의존성 추가.
+- [x] **Vector DB 스키마 설계**: PostgreSQL 16 (pgvector) 기준으로 공시 본문 임베딩 저장을 위한 `vector` 타입 컬럼 테이블 정의.
+- [x] **보안 관리 (Secrets)**:
   - `.env` 파일을 통한 `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` 관리.
   - 확장성을 위해 `TelegramBotProperty` 클래스를 구성하여 다중 봇 지원 구조 설계.
-- **텔레그램 명령 처리기 (Command Pattern)**:
+- [x] **텔레그램 명령 처리기 (Command Pattern)**:
   - `/start`, `/report [종목명]`, `/summary` 등 명령어를 처리할 수 있는 구조 구축.
 
-### 4.2 데이터 전처리 및 분석 엔진 (2주차)
-- **Prompt Engineering**: DB 내 재무제표(JSON)를 LLM이 이해하기 쉬운 요약 텍스트로 변환하는 템플릿 개발.
-- **재무 스코어링**: AI가 판단한 수익성, 안정성, 성장성 점수 산출 로직.
-- **RAG (Retrieval-Augmented Generation)**:
-  - DART 공시 텍스트를 파싱하여 벡터화.
-  - 질문에 적합한 공시 문맥을 추출하여 LLM 답변의 정확도 향상.
+### 4.2 데이터 전처리 및 분석 엔진 (2주차) [완료]
+- [x] **데이터 수집 및 동기화 전략 (Event-Driven & Polling)**:
+  - [x] **최신 공시 폴링**: OpenDART의 '공시서류 검색' API를 주기적(15~30분)으로 호출하여 전체 상장사의 최신 공시 목록 수집.
+  - [x] **재무 업데이트 감지**: 공시 유형이 **정기공시(`pblntf_ty=A`)**이면서 '사업/분기/반기보고서'인 경우, 해당 기업의 최신 재무 데이터 업데이트 이벤트 발생.
+  - [x] **정밀 수집 및 동기화**: 감지된 기업에 한해 '단일/다중회사 주요재무사항' API를 호출하여 매출, 영업이익 등 핵심 지표를 즉시 수집하고 `stock-finance` 서비스와 동기화.
+  - [x] **기존 서비스 기능 확장 (`stock-finance`)**: 특정 기업의 재무 데이터만 선별적으로 수집할 수 있도록 `CorpFinanceController`의 `/batch/corp-fin` API에 `corpCode` 파라미터 추가 및 배치 연동 로직 고도화.
+  - [x] **중복 방지 및 필터링**: `rcept_no`(접수번호)를 식별자로 사용하여 중복 수집을 방지하며, 관심/보유 종목 위주로 우선 분석하여 리소스 낭비 최소화.
+- [x] **Prompt Engineering**: DB 내 재무제표(JSON)를 LLM이 이해하기 쉬운 요약 텍스트로 변환하는 템플릿 개발.
+- [x] **재무 스코어링**: AI가 판단한 수익성, 안정성, 성장성 점수 산출 로직.
+- [x] **RAG (Retrieval-Augmented Generation)**:
+  - [x] 선별된 DART 공시 본문 및 재무 지표를 파싱하여 벡터화 후 `pgvector` 저장.
+  - [x] 질문에 적합한 공시 문맥과 재무 수치를 결합 추출하여 LLM 답변의 정확도 향상.
 
-### 4.3 텔레그램 리포팅 시스템 (3주차)
-- **자동화 스케줄러**:
+### 4.3 텔레그램 리포팅 시스템 (3주차) [진행 중]
+- [ ] **자동화 스케줄러**:
   - `08:30`: 당일 주요 일정 및 관심 종목 AI 요약 발송.
   - `16:00`: 장 마감 후 체결 강도 및 재무 특이점 보고서 발송.
-- **인터랙티브 봇**: 사용자가 종목명을 입력하면 즉시 현재가, 재무 상태, AI 의견을 한눈에 볼 수 있는 카드형 메시지 응답.
-- **PDF 생성기**: `Thymeleaf` 또는 `React-PDF`를 활용해 차트와 텍스트가 결합된 리서치 보고서를 PDF로 렌더링 후 텔레그램 파일 전송.
+- [x] **인터랙티브 봇**: 사용자가 종목명을 입력하면 즉시 현재가, 재무 상태, AI 의견을 한눈에 볼 수 있는 카드형 메시지 응답.
+- [ ] **시각화 및 요약 메시지 (Image + Text)**: 
+  - `jFreeChart` 등을 활용해 재무/주가 추이 차트를 가벼운 이미지 파일로 생성.
+  - 텔레그램의 `sendPhoto` API와 `HTML` 모드를 조합하여 이미지와 함께 상세 분석 본문을 한 개의 메시지로 묶어서 발송 (PDF 대비 리소스 점유율 80% 감소).
 
 ### 4.4 개인화 및 확장성 고도화 (4주차)
 - **사용자별 알림 설정**: 특정 종목이 특정 지표(예: PER 5 이하)에 도달했을 때 개인별 텔레그램 알림.
@@ -81,6 +89,11 @@ TELEGRAM_BOT_NAME=StockMsaBot
 
 # AI Provider Settings
 SPRING_AI_GEMINI_API_KEY=your_gemini_key_here
+
+# AI Database Settings (PostgreSQL + pgvector)
+AI_DB_USER=ai_user
+AI_DB_PASSWORD=ai_pass
+STOCK_AI_DB_URL=jdbc:postgresql://localhost:5432/stock_ai?useSSL=false
 ```
 
 ### 5.2 확장성 고려 (Multi-Tenant)

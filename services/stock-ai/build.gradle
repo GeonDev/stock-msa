@@ -1,0 +1,38 @@
+def profile = project.findProperty('profile') ?: 'local'
+
+println "Current profile: ${profile}"
+
+configurations {
+    all {
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-tomcat'
+    }
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-undertow'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+
+    // Spring AI
+    implementation 'org.springframework.ai:spring-ai-vertex-ai-gemini-spring-boot-starter:1.0.0-M5'
+    implementation 'org.springframework.ai:spring-ai-pgvector-store-spring-boot-starter:1.0.0-M5'
+
+    // Database
+    implementation 'org.postgresql:postgresql'
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-database-postgresql'
+
+    // Utilities
+    implementation 'io.github.cdimascio:dotenv-java:2.2.0'
+    implementation project(':modules:stock-common')
+    
+    // WebClient for Telegram
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+    // JSON
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+}

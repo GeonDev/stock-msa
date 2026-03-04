@@ -1,6 +1,8 @@
 package com.stock.finance.controller;
 
 import com.stock.common.dto.CorpFinanceIndicatorDto;
+import com.stock.finance.client.DartClient;
+import com.stock.finance.dto.DartListResponse;
 import com.stock.finance.mapper.CorpFinanceIndicatorMapper;
 import com.stock.finance.repository.CorpFinanceIndicatorRepository;
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,6 +25,16 @@ public class InternalFinanceController {
 
     private final CorpFinanceIndicatorRepository indicatorRepository;
     private final CorpFinanceIndicatorMapper mapper;
+    private final DartClient dartClient;
+
+    @GetMapping("/dart/list")
+    @Operation(summary = "DART 공시 목록 조회", description = "DART API를 직접 호출하여 특정 기간의 공시 목록을 조회합니다.")
+    public DartListResponse getDartDisclosureList(
+            @RequestParam String bgnDe,
+            @RequestParam String endDe,
+            @RequestParam(required = false) String pblntfTy) {
+        return dartClient.getDisclosureList(bgnDe, endDe, pblntfTy);
+    }
 
     @GetMapping("/indicators/batch")
     @Operation(summary = "지정된 종목 및 날짜의 재무 지표 조회", description = "여러 종목의 특정 날짜 재무 지표를 한 번에 조회합니다.")
