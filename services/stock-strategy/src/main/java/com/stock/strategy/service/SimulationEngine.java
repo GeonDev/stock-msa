@@ -4,34 +4,27 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stock.common.dto.StockPriceDto;
 import com.stock.common.service.DayOffService;
-import com.stock.common.utils.DateUtils;
 import com.stock.strategy.client.PriceClient;
 import com.stock.strategy.dto.BacktestRequest;
 import com.stock.strategy.dto.PortfolioHolding;
 import com.stock.strategy.dto.TradeOrder;
-import com.stock.strategy.entity.BacktestSimulation;
+import com.stock.strategy.entity.BacktestResult;
 import com.stock.strategy.entity.PortfolioSnapshot;
-import com.stock.strategy.entity.TradeHistory;
+import com.stock.strategy.enums.OrderType;
 import com.stock.strategy.enums.RebalancingPeriod;
-import com.stock.strategy.enums.SimulationStatus;
-import com.stock.strategy.repository.BacktestSimulationRepository;
+import com.stock.strategy.enums.SlippageType;
+import com.stock.strategy.service.slippage.SlippageModel;
+import com.stock.strategy.service.slippage.SlippageModelFactory;
 import com.stock.strategy.repository.PortfolioSnapshotRepository;
-import com.stock.strategy.repository.TradeHistoryRepository;
 import com.stock.strategy.strategy.Strategy;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import com.stock.strategy.service.slippage.SlippageModel;
-import com.stock.strategy.service.slippage.NoSlippageModel;
-import com.stock.strategy.service.slippage.FixedSlippageModel;
-import com.stock.strategy.service.slippage.VolumeBasedSlippageModel;
-import com.stock.strategy.enums.SlippageType;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -42,96 +35,55 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SimulationEngine {
 
-    private final BacktestSimulationRepository simulationRepository;
-    private final PortfolioSnapshotRepository snapshotRepository;
-    private final TradeHistoryRepository tradeHistoryRepository;
     private final DayOffService dayOffService;
     private final UniverseFilterService universeFilterService;
-    private final StrategyFactory strategyFactory;
-    private final PerformanceCalculationService performanceCalculationService;
     private final PriceClient priceClient;
+    private final PortfolioSnapshotRepository snapshotRepository;
     private final ObjectMapper objectMapper;
 
-    @Transactional
-    public void runSimulation(Long simulationId, BacktestRequest request) {
-        // 시뮬레이션 상태 업데이트
-        BacktestSimulation simulation = simulationRepository.findById(simulationId)
-                .orElseThrow(() -> new IllegalArgumentException("Simulation not found"));
-        simulation.setStatus(SimulationStatus.RUNNING);
-        simulationRepository.save(simulation);
-
-        // 초기 포트폴리오 설정
+    public BacktestResult runSimulation(Long simulationId, BacktestRequest request, Strategy strategy) {
         Portfolio portfolio = new Portfolio(request.getInitialCapital());
-        
-        // 전략 가져오기
-        Strategy strategy = strategyFactory.getStrategy(request.getStrategyType());
-
-        // 슬리피지 모델 초기화
-        SlippageModel slippageModel = new NoSlippageModel();
-        if (request.getSlippageType() == SlippageType.FIXED && request.getFixedSlippageRate() != null) {
-            slippageModel = new FixedSlippageModel(request.getFixedSlippageRate());
-        } else if (request.getSlippageType() == SlippageType.VOLUME) {
-            slippageModel = new VolumeBasedSlippageModel(request.getFixedSlippageRate(), new BigDecimal("0.005")); // 기본값
-        }
-
-        // 제약 조건
-        BigDecimal maxWeightPerStock = request.getMaxWeightPerStock() != null ? request.getMaxWeightPerStock() : BigDecimal.ONE;
-
-        // 시뮬레이션 실행
         LocalDate currentDate = request.getStartDate();
-        while (!currentDate.isAfter(request.getEndDate())) {
+        LocalDate endDate = request.getEndDate();
+        
+        SlippageModel slippageModel = SlippageModelFactory.create(
+                request.getSlippageType() != null ? request.getSlippageType() : SlippageType.NONE,
+                request.getFixedSlippageRate()
+        );
 
+        while (!currentDate.isAfter(endDate)) {
             // 휴장일 인경우 다음날 체크
             if (dayOffService.checkIsDayOff(currentDate)) {
                 currentDate = currentDate.plusDays(1);
                 continue;
             }
 
+            log.info("Processing backtest date: {}", currentDate);
+
             // 리밸런싱 체크
             if (isRebalancingDate(currentDate, request.getRebalancingPeriod(), request.getStartDate())) {
+                log.info("Rebalancing on: {}", currentDate);
                 // 유니버스 필터링
                 List<String> universe = universeFilterService.filter(currentDate, request.getUniverseFilter());
                 
-                // 전략에 따른 매매 시그널 생성
-                List<TradeOrder> orders;
-                if (strategy instanceof com.stock.strategy.strategy.ValueStrategy && request.getValueStrategyConfig() != null) {
-                    orders = ((com.stock.strategy.strategy.ValueStrategy) strategy).rebalance(
-                            currentDate, portfolio, universe, request.getValueStrategyConfig());
-                } else if (strategy instanceof com.stock.strategy.strategy.MultiFactorStrategy && request.getMultiFactorConfig() != null) {
-                    orders = ((com.stock.strategy.strategy.MultiFactorStrategy) strategy).rebalance(
-                            currentDate, portfolio, universe, request.getMultiFactorConfig());
-                } else if (strategy instanceof com.stock.strategy.strategy.SectorRotationStrategy && request.getSectorRotationConfig() != null) {
-                    orders = ((com.stock.strategy.strategy.SectorRotationStrategy) strategy).rebalance(
-                            currentDate, portfolio, universe, request.getSectorRotationConfig());
-                } else if (strategy instanceof com.stock.strategy.strategy.AssetAllocationStrategy && request.getAssetAllocationConfig() != null) {
-                    orders = ((com.stock.strategy.strategy.AssetAllocationStrategy) strategy).rebalance(
-                            currentDate, portfolio, universe, request.getAssetAllocationConfig(), request.getStrategyType());
-                } else {
-                    orders = strategy.rebalance(currentDate, portfolio, universe);
-                }
+                // 전략 실행
+                List<TradeOrder> orders = strategy.rebalance(currentDate, portfolio, universe, request);
                 
-                // 매매 실행
-                executeOrders(simulationId, currentDate, orders, portfolio, request.getTradingFeeRate(), request.getTaxRate(), slippageModel, maxWeightPerStock);
+                // 주문 실행
+                executeOrders(orders, portfolio, slippageModel, request.getTradingFeeRate(), request.getTaxRate());
             }
 
-            // 포트폴리오 평가 (현재가 기준)
-            updatePortfolioValue(currentDate, portfolio);
-
-            // 스냅샷 저장 (리밸런싱일 또는 월말)
-            if (shouldSaveSnapshot(currentDate, request.getRebalancingPeriod())) {
-                saveSnapshot(simulationId, currentDate, portfolio);
-            }
+            // 일일 성과 계산 (현금 + 주식)
+            calculateDailyReturn(currentDate, portfolio);
+            
+            // 포트폴리오 스냅샷 저장
+            saveSnapshot(currentDate, portfolio, simulationId);
 
             currentDate = currentDate.plusDays(1);
         }
 
-        // 성과 지표 계산
-        performanceCalculationService.calculateAndSave(simulationId);
-
-        // 시뮬레이션 완료
-        simulation.setStatus(SimulationStatus.COMPLETED);
-        simulation.setCompletedAt(LocalDateTime.now());
-        simulationRepository.save(simulation);
+        // 최종 결과 계산
+        return calculateBacktestResult(simulationId, request, portfolio);
     }
 
     private boolean isRebalancingDate(LocalDate date, RebalancingPeriod period, LocalDate startDate) {
@@ -143,206 +95,115 @@ public class SimulationEngine {
             case DAILY -> true;
             case WEEKLY -> date.getDayOfWeek().getValue() == 1; // 월요일
             case MONTHLY -> date.getDayOfMonth() == 1; // 매월 1일
-            case QUARTERLY -> date.getDayOfMonth() == 1 && (date.getMonthValue() % 3 == 1); // 분기 첫날
-            case YEARLY -> date.getDayOfMonth() == 1 && date.getMonthValue() == 1; // 매년 1월 1일
+            case QUARTERLY -> date.getDayOfMonth() == 1 && (date.getMonthValue() % 3 == 1);
+            case YEARLY -> date.getDayOfYear() == 1;
         };
     }
 
-    private void executeOrders(Long simulationId, LocalDate date, List<TradeOrder> orders, 
-                               Portfolio portfolio, BigDecimal feeRate, BigDecimal taxRate,
-                               SlippageModel slippageModel, BigDecimal maxWeightPerStock) {
-        BigDecimal totalValueBeforeTrade = portfolio.getTotalValue();
-        BigDecimal maxInvestmentPerStock = totalValueBeforeTrade.multiply(maxWeightPerStock);
+    private void executeOrders(List<TradeOrder> orders, Portfolio portfolio, SlippageModel slippageModel, BigDecimal feeRate, BigDecimal taxRate) {
+        // 1. 매도 먼저 처리
+        orders.stream()
+                .filter(o -> o.getOrderType() == OrderType.SELL)
+                .forEach(o -> processOrder(o, portfolio, slippageModel, feeRate, taxRate));
 
-        for (TradeOrder order : orders) {
-            BigDecimal execPrice = slippageModel.calculateExecutionPrice(order.getPrice(), order.getQuantity(), order.getOrderType());
-            int quantity = order.getQuantity();
-
-            if (order.getOrderType() == com.stock.strategy.enums.OrderType.BUY) {
-                // 단일 종목 최대 비중 제한 검사
-                BigDecimal currentHoldingValue = BigDecimal.ZERO;
-                if (portfolio.getHoldings().containsKey(order.getStockCode())) {
-                    currentHoldingValue = portfolio.getHoldings().get(order.getStockCode()).getMarketValue();
-                }
-
-                BigDecimal plannedValue = execPrice.multiply(BigDecimal.valueOf(quantity));
-                if (currentHoldingValue.add(plannedValue).compareTo(maxInvestmentPerStock) > 0) {
-                    BigDecimal allowedAdditionalValue = maxInvestmentPerStock.subtract(currentHoldingValue);
-                    if (allowedAdditionalValue.compareTo(BigDecimal.ZERO) > 0) {
-                        quantity = allowedAdditionalValue.divide(execPrice, 0, RoundingMode.DOWN).intValue();
-                    } else {
-                        quantity = 0;
-                    }
-                }
-            }
-
-            if (quantity <= 0) continue;
-
-            BigDecimal totalAmount = execPrice.multiply(BigDecimal.valueOf(quantity));
-            BigDecimal fee = totalAmount.multiply(feeRate).setScale(2, RoundingMode.HALF_UP);
-            BigDecimal tax = BigDecimal.ZERO;
-
-            switch (order.getOrderType()) {
-                case BUY -> {
-                    BigDecimal totalCost = totalAmount.add(fee);
-                    if (portfolio.getCashBalance().compareTo(totalCost) >= 0) {
-                        portfolio.setCashBalance(portfolio.getCashBalance().subtract(totalCost));
-                        portfolio.addHolding(order.getStockCode(), quantity, execPrice);
-                    } else {
-                        // 잔고 부족 시 살 수 있는 만큼 매수 (1주 단위)
-                        quantity = portfolio.getCashBalance().divide(execPrice.multiply(BigDecimal.ONE.add(feeRate)), 0, RoundingMode.DOWN).intValue();
-                        if (quantity > 0) {
-                            totalAmount = execPrice.multiply(BigDecimal.valueOf(quantity));
-                            fee = totalAmount.multiply(feeRate).setScale(2, RoundingMode.HALF_UP);
-                            totalCost = totalAmount.add(fee);
-                            portfolio.setCashBalance(portfolio.getCashBalance().subtract(totalCost));
-                            portfolio.addHolding(order.getStockCode(), quantity, execPrice);
-                        } else {
-                            continue; // 못 삼
-                        }
-                    }
-                }
-                case SELL -> {
-                    tax = totalAmount.multiply(taxRate).setScale(2, RoundingMode.HALF_UP);
-                    BigDecimal netAmount = totalAmount.subtract(fee).subtract(tax);
-                    portfolio.setCashBalance(portfolio.getCashBalance().add(netAmount));
-                    portfolio.removeHolding(order.getStockCode(), quantity);
-                }
-            }
-
-            // 거래 이력 저장
-            TradeHistory history = TradeHistory.builder()
-                    .simulationId(simulationId)
-                    .tradeDate(date)
-                    .stockCode(order.getStockCode())
-                    .orderType(order.getOrderType().name())
-                    .quantity(quantity)
-                    .price(execPrice)
-                    .fee(fee)
-                    .tax(tax)
-                    .build();
-            tradeHistoryRepository.save(history);
-        }
+        // 2. 매수 처리
+        orders.stream()
+                .filter(o -> o.getOrderType() == OrderType.BUY)
+                .forEach(o -> processOrder(o, portfolio, slippageModel, feeRate, taxRate));
     }
 
-    private void updatePortfolioValue(LocalDate date, Portfolio portfolio) {
-        // 보유 종목의 현재가를 조회하여 포트폴리오 가치 업데이트
-        String dateStr = DateUtils.toLocalDateString(date);
+    private void processOrder(TradeOrder order, Portfolio portfolio, SlippageModel slippageModel, BigDecimal feeRate, BigDecimal taxRate) {
+        BigDecimal execPrice = slippageModel.calculateExecutionPrice(order.getPrice(), order.getQuantity(), order.getOrderType());
+        BigDecimal totalAmount = execPrice.multiply(BigDecimal.valueOf(order.getQuantity()));
         
-        for (Map.Entry<String, PortfolioHolding> entry : portfolio.getHoldings().entrySet()) {
-            String stockCode = entry.getKey();
-            PortfolioHolding holding = entry.getValue();
+        if (order.getOrderType() == OrderType.BUY) {
+            BigDecimal fee = totalAmount.multiply(feeRate);
+            BigDecimal totalCost = totalAmount.add(fee);
             
-            try {
-                // 해당 날짜의 주가 조회
-                StockPriceDto priceDto = priceClient.getPriceByDate(stockCode, dateStr);
+            if (portfolio.getCashBalance().compareTo(totalCost) >= 0) {
+                portfolio.setCashBalance(portfolio.getCashBalance().subtract(totalCost));
+                PortfolioHolding holding = portfolio.getHoldings().getOrDefault(order.getStockCode(), new PortfolioHolding());
+                holding.setStockCode(order.getStockCode());
+                holding.setQuantity(holding.getQuantity() + order.getQuantity());
+                holding.setAveragePrice(totalAmount.divide(BigDecimal.valueOf(holding.getQuantity()), 2, RoundingMode.HALF_UP));
+                portfolio.getHoldings().put(order.getStockCode(), holding);
+                portfolio.getTrades().add(order);
+            }
+        } else {
+            PortfolioHolding holding = portfolio.getHoldings().get(order.getStockCode());
+            if (holding != null && holding.getQuantity() >= order.getQuantity()) {
+                BigDecimal fee = totalAmount.multiply(feeRate);
+                BigDecimal tax = totalAmount.multiply(taxRate);
+                BigDecimal netProceeds = totalAmount.subtract(fee).subtract(tax);
                 
-                if (priceDto != null && priceDto.getEndPrice() != null) {
-                    // 현재가 업데이트
-                    holding.setCurrentPrice(priceDto.getEndPrice());
-                    // 시장가치 재계산
-                    BigDecimal marketValue = priceDto.getEndPrice()
-                            .multiply(BigDecimal.valueOf(holding.getQuantity()));
-                    holding.setMarketValue(marketValue);
+                portfolio.setCashBalance(portfolio.getCashBalance().add(netProceeds));
+                int remainingQuantity = holding.getQuantity() - order.getQuantity();
+                if (remainingQuantity == 0) {
+                    portfolio.getHoldings().remove(order.getStockCode());
                 } else {
-                    // 가격 정보가 없으면 이전 가격 유지
-                    log.warn("No price data for {} on {}, keeping previous price", stockCode, date);
+                    holding.setQuantity(remainingQuantity);
                 }
-            } catch (Exception e) {
-                // API 호출 실패 시 이전 가격 유지
-                log.error("Failed to fetch price for {} on {}: {}", stockCode, date, e.getMessage());
+                portfolio.getTrades().add(order);
             }
         }
     }
 
-    private boolean shouldSaveSnapshot(LocalDate date, RebalancingPeriod period) {
-        // 리밸런싱일 또는 월말에 저장
-        return date.getDayOfMonth() == date.lengthOfMonth() || 
-               isRebalancingDate(date, period, date);
+    private void calculateDailyReturn(LocalDate date, Portfolio portfolio) {
+        BigDecimal stockValue = BigDecimal.ZERO;
+        String dateStr = date.toString();
+
+        for (PortfolioHolding holding : portfolio.getHoldings().values()) {
+            var priceDto = priceClient.getPriceByDate(holding.getStockCode(), dateStr);
+            if (priceDto != null && priceDto.getEndPrice() != null) {
+                holding.setCurrentPrice(priceDto.getEndPrice());
+                holding.setMarketValue(priceDto.getEndPrice().multiply(BigDecimal.valueOf(holding.getQuantity())));
+            }
+            stockValue = stockValue.add(holding.getMarketValue());
+        }
+        portfolio.setTotalValue(portfolio.getCashBalance().add(stockValue));
     }
 
-    private void saveSnapshot(Long simulationId, LocalDate date, Portfolio portfolio) {
+    private void saveSnapshot(LocalDate date, Portfolio portfolio, Long simulationId) {
         try {
-            String holdingsJson = objectMapper.writeValueAsString(portfolio.getHoldings());
-            
             PortfolioSnapshot snapshot = PortfolioSnapshot.builder()
                     .simulationId(simulationId)
                     .snapshotDate(date)
-                    .totalValue(portfolio.getTotalValue())
                     .cashBalance(portfolio.getCashBalance())
-                    .holdings(holdingsJson)
+                    .totalValue(portfolio.getTotalValue())
+                    .holdings(objectMapper.writeValueAsString(portfolio.getHoldings()))
                     .build();
-            
             snapshotRepository.save(snapshot);
         } catch (JsonProcessingException e) {
-            log.error("Failed to serialize holdings", e);
+            log.error("Failed to save snapshot", e);
         }
     }
 
-    // 내부 포트폴리오 클래스
+    private BacktestResult calculateBacktestResult(Long simulationId, BacktestRequest request, Portfolio portfolio) {
+        BigDecimal totalReturn = portfolio.getTotalValue().subtract(request.getInitialCapital())
+                .divide(request.getInitialCapital(), 4, RoundingMode.HALF_UP)
+                .multiply(BigDecimal.valueOf(100));
+
+        return BacktestResult.builder()
+                .simulationId(simulationId)
+                .finalValue(portfolio.getTotalValue())
+                .totalReturn(totalReturn)
+                .totalTrades(portfolio.getTrades().size())
+                .profitableTrades(0) // Logic needed to calculate this
+                .cagr(BigDecimal.ZERO) // Logic needed
+                .mdd(BigDecimal.ZERO) // Logic needed
+                .build();
+    }
+
+    @Data
     public static class Portfolio {
         private BigDecimal cashBalance;
-        private final Map<String, PortfolioHolding> holdings = new HashMap<>();
+        private BigDecimal totalValue;
+        private Map<String, PortfolioHolding> holdings = new HashMap<>();
+        private List<TradeOrder> trades = new ArrayList<>();
 
         public Portfolio(BigDecimal initialCapital) {
             this.cashBalance = initialCapital;
-        }
-
-        public BigDecimal getCashBalance() {
-            return cashBalance;
-        }
-
-        public void setCashBalance(BigDecimal cashBalance) {
-            this.cashBalance = cashBalance;
-        }
-
-        public Map<String, PortfolioHolding> getHoldings() {
-            return holdings;
-        }
-
-        public BigDecimal getTotalValue() {
-            BigDecimal holdingsValue = holdings.values().stream()
-                    .map(PortfolioHolding::getMarketValue)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-            return cashBalance.add(holdingsValue);
-        }
-
-        public void addHolding(String stockCode, Integer quantity, BigDecimal price) {
-            PortfolioHolding holding = holdings.get(stockCode);
-            if (holding == null) {
-                holding = PortfolioHolding.builder()
-                        .stockCode(stockCode)
-                        .quantity(quantity)
-                        .averagePrice(price)
-                        .currentPrice(price)
-                        .marketValue(price.multiply(BigDecimal.valueOf(quantity)))
-                        .build();
-                holdings.put(stockCode, holding);
-            } else {
-                // 평균 매입가 계산
-                BigDecimal totalCost = holding.getAveragePrice().multiply(BigDecimal.valueOf(holding.getQuantity()))
-                        .add(price.multiply(BigDecimal.valueOf(quantity)));
-                int totalQuantity = holding.getQuantity() + quantity;
-                BigDecimal avgPrice = totalCost.divide(BigDecimal.valueOf(totalQuantity), 2, RoundingMode.HALF_UP);
-                
-                holding.setQuantity(totalQuantity);
-                holding.setAveragePrice(avgPrice);
-                holding.setCurrentPrice(price);
-                holding.setMarketValue(price.multiply(BigDecimal.valueOf(totalQuantity)));
-            }
-        }
-
-        public void removeHolding(String stockCode, Integer quantity) {
-            PortfolioHolding holding = holdings.get(stockCode);
-            if (holding != null) {
-                int remainingQuantity = holding.getQuantity() - quantity;
-                if (remainingQuantity <= 0) {
-                    holdings.remove(stockCode);
-                } else {
-                    holding.setQuantity(remainingQuantity);
-                    holding.setMarketValue(holding.getCurrentPrice().multiply(BigDecimal.valueOf(remainingQuantity)));
-                }
-            }
+            this.totalValue = initialCapital;
         }
     }
 }

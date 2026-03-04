@@ -5,6 +5,7 @@ import com.stock.common.dto.ValueStrategyConfig;
 import com.stock.common.utils.DateUtils;
 import com.stock.strategy.client.FinanceClient;
 import com.stock.strategy.client.PriceClient;
+import com.stock.strategy.dto.BacktestRequest;
 import com.stock.strategy.dto.PortfolioHolding;
 import com.stock.strategy.dto.TradeOrder;
 import com.stock.strategy.enums.OrderType;
@@ -26,12 +27,6 @@ public class ValueStrategy implements Strategy {
 
     private final PriceClient priceClient;
     private final FinanceClient financeClient;
-    
-    // 기본값
-    private static final int DEFAULT_TOP_N = 20;
-    private static final BigDecimal DEFAULT_WEIGHT_PER = new BigDecimal("0.3");
-    private static final BigDecimal DEFAULT_WEIGHT_PBR = new BigDecimal("0.3");
-    private static final BigDecimal DEFAULT_WEIGHT_ROE = new BigDecimal("0.4");
 
     @Override
     public String getName() {
@@ -39,27 +34,22 @@ public class ValueStrategy implements Strategy {
     }
 
     @Override
-    public List<TradeOrder> rebalance(LocalDate date, Portfolio portfolio, List<String> universe) {
-        return rebalance(date, portfolio, universe, null);
+    public List<TradeOrder> rebalance(LocalDate date, Portfolio portfolio, List<String> universe, BacktestRequest request) {
+        ValueStrategyConfig config = request.getValueStrategyConfig();
+        if (config == null) {
+            config = ValueStrategyConfig.builder().build();
+        }
+        return rebalanceInternal(date, portfolio, universe, config);
     }
-    
-    /**
-     * 가중치 설정 가능한 리밸런싱
-     */
-    public List<TradeOrder> rebalance(LocalDate date, Portfolio portfolio, 
-                                      List<String> universe, ValueStrategyConfig config) {
+
+    private List<TradeOrder> rebalanceInternal(LocalDate date, Portfolio portfolio, 
+                                              List<String> universe, ValueStrategyConfig config) {
         List<TradeOrder> orders = new ArrayList<>();
 
         if (universe.isEmpty()) {
             return orders;
         }
 
-        // 설정값 또는 기본값 사용
-        if (config == null) {
-            config = ValueStrategyConfig.builder().build();
-        }
-        config.validate();
-        
         int topN = config.getTopN();
         BigDecimal perWeight = config.getPerWeight();
         BigDecimal pbrWeight = config.getPbrWeight();
@@ -71,7 +61,6 @@ public class ValueStrategy implements Strategy {
                     calculateValueScores(universe, date, perWeight, pbrWeight, roeWeight);
             
             if (valueScores.isEmpty()) {
-                log.warn("No valid value scores calculated for date: {}", date);
                 return orders;
             }
 
@@ -111,7 +100,7 @@ public class ValueStrategy implements Strategy {
             String dateStr = DateUtils.toLocalDateString(date);
             for (String stockCode : topStocks) {
                 try {
-                    var priceDto = priceClient.getPriceByDate(stockCode, dateStr);
+                    var priceDto = priceClient.getPriceByDate(stockCode.startsWith("A") ? stockCode.substring(1) : stockCode, dateStr);
                     if (priceDto == null || priceDto.getEndPrice() == null) {
                         continue;
                     }
@@ -169,8 +158,6 @@ public class ValueStrategy implements Strategy {
         try {
             List<CorpFinanceIndicatorDto> indicators = financeClient.getIndicatorsBatch(universe, dateStr);
             
-            log.info("Fetched {} indicators for {} stocks on {}", indicators.size(), universe.size(), date);
-            
             for (CorpFinanceIndicatorDto indicator : indicators) {
                 try {
                     BigDecimal score = calculateScore(indicator, perWeight, pbrWeight, roeWeight);
@@ -195,19 +182,16 @@ public class ValueStrategy implements Strategy {
         BigDecimal pbr = indicator.getPbr();
         BigDecimal roe = indicator.getRoe();
 
-        // 필수 지표 검증
         if (per == null || pbr == null || roe == null) {
             return null;
         }
 
-        // 음수/0 제외
         if (per.compareTo(BigDecimal.ZERO) <= 0 || 
             pbr.compareTo(BigDecimal.ZERO) <= 0 || 
             roe.compareTo(BigDecimal.ZERO) <= 0) {
             return null;
         }
 
-        // 가치 스코어 = (1/PER) * perWeight + (1/PBR) * pbrWeight + (ROE/100) * roeWeight
         BigDecimal perScore = BigDecimal.ONE.divide(per, 8, RoundingMode.HALF_UP).multiply(perWeight);
         BigDecimal pbrScore = BigDecimal.ONE.divide(pbr, 8, RoundingMode.HALF_UP).multiply(pbrWeight);
         BigDecimal roeScore = roe.divide(new BigDecimal("100"), 8, RoundingMode.HALF_UP).multiply(roeWeight);

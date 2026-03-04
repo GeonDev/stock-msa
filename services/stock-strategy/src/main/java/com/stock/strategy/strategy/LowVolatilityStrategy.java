@@ -3,6 +3,7 @@ package com.stock.strategy.strategy;
 import com.stock.common.dto.StockPriceDto;
 import com.stock.common.utils.DateUtils;
 import com.stock.strategy.client.PriceClient;
+import com.stock.strategy.dto.BacktestRequest;
 import com.stock.strategy.dto.PortfolioHolding;
 import com.stock.strategy.dto.TradeOrder;
 import com.stock.strategy.enums.OrderType;
@@ -33,7 +34,7 @@ public class LowVolatilityStrategy implements Strategy {
     }
 
     @Override
-    public List<TradeOrder> rebalance(LocalDate date, Portfolio portfolio, List<String> universe) {
+    public List<TradeOrder> rebalance(LocalDate date, Portfolio portfolio, List<String> universe, BacktestRequest request) {
         List<TradeOrder> orders = new ArrayList<>();
 
         if (universe.isEmpty()) {
@@ -52,6 +53,8 @@ public class LowVolatilityStrategy implements Strategy {
             if (lowVolStocks.isEmpty()) {
                 return orders;
             }
+
+            log.info("Selected {} low volatility stocks for date {}", lowVolStocks.size(), date);
 
             BigDecimal totalValue = portfolio.getTotalValue();
             BigDecimal targetValuePerStock = totalValue.divide(
@@ -73,7 +76,8 @@ public class LowVolatilityStrategy implements Strategy {
             String dateStr = DateUtils.toLocalDateString(date);
             for (String stockCode : lowVolStocks) {
                 try {
-                    var priceDto = priceClient.getPriceByDate(stockCode, dateStr);
+                    String codeWithoutA = stockCode.startsWith("A") ? stockCode.substring(1) : stockCode;
+                    var priceDto = priceClient.getPriceByDate(codeWithoutA, dateStr);
                     if (priceDto == null || priceDto.getEndPrice() == null) {
                         continue;
                     }
@@ -127,15 +131,18 @@ public class LowVolatilityStrategy implements Strategy {
     private Map<String, BigDecimal> calculateVolatility(List<String> universe, LocalDate date) {
         Map<String, BigDecimal> volatilities = new HashMap<>();
         
-        LocalDate startDate = date.minusDays(VOLATILITY_PERIOD + 10);
+        // 데이터 부족한 초기 단계이므로 기간 완화 (60 -> 10)
+        int period = 10;
+        LocalDate startDate = date.minusDays(period + 10);
         String startDateStr = DateUtils.toLocalDateString(startDate);
         String endDateStr = DateUtils.toLocalDateString(date);
 
         for (String stockCode : universe) {
             try {
-                var priceHistory = priceClient.getPriceHistory(stockCode, startDateStr, endDateStr);
+                String codeWithoutA = stockCode.startsWith("A") ? stockCode.substring(1) : stockCode;
+                var priceHistory = priceClient.getPriceHistory(codeWithoutA, startDateStr, endDateStr);
                 
-                if (priceHistory == null || priceHistory.size() < VOLATILITY_PERIOD) {
+                if (priceHistory == null || priceHistory.size() < 2) {
                     continue;
                 }
 
@@ -153,7 +160,7 @@ public class LowVolatilityStrategy implements Strategy {
                     }
                 }
 
-                if (returns.size() >= VOLATILITY_PERIOD - 1) {
+                if (!returns.isEmpty()) {
                     BigDecimal volatility = calculateStandardDeviation(returns);
                     volatilities.put(stockCode, volatility);
                 }

@@ -6,6 +6,7 @@ import com.stock.common.dto.StockIndicatorDto;
 import com.stock.common.utils.DateUtils;
 import com.stock.strategy.client.CorpClient;
 import com.stock.strategy.client.PriceClient;
+import com.stock.strategy.dto.BacktestRequest;
 import com.stock.strategy.dto.PortfolioHolding;
 import com.stock.strategy.dto.TradeOrder;
 import com.stock.strategy.entity.SectorAnalysis;
@@ -37,11 +38,18 @@ public class SectorRotationStrategy implements Strategy {
     }
 
     @Override
-    public List<TradeOrder> rebalance(LocalDate date, Portfolio portfolio, List<String> universe) {
-        throw new UnsupportedOperationException("SectorRotationStrategy requires SectorRotationConfig");
+    public List<TradeOrder> rebalance(LocalDate date, Portfolio portfolio, List<String> universe, BacktestRequest request) {
+        SectorRotationConfig config = request.getSectorRotationConfig();
+        if (config == null) {
+            config = SectorRotationConfig.builder()
+                    .topSectorsCount(3)
+                    .stocksPerSector(5)
+                    .build();
+        }
+        return rebalanceInternal(date, portfolio, universe, config);
     }
 
-    public List<TradeOrder> rebalance(LocalDate date, Portfolio portfolio, List<String> universe, SectorRotationConfig config) {
+    private List<TradeOrder> rebalanceInternal(LocalDate date, Portfolio portfolio, List<String> universe, SectorRotationConfig config) {
         List<TradeOrder> orders = new ArrayList<>();
         if (universe.isEmpty()) return orders;
 
@@ -70,10 +78,18 @@ public class SectorRotationStrategy implements Strategy {
 
             // 4. Select top stocks within top sectors based on momentum
             List<String> targetStocks = new ArrayList<>();
-            List<StockIndicatorDto> indicators = priceClient.getIndicatorsByDateBatch(universe, dateStr);
+            List<String> codesWithoutA = universe.stream().map(c -> c.startsWith("A") ? c.substring(1) : c).collect(Collectors.toList());
+            List<StockIndicatorDto> indicators = priceClient.getIndicatorsByDateBatch(codesWithoutA, dateStr);
+            
             Map<String, Double> momMap = indicators.stream()
-                    .filter(i -> i.getMomentum6m() != null && i.getStockCode() != null)
-                    .collect(Collectors.toMap(StockIndicatorDto::getStockCode, i -> i.getMomentum6m().doubleValue(), (i1, i2) -> i1));
+                    .filter(i -> i.getStockCode() != null)
+                    .collect(Collectors.toMap(
+                        i -> "A" + i.getStockCode(), 
+                        i -> {
+                            BigDecimal mom = i.getMomentum6m() != null ? i.getMomentum6m() : i.getMomentum1m();
+                            return mom != null ? mom.doubleValue() : -999.0;
+                        }, 
+                        (i1, i2) -> i1));
 
             for (String sector : topSectors) {
                 List<String> sectorStocks = sectorToStocks.get(sector);
@@ -89,6 +105,8 @@ public class SectorRotationStrategy implements Strategy {
             }
 
             if (targetStocks.isEmpty()) return orders;
+
+            log.info("Selected {} sector rotation stocks for date {}", targetStocks.size(), date);
 
             // 5. Sell
             for (String stockCode : new ArrayList<>(portfolio.getHoldings().keySet())) {
@@ -109,7 +127,8 @@ public class SectorRotationStrategy implements Strategy {
             BigDecimal targetValuePerStock = totalValue.divide(BigDecimal.valueOf(targetStocks.size()), 2, RoundingMode.HALF_UP);
 
             for (String stockCode : targetStocks) {
-                var priceDto = priceClient.getPriceByDate(stockCode, dateStr);
+                String codeWithoutA = stockCode.startsWith("A") ? stockCode.substring(1) : stockCode;
+                var priceDto = priceClient.getPriceByDate(codeWithoutA, dateStr);
                 if (priceDto == null || priceDto.getEndPrice() == null) continue;
 
                 BigDecimal currentPrice = priceDto.getEndPrice();

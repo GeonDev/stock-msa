@@ -17,15 +17,19 @@ public class PortfolioHolding {
     @Schema(description = "종목 코드", example = "005930")
     private String stockCode;
 
+    @Builder.Default
     @Schema(description = "보유 수량", example = "100")
-    private Integer quantity;
+    private Integer quantity = 0;
 
+    @Builder.Default
     @Schema(description = "평균 매수 단가", example = "70000")
-    private BigDecimal averagePrice;
+    private BigDecimal averagePrice = BigDecimal.ZERO;
 
+    @Builder.Default
     @Schema(description = "현재가", example = "72000")
-    private BigDecimal currentPrice;
+    private BigDecimal currentPrice = BigDecimal.ZERO;
 
+    @Builder.Default
     @Schema(description = "평가 금액", example = "7200000")
-    private BigDecimal marketValue;
+    private BigDecimal marketValue = BigDecimal.ZERO;
 }

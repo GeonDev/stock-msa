@@ -20,12 +20,15 @@ import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.data.RepositoryItemReader;
 import org.springframework.batch.item.data.RepositoryItemWriter;
+import org.springframework.batch.item.data.builder.RepositoryItemReaderBuilder;
 import org.springframework.batch.item.data.builder.RepositoryItemWriterBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.domain.Sort;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.LocalDate;
@@ -57,6 +60,7 @@ public class CorpFinanceBatch {
     }
 
     @Bean
+    @StepScope
     public ValidateFinanceItemReader validateFinanceItemReader() {
         return new ValidateFinanceItemReader(corpFinanceRepository);
     }
@@ -81,6 +85,64 @@ public class CorpFinanceBatch {
                     }
                 })
                 .build();
+    }
+
+    @Bean
+    public Job validateFinanceJob() {
+        return new JobBuilder("validateFinanceJob", jobRepository)
+                .start(validateFinanceStep())
+                .build();
+    }
+
+    @Bean
+    public Job recalculateIndicatorsJob() {
+        return new JobBuilder("recalculateIndicatorsJob", jobRepository)
+                .start(recalculateIndicatorsStep())
+                .build();
+    }
+
+    @Bean
+    public Step recalculateIndicatorsStep() {
+        return new StepBuilder("recalculateIndicatorsStep", jobRepository)
+                .<CorpFinance, CorpFinance>chunk(STOCK_FINANCE_CHUNK_SIZE, platformTransactionManager)
+                .reader(allFinanceItemReader())
+                .processor(recalculateIndicatorsProcessor())
+                .writer(corpFinanceWriter())
+                .build();
+    }
+
+    @Bean
+    public RepositoryItemReader<CorpFinance> allFinanceItemReader() {
+        return new RepositoryItemReaderBuilder<CorpFinance>()
+                .name("allFinanceItemReader")
+                .repository(corpFinanceRepository)
+                .methodName("findAll")
+                .sorts(Map.of("id", Sort.Direction.ASC))
+                .build();
+    }
+
+    @Bean
+    public ItemProcessor<CorpFinance, CorpFinance> recalculateIndicatorsProcessor() {
+        return item -> {
+            try {
+                String stockCode = item.getCorpCode().replace("A", "");
+                StockPriceDto stockPrice = stockClient.getLatestStockPrice(stockCode);
+
+                if (stockPrice != null) {
+                    CorpFinanceIndicator indicator = corpFinanceService.calculateIndicators(item, stockPrice.getMarketTotalAmt());
+                    
+                    if (item.getCorpFinanceIndicator() != null) {
+                        updateIndicatorData(item.getCorpFinanceIndicator(), indicator);
+                    } else {
+                        item.setCorpFinanceIndicator(indicator);
+                        indicator.setCorpFinance(item);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Recalculate Indicator fail for {}: {}", item.getCorpCode(), e.getMessage());
+            }
+            return item;
+        };
     }
 
     @Bean

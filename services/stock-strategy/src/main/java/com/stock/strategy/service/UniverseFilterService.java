@@ -16,7 +16,9 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -28,183 +30,112 @@ public class UniverseFilterService {
     private final PriceClient priceClient;
     private final FinanceClient financeClient;
 
-    @Cacheable(value = "universeCache", key = "#baseDate.toString() + ':' + #criteria.hashCode()")
+    @Cacheable(value = "universeCache", key = "#baseDate.toString() + ':' + (#criteria != null ? #criteria.hashCode() : 0)")
     public List<String> filter(LocalDate baseDate, UniverseFilterCriteria criteria) {
-        if (criteria == null) {
-            return new ArrayList<>();
-        }
-
-        try {
-            String market = criteria.getMarket() != null ? criteria.getMarket().name() : "KOSPI";
-            String dateStr = baseDate.toString();
-
-            // 1. 시장별 종목 전체 조회
-            List<CorpInfoDto> corps = corpClient.getCorpsByMarket(market, dateStr);
-            
-            // "A" 접두사 제거 및 초기 리스트 생성
-            List<String> stockCodes = corps.stream()
-                    .map(corp -> corp.getStockCode().replace("A", ""))
-                    .collect(Collectors.toList());
-
-            log.info("Initial universe size for {}: {}", market, stockCodes.size());
-
-            // 2. 주가 및 시가총액/거래량 필터링 (분위수 필터링 포함)
-            // 시가총액 분위수 필터링은 전체 시장 대비로 계산하기 위해 업종 필터링 전에 수행
-            stockCodes = filterByPrice(stockCodes, dateStr, criteria);
-            log.info("After Price/MarketCap filtering: {}", stockCodes.size());
-
-            // 3. 업종 필터링
-            if (criteria.getExcludeSectors() != null && !criteria.getExcludeSectors().isEmpty()) {
-                Set<String> excludeSectors = Set.copyOf(criteria.getExcludeSectors());
-                // 현재 남은 stockCodes 중 업종 필터에 걸리지 않는 것만 유지
-                Map<String, CorpInfoDto> corpMap = corps.stream()
-                        .collect(Collectors.toMap(c -> c.getStockCode().replace("A", ""), c -> c, (a, b) -> a));
-                
-                stockCodes = stockCodes.stream()
-                        .filter(code -> {
-                            CorpInfoDto corp = corpMap.get(code);
-                            return corp == null || corp.getSector() == null || !excludeSectors.contains(corp.getSector().name());
-                        })
-                        .collect(Collectors.toList());
-                log.info("After Sector filtering: {}", stockCodes.size());
-            }
-            
-            // 4. 상세 지표 필터링 (재무 및 모멘텀)
-            if (criteria.getCustomFilter() != null) {
-                stockCodes = filterByCustomCriteria(stockCodes, dateStr, criteria.getCustomFilter());
-                log.info("After Custom filtering: {}", stockCodes.size());
-            }
-
-            return stockCodes;
-
-        } catch (Exception e) {
-            log.error("Failed to filter universe", e);
-            return new ArrayList<>();
-        }
-    }
-
-    private List<String> filterByPrice(List<String> stockCodes, String dateStr, UniverseFilterCriteria criteria) {
-        if (criteria.getMinMarketCap() == null && criteria.getMaxMarketCap() == null && 
-            criteria.getMinTradingVolume() == null &&
-            criteria.getMinMarketCapPercentile() == null && criteria.getMaxMarketCapPercentile() == null) {
-            return stockCodes;
-        }
-
-        List<StockPriceDto> prices = priceClient.getPricesByDateBatch(stockCodes, dateStr);
-        if (prices.isEmpty()) return new ArrayList<>();
-
-        List<StockPriceDto> filteredPrices = prices;
-
-        // 시가총액 분위수 필터링 (배치에서 미리 계산된 값 사용)
-        if (criteria.getMinMarketCapPercentile() != null || criteria.getMaxMarketCapPercentile() != null) {
-            double minP = criteria.getMinMarketCapPercentile() != null ? criteria.getMinMarketCapPercentile() : 0.0;
-            double maxP = criteria.getMaxMarketCapPercentile() != null ? criteria.getMaxMarketCapPercentile() : 100.0;
-            
-            filteredPrices = filteredPrices.stream()
-                    .filter(p -> {
-                        if (p.getMarketCapPercentile() == null) return false;
-                        double val = p.getMarketCapPercentile().doubleValue();
-                        return val >= minP && val <= maxP;
-                    })
-                    .collect(Collectors.toList());
-        }
-
-        // 절대값 필터링
-        return filteredPrices.stream()
-                .filter(p -> {
-                    if (criteria.getMinMarketCap() != null) {
-                        BigDecimal minCap = BigDecimal.valueOf(criteria.getMinMarketCap()).multiply(new BigDecimal("100000000")); // 억 원 단위
-                        if (p.getMarketTotalAmt() == null || p.getMarketTotalAmt().compareTo(minCap) < 0) return false;
-                    }
-                    if (criteria.getMaxMarketCap() != null) {
-                        BigDecimal maxCap = BigDecimal.valueOf(criteria.getMaxMarketCap()).multiply(new BigDecimal("100000000"));
-                        if (p.getMarketTotalAmt() == null || p.getMarketTotalAmt().compareTo(maxCap) > 0) return false;
-                    }
-                    if (criteria.getMinTradingVolume() != null) {
-                        BigDecimal minVol = BigDecimal.valueOf(criteria.getMinTradingVolume());
-                        if (p.getVolume() == null || p.getVolume().compareTo(minVol) < 0) return false;
-                    }
-                    return true;
-                })
-                .map(StockPriceDto::getStockCode)
-                .collect(Collectors.toList());
-    }
-
-    private List<String> filterByCustomCriteria(List<String> stockCodes, String dateStr, CustomFilterCriteria customFilter) {
-        if (stockCodes.isEmpty()) return stockCodes;
+        log.info("Starting universe filtering for date: {}", baseDate);
         
-        List<String> filteredCodes = new ArrayList<>(stockCodes);
+        final UniverseFilterCriteria finalCriteria;
+        if (criteria == null) {
+            finalCriteria = new UniverseFilterCriteria();
+            finalCriteria.setMarket(com.stock.common.enums.StockMarket.KOSPI);
+        } else {
+            finalCriteria = criteria;
+        }
 
-        // 재무 지표 필터링
-        List<CorpFinanceIndicatorDto> financeIndicators = financeClient.getIndicatorsBatch(filteredCodes, dateStr);
-        Map<String, CorpFinanceIndicatorDto> financeMap = financeIndicators.stream()
-                .collect(Collectors.toMap(CorpFinanceIndicatorDto::getCorpCode, i -> i, (existing, replacement) -> existing));
+        String market = finalCriteria.getMarket() != null ? finalCriteria.getMarket().name() : "KOSPI";
+        String dateStr = baseDate.toString();
 
-        filteredCodes = filteredCodes.stream()
+        // 1. 시장 종목 조회 (A005930 형식)
+        List<CorpInfoDto> corps = corpClient.getCorpsByMarket(market, dateStr);
+        log.info("Initial universe size for {}: {}", market, corps.size());
+
+        if (corps.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<String> stockCodesWithA = corps.stream()
+                .map(CorpInfoDto::getStockCode)
+                .filter(code -> code != null && !code.isEmpty())
+                .collect(Collectors.toList());
+
+        // 2. 주가/시총 정보 조회 (005930 형식으로 변환하여 요청)
+        List<String> stockCodesWithoutA = stockCodesWithA.stream()
+                .map(code -> code.startsWith("A") ? code.substring(1) : code)
+                .collect(Collectors.toList());
+
+        List<StockPriceDto> prices = priceClient.getPricesByDateBatch(stockCodesWithoutA, dateStr);
+        log.info("Fetched {} prices for date {}", prices.size(), dateStr);
+        
+        // 다시 A를 붙여서 매핑 (전략 서비스 내부에서는 A 포함 코드 사용)
+        Map<String, StockPriceDto> priceMap = prices.stream()
+                .collect(Collectors.toMap(
+                    p -> "A" + p.getStockCode(), 
+                    p -> p, 
+                    (p1, p2) -> p1));
+
+        // 3. 필터링 수행
+        List<String> filteredCodes = stockCodesWithA.stream()
                 .filter(code -> {
-                    CorpFinanceIndicatorDto i = financeMap.get(code);
-                    if (i == null) return false; 
+                    StockPriceDto price = priceMap.get(code);
+                    if (price == null) return false;
 
-                    if (customFilter.getOnlyProfitable() != null && customFilter.getOnlyProfitable()) {
-                        if (i.getRoe() == null || i.getRoe().compareTo(BigDecimal.ZERO) <= 0) return false;
+                    // 시가총액 필터
+                    if (finalCriteria.getMinMarketCap() != null && 
+                        (price.getMarketTotalAmt() == null || price.getMarketTotalAmt().compareTo(BigDecimal.valueOf(finalCriteria.getMinMarketCap() * 100000000L)) < 0)) {
+                        return false;
                     }
-                    if (customFilter.getMinPer() != null && (i.getPer() == null || i.getPer().compareTo(customFilter.getMinPer()) < 0)) return false;
-                    if (customFilter.getMaxPer() != null && (i.getPer() == null || i.getPer().compareTo(customFilter.getMaxPer()) > 0)) return false;
-                    if (customFilter.getMinPbr() != null && (i.getPbr() == null || i.getPbr().compareTo(customFilter.getMinPbr()) < 0)) return false;
-                    if (customFilter.getMaxPbr() != null && (i.getPbr() == null || i.getPbr().compareTo(customFilter.getMaxPbr()) > 0)) return false;
-                    if (customFilter.getMinRoe() != null && (i.getRoe() == null || i.getRoe().compareTo(customFilter.getMinRoe()) < 0)) return false;
-                    if (customFilter.getMinPsr() != null && (i.getPsr() == null || i.getPsr().compareTo(customFilter.getMinPsr()) < 0)) return false;
+                    if (finalCriteria.getMaxMarketCap() != null && 
+                        (price.getMarketTotalAmt() == null || price.getMarketTotalAmt().compareTo(BigDecimal.valueOf(finalCriteria.getMaxMarketCap() * 100000000L)) > 0)) {
+                        return false;
+                    }
+
+                    // 시가총액 분위수 필터
+                    if (finalCriteria.getMinMarketCapPercentile() != null && 
+                        (price.getMarketCapPercentile() == null || price.getMarketCapPercentile().doubleValue() < finalCriteria.getMinMarketCapPercentile())) {
+                        return false;
+                    }
+                    if (finalCriteria.getMaxMarketCapPercentile() != null && 
+                        (price.getMarketCapPercentile() == null || price.getMarketCapPercentile().doubleValue() > finalCriteria.getMaxMarketCapPercentile())) {
+                        return false;
+                    }
 
                     return true;
                 })
                 .collect(Collectors.toList());
 
-        // 2. 기술적 지표 및 모멘텀 필터링
-        if (isTechnicalFilterRequired(customFilter)) {
-            List<StockIndicatorDto> stockIndicators = priceClient.getIndicatorsByDateBatch(filteredCodes, dateStr);
-            Map<String, StockIndicatorDto> indicatorMap = stockIndicators.stream()
-                    .collect(Collectors.toMap(StockIndicatorDto::getStockCode, i -> i, (existing, replacement) -> existing));
+        log.info("Universe size after price/cap filters: {}", filteredCodes.size());
+
+        // 4. 상세 지표 필터
+        if (finalCriteria.getCustomFilter() != null && !filteredCodes.isEmpty()) {
+            List<CorpFinanceIndicatorDto> indicators = financeClient.getIndicatorsBatch(filteredCodes, dateStr);
+            log.info("Fetched {} finance indicators", indicators.size());
             
-            // 이평선 비교를 위해 종가 정보 필요
-            Map<String, BigDecimal> priceMap = priceClient.getPricesByDateBatch(filteredCodes, dateStr).stream()
-                    .collect(Collectors.toMap(StockPriceDto::getStockCode, StockPriceDto::getEndPrice, (existing, replacement) -> existing));
+            Map<String, CorpFinanceIndicatorDto> indicatorMap = indicators.stream()
+                    .collect(Collectors.toMap(CorpFinanceIndicatorDto::getCorpCode, i -> i, (i1, i2) -> i1));
 
             filteredCodes = filteredCodes.stream()
                     .filter(code -> {
-                        StockIndicatorDto i = indicatorMap.get(code);
-                        if (i == null) return false;
-
-                        // 모멘텀 필터
-                        if (customFilter.getMinMomentum1m() != null && (i.getMomentum1m() == null || i.getMomentum1m().compareTo(customFilter.getMinMomentum1m()) < 0)) return false;
-                        if (customFilter.getMinMomentum3m() != null && (i.getMomentum3m() == null || i.getMomentum3m().compareTo(customFilter.getMinMomentum3m()) < 0)) return false;
-                        if (customFilter.getMinMomentum6m() != null && (i.getMomentum6m() == null || i.getMomentum6m().compareTo(customFilter.getMinMomentum6m()) < 0)) return false;
-
-                        // RSI/MACD 필터
-                        if (customFilter.getMinRsi14() != null && (i.getRsi14() == null || i.getRsi14().compareTo(customFilter.getMinRsi14()) < 0)) return false;
-                        if (customFilter.getMaxRsi14() != null && (i.getRsi14() == null || i.getRsi14().compareTo(customFilter.getMaxRsi14()) > 0)) return false;
-                        if (customFilter.getMinMacd() != null && (i.getMacd() == null || i.getMacd().compareTo(customFilter.getMinMacd()) < 0)) return false;
-                        if (customFilter.getMinMacdSignal() != null && (i.getMacdSignal() == null || i.getMacdSignal().compareTo(customFilter.getMinMacdSignal()) < 0)) return false;
-
-                        // 이평선 위치 필터
-                        BigDecimal currentPrice = priceMap.get(code);
-                        if (currentPrice != null) {
-                            if (customFilter.getPriceAboveMa20() != null && customFilter.getPriceAboveMa20() && (i.getMa20() == null || currentPrice.compareTo(i.getMa20()) <= 0)) return false;
-                            if (customFilter.getPriceAboveMa60() != null && customFilter.getPriceAboveMa60() && (i.getMa60() == null || currentPrice.compareTo(i.getMa60()) <= 0)) return false;
-                            if (customFilter.getPriceAboveMa120() != null && customFilter.getPriceAboveMa120() && (i.getMa120() == null || currentPrice.compareTo(i.getMa120()) <= 0)) return false;
-                        }
-
-                        return true;
+                        CorpFinanceIndicatorDto indicator = indicatorMap.get(code);
+                        if (indicator == null) return false;
+                        return applyCustomFilter(indicator, finalCriteria.getCustomFilter());
                     })
                     .collect(Collectors.toList());
+            
+            log.info("Universe size after custom filters: {}", filteredCodes.size());
         }
 
         return filteredCodes;
     }
 
-    private boolean isTechnicalFilterRequired(CustomFilterCriteria f) {
-        return f.getMinMomentum1m() != null || f.getMinMomentum3m() != null || f.getMinMomentum6m() != null ||
-               f.getMinRsi14() != null || f.getMaxRsi14() != null || 
-               f.getMinMacd() != null || f.getMinMacdSignal() != null ||
-               f.getPriceAboveMa20() != null || f.getPriceAboveMa60() != null || f.getPriceAboveMa120() != null;
+    private boolean applyCustomFilter(CorpFinanceIndicatorDto indicator, CustomFilterCriteria f) {
+        if (f == null) return true;
+
+        if (f.getMinPer() != null && (indicator.getPer() == null || indicator.getPer().compareTo(f.getMinPer()) < 0)) return false;
+        if (f.getMaxPer() != null && (indicator.getPer() == null || indicator.getPer().compareTo(f.getMaxPer()) > 0)) return false;
+        if (f.getMinPbr() != null && (indicator.getPbr() == null || indicator.getPbr().compareTo(f.getMinPbr()) < 0)) return false;
+        if (f.getMaxPbr() != null && (indicator.getPbr() == null || indicator.getPbr().compareTo(f.getMaxPbr()) > 0)) return false;
+        if (f.getMinRoe() != null && (indicator.getRoe() == null || indicator.getRoe().compareTo(f.getMinRoe()) < 0)) return false;
+        
+        return true;
     }
 }

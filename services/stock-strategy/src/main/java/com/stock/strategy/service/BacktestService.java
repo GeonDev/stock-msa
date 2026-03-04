@@ -5,6 +5,7 @@ import com.stock.strategy.dto.BacktestResponse;
 import com.stock.strategy.entity.BacktestSimulation;
 import com.stock.strategy.enums.SimulationStatus;
 import com.stock.strategy.repository.BacktestSimulationRepository;
+import com.stock.strategy.strategy.Strategy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -32,8 +33,16 @@ public class BacktestService {
     private final BacktestSimulationRepository simulationRepository;
     private final BacktestResultRepository resultRepository;
     private final SimulationEngine simulationEngine;
+    private final StrategyFactory strategyFactory;
+    
+    private BacktestService self;
 
-    @Transactional
+    @org.springframework.context.annotation.Lazy
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setSelf(BacktestService self) {
+        this.self = self;
+    }
+
     public BacktestResponse startBacktest(BacktestRequest request) {
         return startBacktestInternal(request, false);
     }
@@ -53,8 +62,8 @@ public class BacktestService {
 
         simulation = simulationRepository.save(simulation);
 
-        // 비동기로 시뮬레이션 실행
-        runSimulationAsync(simulation.getId(), request, isOptimized);
+        // 자가 주입을 통해 프록시를 거쳐 비동기 호출 수행
+        self.runSimulationAsync(simulation.getId(), request, isOptimized);
 
         return BacktestResponse.builder()
                 .simulationId(simulation.getId())
@@ -67,23 +76,22 @@ public class BacktestService {
     public void runSimulationAsync(Long simulationId, BacktestRequest request, boolean isOptimized) {
         try {
             log.info("Starting simulation: {}", simulationId);
-            simulationEngine.runSimulation(simulationId, request);
             
-            // result update
-            resultRepository.findBySimulationId(simulationId).ifPresent(result -> {
-                boolean changed = false;
-                if (isOptimized) {
-                    result.setIsOptimized(true);
-                    changed = true;
-                }
-                if (request.getSlippageType() != null) {
-                    result.setSlippageType(request.getSlippageType().name());
-                    changed = true;
-                }
-                if (changed) {
-                    resultRepository.save(result);
-                }
-            });
+            Strategy strategy = strategyFactory.getStrategy(request.getStrategyType());
+            BacktestResult result = simulationEngine.runSimulation(simulationId, request, strategy);
+            
+            // update status to COMPLETED
+            updateSimulationStatus(simulationId, SimulationStatus.COMPLETED);
+
+            // save result
+            if (isOptimized) {
+                result.setIsOptimized(true);
+            }
+            if (request.getSlippageType() != null) {
+                result.setSlippageType(request.getSlippageType().name());
+            }
+            resultRepository.save(result);
+            
             log.info("Simulation completed: {}", simulationId);
         } catch (Exception e) {
             log.error("Simulation failed: {}", simulationId, e);
@@ -154,8 +162,6 @@ public class BacktestService {
     @Transactional
     public BacktestResponse startGridSearch(GridSearchRequest request) {
         List<BacktestRequest> combinations = generateCombinations(request);
-        
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
         
         // 병렬로 여러 시뮬레이션 실행 (비동기)
         for (BacktestRequest comboRequest : combinations) {

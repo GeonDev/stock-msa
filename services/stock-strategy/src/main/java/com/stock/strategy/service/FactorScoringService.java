@@ -30,15 +30,26 @@ public class FactorScoringService {
                                                     BigDecimal momentumWeight,
                                                     BigDecimal qualityWeight) {
         
+        // 기존 점수 삭제 (중복 방지)
+        factorScoreRepository.deleteByScoreDate(date);
+        factorScoreRepository.flush();
+        
+        // stock-finance의 corpCode는 이미 A005930 형식임
         Map<String, CorpFinanceIndicatorDto> financeMap = finances.stream()
                 .collect(Collectors.toMap(CorpFinanceIndicatorDto::getCorpCode, f -> f, (f1, f2) -> f1));
         
+        // stock-price의 stockCode는 005930 형식이므로 A를 붙여서 매핑
         Map<String, StockIndicatorDto> indicatorMap = indicators.stream()
                 .filter(i -> i.getStockCode() != null)
-                .collect(Collectors.toMap(StockIndicatorDto::getStockCode, i -> i, (i1, i2) -> i1));
+                .collect(Collectors.toMap(
+                    i -> i.getStockCode().startsWith("A") ? i.getStockCode() : "A" + i.getStockCode(), 
+                    i -> i, 
+                    (i1, i2) -> i1));
 
         Set<String> commonStocks = new HashSet<>(financeMap.keySet());
         commonStocks.retainAll(indicatorMap.keySet());
+        
+        log.info("Calculating scores for {} common stocks on {}", commonStocks.size(), date);
 
         List<String> validStocks = new ArrayList<>();
         List<Double> perList = new ArrayList<>();
@@ -50,18 +61,25 @@ public class FactorScoringService {
             CorpFinanceIndicatorDto f = financeMap.get(stock);
             StockIndicatorDto i = indicatorMap.get(stock);
             
-            if (f.getPer() != null && f.getPbr() != null && f.getRoe() != null && i.getMomentum6m() != null) {
+            // 데이터가 부족한 초기 단계이므로 momentum6m 대신 1m 사용 시도
+            BigDecimal momentum = i.getMomentum1m() != null ? i.getMomentum1m() : i.getMomentum3m();
+            if (momentum == null) momentum = i.getMomentum6m();
+
+            if (f.getPer() != null && f.getPbr() != null && f.getRoe() != null && momentum != null) {
                 validStocks.add(stock);
                 perList.add(f.getPer().doubleValue());
                 pbrList.add(f.getPbr().doubleValue());
                 roeList.add(f.getRoe().doubleValue());
-                momList.add(i.getMomentum6m().doubleValue());
+                momList.add(momentum.doubleValue());
             }
         }
 
         if (validStocks.isEmpty()) {
+            log.warn("No valid stocks found for scoring on {}", date);
             return Collections.emptyList();
         }
+
+        log.info("Found {} valid stocks after metric checks", validStocks.size());
 
         // Calculate means and stddevs
         Stat perStat = calculateStat(perList);
@@ -82,7 +100,7 @@ public class FactorScoringService {
             // Quality: ROE (higher is better)
             double qualityZ = calculateZScore(roeList.get(i), roeStat);
 
-            // Momentum: 6M Momentum (higher is better)
+            // Momentum: 1M/3M/6M Momentum (higher is better)
             double momZ = calculateZScore(momList.get(i), momStat);
 
             // Total Score

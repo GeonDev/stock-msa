@@ -6,6 +6,7 @@ import com.stock.common.dto.StockIndicatorDto;
 import com.stock.common.utils.DateUtils;
 import com.stock.strategy.client.FinanceClient;
 import com.stock.strategy.client.PriceClient;
+import com.stock.strategy.dto.BacktestRequest;
 import com.stock.strategy.dto.PortfolioHolding;
 import com.stock.strategy.dto.TradeOrder;
 import com.stock.strategy.entity.FactorScore;
@@ -39,11 +40,20 @@ public class MultiFactorStrategy implements Strategy {
     }
 
     @Override
-    public List<TradeOrder> rebalance(LocalDate date, Portfolio portfolio, List<String> universe) {
-        throw new UnsupportedOperationException("MultiFactorStrategy requires MultiFactorConfig");
+    public List<TradeOrder> rebalance(LocalDate date, Portfolio portfolio, List<String> universe, BacktestRequest request) {
+        MultiFactorConfig config = request.getMultiFactorConfig();
+        if (config == null) {
+            config = MultiFactorConfig.builder()
+                    .topN(20)
+                    .valueWeight(new BigDecimal("0.4"))
+                    .momentumWeight(new BigDecimal("0.3"))
+                    .qualityWeight(new BigDecimal("0.3"))
+                    .build();
+        }
+        return rebalanceInternal(date, portfolio, universe, config);
     }
 
-    public List<TradeOrder> rebalance(LocalDate date, Portfolio portfolio, List<String> universe, MultiFactorConfig config) {
+    private List<TradeOrder> rebalanceInternal(LocalDate date, Portfolio portfolio, List<String> universe, MultiFactorConfig config) {
         List<TradeOrder> orders = new ArrayList<>();
         if (universe.isEmpty()) return orders;
 
@@ -53,6 +63,9 @@ public class MultiFactorStrategy implements Strategy {
             List<CorpFinanceIndicatorDto> finances = financeClient.getIndicatorsBatch(universe, dateStr);
             List<StockIndicatorDto> indicators = priceClient.getIndicatorsByDateBatch(universe, dateStr);
 
+            log.info("MultiFactor rebalance on {}: Universe={}, Finances={}, Indicators={}", 
+                    date, universe.size(), finances.size(), indicators.size());
+
             List<FactorScore> scores = factorScoringService.calculateAndSaveScores(
                     date, finances, indicators, 
                     config.getValueWeight(), 
@@ -60,12 +73,16 @@ public class MultiFactorStrategy implements Strategy {
                     config.getQualityWeight()
             );
 
+            if (scores.isEmpty()) return orders;
+
             // 상위 N개 선정
             List<String> targetStocks = scores.stream()
                     .sorted(Comparator.comparing(FactorScore::getTotalScore).reversed())
                     .limit(config.getTopN())
                     .map(FactorScore::getStockCode)
                     .collect(Collectors.toList());
+
+            log.info("Selected {} multi-factor stocks for date {}", targetStocks.size(), date);
 
             // 1. 매도 (targetStocks에 없는 종목)
             for (String stockCode : new ArrayList<>(portfolio.getHoldings().keySet())) {
@@ -86,7 +103,7 @@ public class MultiFactorStrategy implements Strategy {
             BigDecimal targetValuePerStock = totalValue.divide(BigDecimal.valueOf(targetStocks.size()), 2, RoundingMode.HALF_UP);
 
             for (String stockCode : targetStocks) {
-                var priceDto = priceClient.getPriceByDate(stockCode, dateStr);
+                var priceDto = priceClient.getPriceByDate(stockCode.startsWith("A") ? stockCode.substring(1) : stockCode, dateStr);
                 if (priceDto == null || priceDto.getEndPrice() == null) continue;
 
                 BigDecimal currentPrice = priceDto.getEndPrice();

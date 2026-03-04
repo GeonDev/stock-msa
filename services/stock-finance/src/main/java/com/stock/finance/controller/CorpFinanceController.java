@@ -72,20 +72,27 @@ public class CorpFinanceController {
     }
 
 
-    @PostMapping("/corp-fin/recovery")
-    @Operation(summary = "기업 재무 정보 재수집", description = "특정 기간의 재무 데이터를 재수집 합니다.")
-    public ResponseEntity<String> recoveryCorpFinanceApi(
-            @Parameter(description = "시작 연도 (yyyy)", example = "2020") 
-            @Min(value = 2000, message = "시작 연도는 2000년 이상이어야 합니다")
-            @Max(value = 2100, message = "시작 연도는 2100년 이하여야 합니다")
-            @RequestParam(value = "startYear") int startYear,
-            @Parameter(description = "종료 연도 (yyyy)", example = "2025") 
-            @Min(value = 2000, message = "종료 연도는 2000년 이상이어야 합니다")
-            @Max(value = 2100, message = "종료 연도는 2100년 이하여야 합니다")
-            @RequestParam(value = "endYear") int endYear) throws Exception {
+    @PostMapping("/corp-fin/validate")
+    @Operation(summary = "재무 데이터 검증 실행", description = "DB에 저장된 재무 데이터 중 검증되지 않은 데이터를 검증합니다.")
+    public ResponseEntity<String> validateFinanceApi() throws Exception {
+        JobParameters jobParameters = new JobParametersBuilder()
+                .addLong("time", System.currentTimeMillis())
+                .toJobParameters();
 
-        corpFinanceService.recoverCorpFinance(startYear, endYear);
+        jobLauncher.run(jobRegistry.getJob("validateFinanceJob"), jobParameters);
 
-        return ResponseEntity.ok("RECOVERY STARTED for " + startYear + " - " + endYear);
+        return ResponseEntity.ok("VALIDATION STARTED");
+    }
+
+    @PostMapping("/corp-fin/recalculate-indicators")
+    @Operation(summary = "재무 지표 재계산", description = "DB에 저장된 재무 데이터를 기반으로 지표를 다시 계산합니다.")
+    public ResponseEntity<String> recalculateIndicatorsApi() throws Exception {
+        JobParameters jobParameters = new JobParametersBuilder()
+                .addLong("time", System.currentTimeMillis())
+                .toJobParameters();
+
+        jobLauncher.run(jobRegistry.getJob("recalculateIndicatorsJob"), jobParameters);
+
+        return ResponseEntity.ok("RECALCULATION STARTED");
     }
 }

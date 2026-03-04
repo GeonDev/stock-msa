@@ -12,6 +12,6 @@ import java.util.List;
 @Repository
 public interface StockIndicatorRepository extends JpaRepository<StockIndicator, Long> {
     
-    @Query("SELECT i FROM StockIndicator i JOIN i.stockPrice s WHERE s.stockCode IN :stockCodes AND s.basDt = :basDt")
+    @Query("SELECT i FROM StockIndicator i JOIN FETCH i.stockPrice s WHERE s.stockCode IN :stockCodes AND s.basDt = :basDt")
     List<StockIndicator> findByStockCodesAndBasDt(@Param("stockCodes") List<String> stockCodes, @Param("basDt") LocalDate basDt);
 }

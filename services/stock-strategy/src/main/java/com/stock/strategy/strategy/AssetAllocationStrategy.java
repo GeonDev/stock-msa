@@ -4,6 +4,7 @@ import com.stock.common.dto.AssetAllocationConfig;
 import com.stock.common.dto.StockIndicatorDto;
 import com.stock.common.utils.DateUtils;
 import com.stock.strategy.client.PriceClient;
+import com.stock.strategy.dto.BacktestRequest;
 import com.stock.strategy.dto.PortfolioHolding;
 import com.stock.strategy.dto.TradeOrder;
 import com.stock.strategy.enums.OrderType;
@@ -31,11 +32,18 @@ public class AssetAllocationStrategy implements Strategy {
     }
 
     @Override
-    public List<TradeOrder> rebalance(LocalDate date, Portfolio portfolio, List<String> universe) {
-        throw new UnsupportedOperationException("AssetAllocationStrategy requires AssetAllocationConfig");
+    public List<TradeOrder> rebalance(LocalDate date, Portfolio portfolio, List<String> universe, BacktestRequest request) {
+        AssetAllocationConfig config = request.getAssetAllocationConfig();
+        if (config == null) {
+            config = AssetAllocationConfig.builder()
+                    .useDualMomentum(false)
+                    .maxRiskAssetWeight(BigDecimal.ONE)
+                    .build();
+        }
+        return rebalanceInternal(date, portfolio, universe, config, request.getStrategyType());
     }
 
-    public List<TradeOrder> rebalance(LocalDate date, Portfolio portfolio, List<String> universe, AssetAllocationConfig config, com.stock.strategy.enums.StrategyType strategyType) {
+    private List<TradeOrder> rebalanceInternal(LocalDate date, Portfolio portfolio, List<String> universe, AssetAllocationConfig config, com.stock.strategy.enums.StrategyType strategyType) {
         List<TradeOrder> orders = new ArrayList<>();
         if (universe.isEmpty()) return orders;
 
@@ -43,13 +51,17 @@ public class AssetAllocationStrategy implements Strategy {
 
         try {
             // 1. Dual Momentum check (Absolute momentum of the market/universe)
-            List<StockIndicatorDto> indicators = priceClient.getIndicatorsByDateBatch(universe, dateStr);
+            List<StockIndicatorDto> indicators = priceClient.getIndicatorsByDateBatch(
+                universe.stream().map(c -> c.startsWith("A") ? c.substring(1) : c).collect(Collectors.toList()), 
+                dateStr);
             
             double sumMom = 0;
             int count = 0;
             for (StockIndicatorDto ind : indicators) {
-                if (ind.getMomentum6m() != null) {
-                    sumMom += ind.getMomentum6m().doubleValue();
+                // 데이터 부족 시 1m 사용
+                BigDecimal mom = ind.getMomentum6m() != null ? ind.getMomentum6m() : ind.getMomentum1m();
+                if (mom != null) {
+                    sumMom += mom.doubleValue();
                     count++;
                 }
             }
@@ -91,15 +103,15 @@ public class AssetAllocationStrategy implements Strategy {
                     double sumInvVol = 0.0;
 
                     for (StockIndicatorDto ind : indicators) {
+                        String codeWithA = "A" + ind.getStockCode();
                         if (ind.getStockCode() != null && ind.getBollingerUpper() != null && ind.getBollingerLower() != null) {
-                            // proxy for volatility using bollinger band width
                             double bandWidth = ind.getBollingerUpper().doubleValue() - ind.getBollingerLower().doubleValue();
                             double price = ind.getMa20() != null ? ind.getMa20().doubleValue() : bandWidth;
                             double vol = price > 0 ? (bandWidth / price) : 0.01;
                             if (vol <= 0) vol = 0.01;
 
                             double invVol = 1.0 / vol;
-                            invVolMap.put(ind.getStockCode(), invVol);
+                            invVolMap.put(codeWithA, invVol);
                             sumInvVol += invVol;
                         }
                     }
@@ -123,7 +135,7 @@ public class AssetAllocationStrategy implements Strategy {
 
                     BigDecimal targetValuePerStock = targetRiskAssetValue.multiply(weight).setScale(2, RoundingMode.HALF_UP);
 
-                    var priceDto = priceClient.getPriceByDate(stockCode, dateStr);
+                    var priceDto = priceClient.getPriceByDate(stockCode.startsWith("A") ? stockCode.substring(1) : stockCode, dateStr);
                     if (priceDto == null || priceDto.getEndPrice() == null) continue;
 
                     BigDecimal currentPrice = priceDto.getEndPrice();

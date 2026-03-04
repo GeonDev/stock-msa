@@ -18,6 +18,8 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
@@ -29,6 +31,7 @@ import static com.stock.price.utils.StockParseUtils.parseStockPriceFromXml;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class StockService {
 
     @Value("${data-go.service-key}")

@@ -17,7 +17,9 @@ import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.data.RepositoryItemReader;
 import org.springframework.batch.item.data.RepositoryItemWriter;
+import org.springframework.batch.item.data.builder.RepositoryItemReaderBuilder;
 import org.springframework.batch.item.data.builder.RepositoryItemWriterBuilder;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,6 +27,7 @@ import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -117,6 +120,7 @@ public class StockPriceBatch {
         return new JobBuilder("stockPriceRecoveryJob", jobRepository)
                 .start(stockDataStep()) // 1. 일별 데이터 수집/업데이트
                 .next(calculateRankStep())
+                .next(calculateIndicatorStep()) // 지표 계산 추가
                 .next(weeklyStockDataStep) // 2. 주간 데이터 집계/업데이트
                 .next(monthlyStockDataStep) // 3. 월간 데이터 집계/업데이트
                 .listener(new JobExecutionListener() {
@@ -133,6 +137,33 @@ public class StockPriceBatch {
                         }
                     }
                 })
+                .build();
+    }
+
+    @Bean
+    public Job recalculateIndicatorsJob() {
+        return new JobBuilder("recalculateIndicatorsJob", jobRepository)
+                .start(recalculateAllIndicatorsStep())
+                .build();
+    }
+
+    @Bean
+    public Step recalculateAllIndicatorsStep() {
+        return new StepBuilder("recalculateAllIndicatorsStep", jobRepository)
+                .<StockPrice, StockPrice>chunk(ApplicationConstants.STOCK_PRICE_CHUNK_SIZE, platformTransactionManager)
+                .reader(allStockPriceItemReader())
+                .processor(indicatorItemProcessor())
+                .writer(stockItemWriter())
+                .build();
+    }
+
+    @Bean
+    public RepositoryItemReader<StockPrice> allStockPriceItemReader() {
+        return new RepositoryItemReaderBuilder<StockPrice>()
+                .name("allStockPriceItemReader")
+                .repository(stockPriceRepository)
+                .methodName("findAll")
+                .sorts(Map.of("id", Sort.Direction.ASC))
                 .build();
     }
 
@@ -212,8 +243,8 @@ public class StockPriceBatch {
             List<StockPrice> history = stockPriceRepository.findTop300ByStockCodeAndBasDtBeforeOrderByBasDtDesc(
                     item.getStockCode(), item.getBasDt());
 
-            if (history.size() < 300) {
-                log.warn("Insufficient history data for stock: {}. Required: 300, Found: {}", item.getStockCode(), history.size());
+            if (history.size() < 1) {
+                // 이 경고는 너무 자주 발생하므로 주석 처리하거나 빈 리스트일 때만 처리
                 return null;
             }
 

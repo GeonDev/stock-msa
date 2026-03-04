@@ -30,10 +30,10 @@ public class InternalFinanceController {
             @RequestParam List<String> corpCodes,
             @RequestParam String date) {
         
-        LocalDate basDt = LocalDate.parse(date);
+        java.time.LocalDate basDt = com.stock.common.utils.DateUtils.toStringLocalDate(date);
         
         return mapper.toDtoList(
-            indicatorRepository.findByCorpCodeInAndBasDt(corpCodes, basDt)
+            indicatorRepository.findLatestByCorpCodeInAndBasDtBefore(corpCodes, basDt)
         );
     }
 

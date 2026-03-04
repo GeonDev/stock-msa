@@ -24,7 +24,7 @@ public class CorpClient {
     public CorpInfoDto getCorpInfo(String corpCode) {
         try {
             return restClient.get()
-                    .uri(corpServiceUrl + "/api/v1/corp/internal/" + corpCode)
+                    .uri(corpServiceUrl + "/internal/" + corpCode)
                     .retrieve()
                     .body(CorpInfoDto.class);
         } catch (Exception e) {
@@ -36,7 +36,7 @@ public class CorpClient {
     public Set<String> getValidCorpCodes() {
         try {
             return restClient.get()
-                    .uri(corpServiceUrl + "/api/v1/corp/internal/valid-codes")
+                    .uri(corpServiceUrl + "/internal/valid-codes")
                     .retrieve()
                     .body(new ParameterizedTypeReference<Set<String>>() {});
         } catch (Exception e) {
@@ -51,7 +51,7 @@ public class CorpClient {
     public List<String> getAllStockCodes() {
         try {
             return restClient.get()
-                    .uri(corpServiceUrl + "/api/v1/corp/internal/all-stock-codes")
+                    .uri(corpServiceUrl + "/internal/all-stock-codes")
                     .retrieve()
                     .body(new ParameterizedTypeReference<List<String>>() {});
         } catch (Exception e) {
@@ -66,7 +66,7 @@ public class CorpClient {
     public String getDartCorpCode(String stockCode) {
         try {
             return restClient.get()
-                    .uri(corpServiceUrl + "/api/v1/corp/internal/dart-corp-code/" + stockCode)
+                    .uri(corpServiceUrl + "/internal/dart-corp-code/" + stockCode)
                     .retrieve()
                     .body(String.class);
         } catch (Exception e) {

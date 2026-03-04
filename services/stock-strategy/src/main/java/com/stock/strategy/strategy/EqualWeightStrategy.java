@@ -2,6 +2,7 @@ package com.stock.strategy.strategy;
 
 import com.stock.common.utils.DateUtils;
 import com.stock.strategy.client.PriceClient;
+import com.stock.strategy.dto.BacktestRequest;
 import com.stock.strategy.dto.PortfolioHolding;
 import com.stock.strategy.dto.TradeOrder;
 import com.stock.strategy.enums.OrderType;
@@ -29,7 +30,7 @@ public class EqualWeightStrategy implements Strategy {
     }
 
     @Override
-    public List<TradeOrder> rebalance(LocalDate date, Portfolio portfolio, List<String> universe) {
+    public List<TradeOrder> rebalance(LocalDate date, Portfolio portfolio, List<String> universe, BacktestRequest request) {
         List<TradeOrder> orders = new ArrayList<>();
 
         if (universe.isEmpty()) {
@@ -62,7 +63,8 @@ public class EqualWeightStrategy implements Strategy {
             String dateStr = DateUtils.toLocalDateString(date);
             for (String stockCode : universe) {
                 try {
-                    var priceDto = priceClient.getPriceByDate(stockCode, dateStr);
+                    String codeWithoutA = stockCode.startsWith("A") ? stockCode.substring(1) : stockCode;
+                    var priceDto = priceClient.getPriceByDate(codeWithoutA, dateStr);
                     if (priceDto == null || priceDto.getEndPrice() == null) {
                         continue;
                     }

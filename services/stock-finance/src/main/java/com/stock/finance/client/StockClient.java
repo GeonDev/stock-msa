@@ -17,7 +17,7 @@ public class StockClient {
 
     public StockPriceDto getLatestStockPrice(String stockCode) {
         return restClient.get()
-                .uri(stockServiceUrl + "/api/v1/stock/internal/price/latest/" + stockCode)
+                .uri(stockServiceUrl + "/internal/price/latest/" + stockCode)
                 .retrieve()
                 .body(StockPriceDto.class);
     }

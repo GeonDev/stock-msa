@@ -120,4 +120,16 @@ public class StockController {
 
         return ResponseEntity.ok("Price recovery process started for " + startDate + " - " + endDate);
     }
+
+    @PostMapping("/price/recalculate-indicators")
+    @Operation(summary = "기술적 지표 재계산", description = "수집된 주가 데이터를 기반으로 기술적 지표를 재계산합니다.")
+    public ResponseEntity<String> recalculateIndicatorsApi() throws Exception {
+        JobParameters jobParameters = new JobParametersBuilder()
+                .addLong("time", System.currentTimeMillis())
+                .toJobParameters();
+
+        jobLauncher.run(jobRegistry.getJob("recalculateIndicatorsJob"), jobParameters);
+
+        return ResponseEntity.ok("RECALCULATION STARTED");
+    }
 }

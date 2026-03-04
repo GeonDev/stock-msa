@@ -55,7 +55,6 @@ public class TechnicalIndicatorService {
         if (indicator == null) {
             indicator = new StockIndicator();
             indicator.setStockPrice(targetPrice);
-            indicator.setId(targetPrice.getId());
             targetPrice.setStockIndicator(indicator);
         }
 
