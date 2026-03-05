@@ -54,6 +54,7 @@ mcp-shell.log
 GEMINI_REPORT.md
 
 # Environment variables
+env
 .env
 .env.local
 .env.*.local
