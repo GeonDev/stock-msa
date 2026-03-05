@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Sun, Moon, Monitor, Server, Play, ShieldCheck, Database, RefreshCw, Cpu } from 'lucide-react';
+import { Sun, Moon, Monitor, Server, Play, ShieldCheck, Database, RefreshCw, Cpu, Bell, Eye, Trash2 } from 'lucide-react';
 import { useSettingsStore } from '../hooks/useSettingsStore';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { systemService, corpService, financeService, priceService } from '../services/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { systemService, corpService, financeService, priceService, aiService } from '../services/api';
+import { UserAlert } from '../types/api';
 
 const SettingSection = ({ title, icon: Icon, children }: any) => (
   <div className="bg-white dark:bg-[#111111] p-6 rounded-3xl border border-zinc-200 dark:border-[#2C2C2E] shadow-sm">
@@ -28,8 +29,10 @@ const BatchButton = ({ label, onClick, isLoading }: any) => (
 );
 
 export default function Settings() {
+  const queryClient = useQueryClient();
   const { theme, setTheme, defaults, setDefaults } = useSettingsStore();
-  
+  const [chatId, setChatId] = useState('DEFAULT_USER'); // Default for demo
+
   const getYesterdayDate = () => {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
@@ -53,6 +56,22 @@ export default function Settings() {
   // Service Health Queries
   const { data: gatewayStatus } = useQuery({ queryKey: ['health', 'gateway'], queryFn: () => systemService.getServiceInfo() });
 
+  // AI Service Queries
+  const { data: watchlist } = useQuery({ 
+    queryKey: ['watchlist', chatId], 
+    queryFn: () => aiService.getWatchlist(chatId) 
+  });
+  const { data: activeAlerts } = useQuery({ 
+    queryKey: ['alerts', 'active'], 
+    queryFn: () => aiService.getActiveAlerts() 
+  });
+
+  // AI Mutations
+  const removeWatchlistMutation = useMutation({
+    mutationFn: (ticker: string) => aiService.removeFromWatchlist(chatId, ticker),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['watchlist', chatId] })
+  });
+
   // Batch Mutations
   const corpBatch = useMutation({ mutationFn: (date: string) => corpService.runCorpInfoBatch(date) });
   const priceRecoveryMutation = useMutation({ 
@@ -73,6 +92,63 @@ export default function Settings() {
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Watchlist Section */}
+        <SettingSection title="My Watchlist" icon={Eye}>
+          <div className="space-y-4">
+            <div className="flex gap-2 mb-4">
+              <input 
+                type="text" 
+                value={chatId}
+                onChange={(e) => setChatId(e.target.value)}
+                placeholder="Telegram Chat ID"
+                className="flex-1 bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-[#2C2C2E] rounded-xl p-2 text-sm focus:border-green-500 outline-none"
+              />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {watchlist?.map((ticker: string) => (
+                <div key={ticker} className="flex items-center gap-2 px-3 py-1 bg-zinc-100 dark:bg-black border border-zinc-200 dark:border-[#2C2C2E] rounded-full group">
+                  <span className="text-xs font-bold">{ticker}</span>
+                  <button 
+                    onClick={() => removeWatchlistMutation.mutate(ticker)}
+                    className="text-zinc-400 hover:text-red-500 transition-colors"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              ))}
+              {(!watchlist || watchlist.length === 0) && (
+                <p className="text-xs text-zinc-400 italic">No stocks in watchlist.</p>
+              )}
+            </div>
+          </div>
+        </SettingSection>
+
+        {/* Active Alerts Section */}
+        <SettingSection title="Active Indicators Alerts" icon={Bell}>
+          <div className="space-y-3">
+            {activeAlerts?.filter((a: UserAlert) => a.chatId === chatId).map((alert: UserAlert) => (
+              <div key={alert.id} className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-black rounded-2xl border border-zinc-200 dark:border-[#2C2C2E]">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-black px-1.5 py-0.5 bg-green-500/10 text-green-500 rounded uppercase">{alert.ticker}</span>
+                    <span className="text-sm font-bold">{alert.indicatorName}</span>
+                  </div>
+                  <p className="text-[10px] text-zinc-500">
+                    Condition: {alert.conditionOperator} {alert.targetValue}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-[10px] font-bold text-green-500 uppercase tracking-tighter">Monitoring</span>
+                </div>
+              </div>
+            ))}
+            {(!activeAlerts || activeAlerts.filter((a: UserAlert) => a.chatId === chatId).length === 0) && (
+              <p className="text-sm text-zinc-400 italic p-4 text-center">No active alerts for this ID.</p>
+            )}
+          </div>
+        </SettingSection>
+
         {/* Appearance Setting */}
         <SettingSection title="Appearance" icon={Sun}>
           <div className="grid grid-cols-3 gap-3">

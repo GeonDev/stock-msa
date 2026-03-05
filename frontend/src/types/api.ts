@@ -53,3 +53,21 @@ export interface ServiceInfo {
   version: string;
   profile: string;
 }
+
+export interface UserAlert {
+  id: number;
+  chatId: string;
+  ticker: string;
+  indicatorName: string;
+  conditionOperator: string;
+  targetValue: number;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface UserWatchlist {
+  id: number;
+  chatId: string;
+  ticker: string;
+  createdAt: string;
+}

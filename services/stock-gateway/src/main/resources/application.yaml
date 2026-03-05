@@ -65,6 +65,12 @@ spring:
             - Path=/api/v1/strategy/**
           filters:
             - StripPrefix=3
+        - id: stock-ai
+          uri: http://localhost:8085
+          predicates:
+            - Path=/api/v1/ai/**
+          filters:
+            - StripPrefix=3
 
 eureka:
   client:

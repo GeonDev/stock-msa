@@ -11,6 +11,10 @@ import org.springframework.beans.factory.annotation.Value;
 import java.util.Iterator;
 import java.util.List;
 
+import com.stock.common.utils.DateUtils;
+import java.time.LocalDate;
+import java.util.ArrayList;
+
 @RequiredArgsConstructor
 public class StockPriceItemReader implements ItemReader<StockPrice> {
 
@@ -28,9 +32,25 @@ public class StockPriceItemReader implements ItemReader<StockPrice> {
     @Override
     public synchronized StockPrice read() throws Exception {
         if (!dataFetched) {
-            List<StockPrice> list = stockService.getStockPrice(StockMarket.valueOf(jobMarket), jobDate);
-            if (list != null && !list.isEmpty()) {
-                stockIterator = list.iterator();
+            List<StockPrice> allPrices = new ArrayList<>();
+            LocalDate endDate = DateUtils.toStringLocalDate(jobDate);
+            // Collect for last 7 days
+            for (int i = 0; i < 7; i++) {
+                LocalDate targetDate = endDate.minusDays(i);
+                String targetBasDt = DateUtils.localDateToString(targetDate).replace("-", "");
+                try {
+                    List<StockPrice> dailyPrices = stockService.getStockPrice(StockMarket.valueOf(jobMarket), targetBasDt);
+                    if (dailyPrices != null && !dailyPrices.isEmpty()) {
+                        allPrices.addAll(dailyPrices);
+                        log.info("Fetched {} prices for date {}", dailyPrices.size(), targetBasDt);
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to fetch prices for date {}: {}", targetBasDt, e.getMessage());
+                }
+            }
+            
+            if (!allPrices.isEmpty()) {
+                stockIterator = allPrices.iterator();
             }
             dataFetched = true;
         }

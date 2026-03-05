@@ -23,16 +23,26 @@ dependencies {
     implementation 'org.postgresql:postgresql'
     implementation 'org.flywaydb:flyway-core'
     implementation 'org.flywaydb:flyway-database-postgresql'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 
     // Utilities
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
     implementation 'io.github.cdimascio:dotenv-java:2.2.0'
     implementation project(':modules:stock-common')
     
+    // Visualization
+    implementation 'org.jfree:jfreechart:1.5.4'
+
     // WebClient for Telegram
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
     // JSON
     implementation 'com.fasterxml.jackson.core:jackson-databind'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'com.h2database:h2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
 }

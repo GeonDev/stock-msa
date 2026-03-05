@@ -1,7 +1,11 @@
 package com.stock.ai.telegram;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.MediaType;
+import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
@@ -24,9 +28,27 @@ public class TelegramBotService {
     }
 
     public Mono<String> sendMessage(String chatId, String text) {
+        String targetChatId = (chatId == null) ? defaultChatId : chatId;
         return webClient.post()
                 .uri("/sendMessage")
-                .bodyValue(new TelegramSendMessageRequest(chatId, text, "HTML"))
+                .bodyValue(new TelegramSendMessageRequest(targetChatId, text, "HTML"))
+                .retrieve()
+                .bodyToMono(String.class);
+    }
+
+    public Mono<String> sendPhoto(String chatId, byte[] photo, String caption) {
+        String targetChatId = (chatId == null) ? defaultChatId : chatId;
+        MultipartBodyBuilder builder = new MultipartBodyBuilder();
+        builder.part("chat_id", targetChatId);
+        builder.part("photo", new ByteArrayResource(photo))
+                .header("Content-Disposition", "form-data; name=\"photo\"; filename=\"chart.png\"");
+        builder.part("caption", caption);
+        builder.part("parse_mode", "HTML");
+
+        return webClient.post()
+                .uri("/sendPhoto")
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(BodyInserters.fromMultipartData(builder.build()))
                 .retrieve()
                 .bodyToMono(String.class);
     }

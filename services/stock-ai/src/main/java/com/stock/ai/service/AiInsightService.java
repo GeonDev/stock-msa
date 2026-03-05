@@ -21,14 +21,41 @@ public class AiInsightService {
     private final FinanceClient financeClient;
     private final PromptService promptService;
     private final AiDBService aiDBService;
+    private final VisualizationService visualizationService;
 
     public AiInsightService(ChatClient.Builder builder, CorpClient corpClient, FinanceClient financeClient, 
-                             PromptService promptService, AiDBService aiDBService) {
+                             PromptService promptService, AiDBService aiDBService, 
+                             VisualizationService visualizationService) {
         this.chatClient = builder.build();
         this.corpClient = corpClient;
         this.financeClient = financeClient;
         this.promptService = promptService;
         this.aiDBService = aiDBService;
+        this.visualizationService = visualizationService;
+    }
+
+    public record VisualReport(String text, byte[] chartImage) {}
+
+    public Mono<VisualReport> getFinancialVisualReport(String stockCode) {
+        return Mono.zip(
+                corpClient.getCorpInfo(stockCode),
+                financeClient.getLatestIndicator(stockCode)
+        ).map(tuple -> {
+            CorpInfoDto corpInfo = tuple.getT1();
+            CorpFinanceIndicatorDto indicators = tuple.getT2();
+            
+            String summary = promptService.createFinancialSummary(corpInfo, indicators);
+            
+            // Store in vector DB for RAG
+            aiDBService.storeFinancialSummary(stockCode, summary);
+            
+            String prompt = promptService.createScoringPrompt(summary);
+            String aiOpinion = generateInsight(prompt);
+
+            byte[] chart = visualizationService.createIndicatorChart(corpInfo.getCorpName(), indicators);
+            
+            return new VisualReport(aiOpinion, chart);
+        });
     }
 
     public String generateInsight(String message) {

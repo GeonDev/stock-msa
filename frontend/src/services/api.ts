@@ -100,6 +100,20 @@ export const priceService = {
   },
 };
 
+export const aiService = {
+  getWatchlist: async (chatId: string) => {
+    const { data } = await api.get(`/ai/user/watchlist/${chatId}`);
+    return data;
+  },
+  removeFromWatchlist: async (chatId: string, ticker: string) => {
+    await api.delete(`/ai/user/watchlist/${chatId}/${ticker}`);
+  },
+  getActiveAlerts: async () => {
+    const { data } = await api.get('/ai/user/alerts/active');
+    return data;
+  },
+};
+
 export const systemService = {
   getServiceInfo: async () => {
     // Gateway의 RootController는 보통 / (경로)에 직접 매핑되어 있을 수 있으므로 
