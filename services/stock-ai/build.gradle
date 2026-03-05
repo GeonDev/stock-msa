@@ -16,8 +16,8 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
 
     // Spring AI
-    implementation 'org.springframework.ai:spring-ai-vertex-ai-gemini-spring-boot-starter:1.0.0-M5'
-    implementation 'org.springframework.ai:spring-ai-pgvector-store-spring-boot-starter:1.0.0-M5'
+    implementation 'org.springframework.ai:spring-ai-google-ai-spring-boot-starter:2.0.0-M2'
+    implementation 'org.springframework.ai:spring-ai-pgvector-store-spring-boot-starter:2.0.0-M2'
 
     // Database
     implementation 'org.postgresql:postgresql'

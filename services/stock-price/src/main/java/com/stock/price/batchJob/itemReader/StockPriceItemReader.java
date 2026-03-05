@@ -4,6 +4,7 @@ import com.stock.price.entity.StockPrice;
 import com.stock.common.enums.StockMarket;
 import com.stock.price.service.StockService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.batch.item.ItemReader;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,6 +16,7 @@ import com.stock.common.utils.DateUtils;
 import java.time.LocalDate;
 import java.util.ArrayList;
 
+@Slf4j
 @RequiredArgsConstructor
 public class StockPriceItemReader implements ItemReader<StockPrice> {
 
@@ -37,7 +39,7 @@ public class StockPriceItemReader implements ItemReader<StockPrice> {
             // Collect for last 7 days
             for (int i = 0; i < 7; i++) {
                 LocalDate targetDate = endDate.minusDays(i);
-                String targetBasDt = DateUtils.localDateToString(targetDate).replace("-", "");
+                String targetBasDt = DateUtils.toLocalDateString(targetDate);
                 try {
                     List<StockPrice> dailyPrices = stockService.getStockPrice(StockMarket.valueOf(jobMarket), targetBasDt);
                     if (dailyPrices != null && !dailyPrices.isEmpty()) {

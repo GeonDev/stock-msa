@@ -21,16 +21,19 @@ spring:
 
   ai:
     google:
-      gemini:
+      ai:
         api-key: ${SPRING_AI_GEMINI_API_KEY}
         chat:
           options:
-            model: gemini-1.5-flash
+            model: gemini-3.1-flash-lite-preview
+        embedding:
+          options:
+            model: text-embedding-004
     vectorstore:
       pgvector:
         index-type: HNSW
         distance-type: COSINE
-        dimensions: 768 # Gemini embedding dimensions (verify if using default)
+        dimensions: 768
 
   data:
     redis:
@@ -51,7 +54,7 @@ dart:
 telegram:
   bot-token: ${TELEGRAM_BOT_TOKEN}
   chat-id: ${TELEGRAM_CHAT_ID}
-  bot-name: ${TELEGRAM_BOT_NAME}
+  bot-name: ${TELEGRAM_BOT_NAME:StockMsaBot}
 
 server:
   port: 8085
