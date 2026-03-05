@@ -6,6 +6,24 @@
 
 set -e
 
+# [SECURITY CHECK] 환경 변수 및 민감 정보 유출 방지
+STAGED_ALL_FILES=$(git diff --cached --name-only)
+if echo "$STAGED_ALL_FILES" | grep -E "^(.env|env)$" > /dev/null; then
+    echo "\033[0;31m🚨 [SECURITY BLOCK] '.env' 또는 'env' 파일은 커밋할 수 없습니다!\033[0m"
+    echo "이 파일들은 민감한 정보를 포함하고 있으므로 .gitignore에 등록되어야 합니다."
+    exit 1
+fi
+
+# 파일 내용 내 민감한 패턴 검사 (단, .env.example 파일은 제외)
+STAGED_CONTENT_FILES=$(git diff --cached --name-only | grep -v ".env.example" || true)
+if [ -n "$STAGED_CONTENT_FILES" ]; then
+    if git diff --cached -- $STAGED_CONTENT_FILES | grep -E "BEGIN RSA PRIVATE KEY|SPRING_AI_GEMINI_API_KEY=[^Y]|DART_API_KEY=[^Y]|TELEGRAM_BOT_TOKEN=[^Y]" > /dev/null; then
+        echo "\033[0;31m🚨 [SECURITY BLOCK] 파일 내용 중에 민감한 API 키나 개인키가 포함되어 있습니다!\033[0m"
+        echo "보안을 위해 커밋을 중단합니다. 해당 정보를 제거하거나 환경 변수로 관리하세요."
+        exit 1
+    fi
+fi
+
 export PATH="$PATH:/usr/local/bin:/opt/homebrew/bin"
 source ~/.zshrc 2>/dev/null || true
 
