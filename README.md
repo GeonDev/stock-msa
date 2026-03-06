@@ -26,6 +26,15 @@
     - **섹터 로테이션**: 12개월 모멘텀 기반으로 강세 업종(섹터)을 선별하고, 해당 섹터 내 우량주로 자금을 순환시키는 전략
     - **동적 자산배분 (Dual Momentum)**: 시장의 절대 모멘텀이 꺾일 경우 주식(위험 자산) 비중을 0%로 줄이고 현금(안전 자산)으로 회피
     - **리스크 패리티 (Inverse Volatility)**: 각 종목의 변동성(볼린저 밴드 대역폭 등 활용)의 역수에 비례하여 자금을 배분함으로써 포트폴리오의 리스크 기여도를 균등화
+- **프론트엔드 대시보드 (Phase 4 완료)**:
+    - **React & Shadcn UI**: 최신 웹 기술 기반의 직관적이고 반응형인 투자 대시보드 구축.
+    - **전략 시뮬레이션 시각화**: 백테스팅 결과를 차트(Recharts)로 시각화하여 수익률 곡선 및 MDD 분석 지원.
+    - **종목 상세 분석**: 개별 종목의 재무 지표 추이 및 기술적 지표를 한눈에 파악할 수 있는 상세 페이지 제공.
+- **AI 인사이트 및 리서치 (Phase 5 완료)**:
+    - **LLM 기반 자동 리서치**: DB 내 재무 데이터를 Google Gemini LLM과 결합하여 자연어 기반의 심층 분석 리포트 생성.
+    - **DART 공시 RAG**: pgvector를 활용한 검색 증강 생성(RAG) 기법으로 공시 원문 내 핵심 리스크 및 전망 자동 요약.
+    - **텔레그램 봇 연동**: 개인화된 아침 브리핑(08:30) 및 장 마감 리포트(16:00) 자동 발송 및 온디맨드 리서치(/report) 지원.
+    - **지능형 알림 시스템**: 특정 지표 조건(예: PER 10 이하) 도달 시 실시간 텔레그램 알림 서비스 제공.
 - **입력값 검증 (2026-02-15 완료)**:
     - **Spring Validation**: `@Valid` 및 `@Validated` 기반 입력값 검증 시스템 구축.
     - **글로벌 예외 처리**: 일관된 에러 응답 형식 제공 (`GlobalExceptionHandler`, `ErrorResponse`).
@@ -46,6 +55,11 @@
 # API Keys
 DATA_GO_SERVICE_KEY=your_key
 DART_API_KEY=your_key
+SPRING_AI_GEMINI_API_KEY=your_gemini_key
+
+# Telegram Bot Settings
+TELEGRAM_BOT_TOKEN=your_bot_token
+TELEGRAM_CHAT_ID=your_chat_id
 
 # Security Credentials
 EUREKA_USER=eurekaAdmin
@@ -78,11 +92,13 @@ docker-compose up -d --build
 | **stock-finance** | 8082 | **8082** | 재무 정보 서비스 |
 | **stock-price** | 8083 | **8083** | 주식 정보 서비스 |
 | **stock-strategy** | 8084 | **8084** | 백테스팅 전략 서비스 |
+| **stock-ai** | 8085 | **8085** | AI 인사이트 서비스 |
 | **stock-corp-db** | 3306 | **3306** | 기업 정보 DB |
 | **stock-finance-db** | 3306 | **3307** | 재무 정보 DB |
 | **stock-price-db** | 3306 | **3308** | 주식 정보 DB |
 | **stock-batch-db** | 3306 | **3309** | 배치 메타 DB (공유) |
 | **stock-strategy-db** | 3306 | **3310** | 백테스팅 전략 DB |
+| **stock-ai-db** | 5432 | **5432** | AI 벡터 DB (PostgreSQL) |
 
 ### 3) 데이터 영속성 (Volumes)
 각 데이터베이스는 Docker Volume을 통해 데이터가 영구 저장됩니다. 컨테이너를 내렸다 올려도 데이터는 유지됩니다.
@@ -91,6 +107,7 @@ docker-compose up -d --build
 - `price-db-volume`: 주식 정보 DB 데이터
 - `batch-db-volume`: 배치 메타 DB 데이터
 - `strategy-db-volume`: 백테스팅 전략 DB 데이터
+- `ai-db-volume`: AI 벡터 DB 데이터
 
 ---
 
@@ -108,6 +125,7 @@ docker-compose up -d --build
 - 재무 정보: `/api/v1/finance/**`
 - 주식 정보: `/api/v1/stock/**`
 - 백테스팅 전략: `/api/v1/strategy/**`
+- AI 리서치: `/api/v1/ai/**`
 
 ---
 
@@ -124,9 +142,12 @@ docker-compose up -d --build
 ### 핵심 기술
 - **Java 21** (Amazon Corretto)
 - **Spring Boot 3.4.8** / **Spring Cloud 2024.0.2**
+- **Spring AI**: Google Gemini 연동 및 RAG 구현
 - **Spring Batch**: 대용량 데이터 수집 및 처리
 - **Spring Data JPA** + **Flyway**: 데이터베이스 관리
 - **MySQL 8.0**: 도메인별 독립 데이터베이스
+- **PostgreSQL 16 (pgvector)**: AI 벡터 데이터 저장 및 검색
+- **React 18**: 프론트엔드 대시보드
 
 ### 주요 라이브러리
 - **Jackson JSR310**: Java 8 날짜/시간 타입 직렬화 (JavaTimeModule)
@@ -134,6 +155,9 @@ docker-compose up -d --build
 - **RestClient**: 마이크로서비스 간 통신
 - **Undertow**: 고성능 웹 서버
 - **Lombok**: 보일러플레이트 코드 감소
+- **Telegram Bot API**: 지능형 알림 및 리포트 발송
+- **JFreeChart**: 재무/주가 분석 차트 이미지 생성
+- **Shadcn UI & Tailwind CSS**: 프론트엔드 UI 컴포넌트
 
 ### 배치 아키텍처
 - **ItemReader 분리**: 모든 배치 Reader는 `batchJob/ItemReader/` 패키지에 독립 클래스로 구성
@@ -158,11 +182,13 @@ docker-compose up -d --build
 - **Corp Code 매핑**: `corpCode.xml` 다운로드 및 파싱을 통한 Stock Code → Corp Code 변환.
 - **로컬 캐싱**: `~/.stock-msa/dart/` 디렉토리에 Corp Code XML 캐싱.
 
+### 3) Google Gemini AI
+- **LLM 분석**: 기업 재무제표 및 공시 데이터를 바탕으로 투자 인사이트 리포트 생성.
+- **RAG 지원**: `stock-ai` 서비스에서 pgvector와 연동하여 관련 문맥 기반 답변 생성.
+
 ---
 
 ## 8. DART API 통합 및 재무 지표 계산 (2026-02-23 완료)
-
-### 개요
 불안정한 DataGo API에서 공식 DART API로 재무 데이터 수집을 전환하고, 주가 데이터와 연동하여 재무 지표를 자동 계산합니다.
 
 ### 주요 구성요소
@@ -260,7 +286,31 @@ POST /batch/corp-fin?date=20241014&reportCode=ANNUAL  # 연간 (2,694 API 호출
 
 ---
 
-## 9. 주의 사항
+## 10. AI 인사이트 및 리서치 시스템 (Phase 5 완료)
+
+### 개요
+퀀트 데이터(정량)와 LLM/뉴스(정성) 데이터를 결합하여 지능형 투자 리포트를 생성하고, 텔레그램을 통해 개인화된 정보를 제공합니다.
+
+### 주요 기능
+- **AI 리서치 보고서 자동 생성**:
+  - **재무 분석**: DB 내 재무제표 데이터를 LLM 프롬프트로 변환하여 자연어 분석 리포트 생성.
+  - **DART 공시 RAG**: 공시 원문을 수집/벡터화(pgvector)하여 핵심 리스크 및 전망 요약.
+  - **시각화 리포트**: JFreeChart 기반 재무 지표 차트 이미지 자동 생성 및 발송.
+- **텔레그램 봇 연동**:
+  - **정기 브리핑**: 08:30 아침 브리핑 및 16:00 장 마감 리포트 자동화.
+  - **온디맨드 리포트**: `/report [종목코드]` 명령 시 즉시 AI 분석 결과 및 차트 응답.
+  - **지능형 알림**: `/alert [종목코드] [지표] [조건]` 설정 시 도달 즉시 푸시 알림.
+- **로컬 리소스 최적화 (M1 8GB 대응)**:
+  - Docker 메모리 제한 및 PostgreSQL 경량화 설정을 통해 저사양 환경에서도 안정적 구동.
+
+### AI 서비스 아키텍처
+- **Spring AI**: Google Gemini API 통합 및 프롬프트 엔지니어링.
+- **pgvector**: PostgreSQL 기반 고성능 벡터 검색 엔진 활용.
+- **Command Pattern**: 텔레그램 명령어 확장성을 고려한 설계.
+
+---
+
+## 11. 주의 사항
 - `.env` 파일은 절대 Git에 커밋하지 마세요 (중요 정보 포함).
 - **Stock Code 형식**: 기업 정보는 `A900100` (A 접두사), 주가 데이터는 `900100` (숫자만) 형식을 사용합니다.
 - **서비스 간 통신**: Docker 환경에서는 서비스 이름(예: `stock-price:8083`)을 사용하고, 로컬 개발 시에는 `localhost`를 사용합니다.
