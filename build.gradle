@@ -54,7 +54,7 @@ subprojects {
     
     ext {
         set('springCloudVersion', "2024.0.2")
-        set('springAiVersion', "1.0.0-M5")
+        set('springAiVersion', "1.1.2")
     }
 
     dependencyManagement {

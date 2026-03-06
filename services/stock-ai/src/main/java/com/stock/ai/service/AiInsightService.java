@@ -68,7 +68,7 @@ public class AiInsightService {
     public String generateRAGInsight(String question) {
         List<Document> relatedDocs = aiDBService.searchRelatedFinances(question);
         String context = relatedDocs.stream()
-                .map(Document::getContent)
+                .map(Document::getText)
                 .collect(Collectors.joining("\n---\n"));
 
         String prompt = "Answer the following question based on the provided financial context.\n\n" +

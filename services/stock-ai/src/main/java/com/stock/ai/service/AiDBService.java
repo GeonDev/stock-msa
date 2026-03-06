@@ -25,8 +25,10 @@ public class AiDBService {
 
     public List<Document> searchRelatedFinances(String query) {
         return vectorStore.similaritySearch(
-                SearchRequest.query(query)
-                        .withTopK(3)
+                SearchRequest.builder()
+                        .query(query)
+                        .topK(3)
+                        .build()
         );
     }
 }
