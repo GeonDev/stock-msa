@@ -147,6 +147,11 @@ parse_section() {
 
 BLOCK_REASON=$(parse_section "###BLOCK###")
 
+# Check if BLOCK_REASON actually indicates no error
+if [[ -n "$BLOCK_REASON" ]] && echo "$BLOCK_REASON" | grep -q "치명적인 문법 오류나 보안 결함은 발견되지 않았습니다"; then
+    BLOCK_REASON=""
+fi
+
 if [[ -n "$BLOCK_REASON" ]]; then
     echo "${RED}🚨 [BLOCK] 커밋 거부${NC}"
     echo "${RED}사유: ${BLOCK_REASON}${NC}"
