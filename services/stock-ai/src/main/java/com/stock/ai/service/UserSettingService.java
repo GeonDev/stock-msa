@@ -1,7 +1,7 @@
 package com.stock.ai.service;
 
-import com.stock.ai.domain.UserAlert;
-import com.stock.ai.domain.UserWatchlist;
+import com.stock.ai.entity.UserAlert;
+import com.stock.ai.entity.UserWatchlist;
 import com.stock.ai.repository.UserAlertRepository;
 import com.stock.ai.repository.UserWatchlistRepository;
 import lombok.RequiredArgsConstructor;

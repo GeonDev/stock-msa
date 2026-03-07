@@ -51,7 +51,7 @@ class SimulationEngineTest {
 
         // when
         ReflectionTestUtils.invokeMethod(engine, "executeOrders",
-                1L, LocalDate.now(), Collections.singletonList(order), portfolio, feeRate, taxRate, slippageModel, maxWeightPerStock);
+                1L, LocalDate.now(), Collections.singletonList(order), portfolio, slippageModel, feeRate, taxRate, maxWeightPerStock);
 
         // then
         // 200만원 어치 (200주)만 매수되어야 함
@@ -80,7 +80,7 @@ class SimulationEngineTest {
 
         // when
         ReflectionTestUtils.invokeMethod(engine, "executeOrders",
-                1L, LocalDate.now(), Collections.singletonList(order), portfolio, feeRate, taxRate, slippageModel, maxWeightPerStock);
+                1L, LocalDate.now(), Collections.singletonList(order), portfolio, slippageModel, feeRate, taxRate, maxWeightPerStock);
 
         // then
         // 150만원 어치 (150주)만 매수되어야 함

@@ -1,11 +1,11 @@
-package com.stock.ai.domain;
+package com.stock.ai.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "user_watchlist", uniqueConstraints = {@UniqueConstraint(columnNames = {"chat_id", "ticker"})})
+@Table(name = "user_watchlist", uniqueConstraints = { @UniqueConstraint(columnNames = { "chat_id", "ticker" }) })
 @Getter
 @Setter
 @NoArgsConstructor

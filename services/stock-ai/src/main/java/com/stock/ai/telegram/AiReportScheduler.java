@@ -1,6 +1,6 @@
 package com.stock.ai.telegram;
 
-import com.stock.ai.domain.UserAlert;
+import com.stock.ai.entity.UserAlert;
 import com.stock.ai.repository.UserWatchlistRepository;
 import com.stock.ai.service.AiInsightService;
 import com.stock.ai.service.UserSettingService;
@@ -28,15 +28,16 @@ public class AiReportScheduler {
     public void morningBriefing() {
         log.info("Sending morning briefing to all users...");
         List<String> chatIds = watchlistRepository.findDistinctChatIds();
-        
+
         for (String chatId : chatIds) {
             List<String> tickers = userSettingService.getWatchlist(chatId);
-            if (tickers.isEmpty()) continue;
+            if (tickers.isEmpty())
+                continue;
 
             telegramBotService.sendMessage(chatId, "☀️ <b>Morning Briefing</b>\n당신의 관심 종목 리포트입니다.").subscribe();
             for (String ticker : tickers) {
                 aiInsightService.getFinancialVisualReport(ticker)
-                        .subscribe(report -> telegramBotService.sendPhoto(chatId, report.chartImage(), 
+                        .subscribe(report -> telegramBotService.sendPhoto(chatId, report.chartImage(),
                                 "<b>[" + ticker + "]</b> Morning Analysis\n" + report.text()).subscribe());
             }
         }
@@ -46,13 +47,14 @@ public class AiReportScheduler {
     public void checkAlerts() {
         log.info("Checking user alerts...");
         List<UserAlert> alerts = userSettingService.getActiveAlerts();
-        
+
         for (UserAlert alert : alerts) {
             financeClient.getLatestIndicator(alert.getTicker())
                     .subscribe(indicator -> {
                         if (checkCondition(alert, indicator)) {
-                            String message = String.format("🔔 <b>Alert!</b>\n%s %s is %s than %s", 
-                                    alert.getTicker(), alert.getIndicatorName(), alert.getConditionOperator(), alert.getTargetValue());
+                            String message = String.format("🔔 <b>Alert!</b>\n%s %s is %s than %s",
+                                    alert.getTicker(), alert.getIndicatorName(), alert.getConditionOperator(),
+                                    alert.getTargetValue());
                             telegramBotService.sendMessage(alert.getChatId(), message).subscribe();
                             // Optional: Deactivate alert after firing
                         }
@@ -68,7 +70,8 @@ public class AiReportScheduler {
             default -> null;
         };
 
-        if (currentValue == null) return false;
+        if (currentValue == null)
+            return false;
 
         if ("UPPER".equalsIgnoreCase(alert.getConditionOperator())) {
             return currentValue.compareTo(alert.getTargetValue()) >= 0;
@@ -84,12 +87,13 @@ public class AiReportScheduler {
 
         for (String chatId : chatIds) {
             List<String> tickers = userSettingService.getWatchlist(chatId);
-            if (tickers.isEmpty()) continue;
+            if (tickers.isEmpty())
+                continue;
 
             telegramBotService.sendMessage(chatId, "🔔 <b>Market Close Report</b>\n장 마감 요약 및 특이점 보고서입니다.").subscribe();
             for (String ticker : tickers) {
                 aiInsightService.getFinancialVisualReport(ticker)
-                        .subscribe(report -> telegramBotService.sendPhoto(chatId, report.chartImage(), 
+                        .subscribe(report -> telegramBotService.sendPhoto(chatId, report.chartImage(),
                                 "<b>[" + ticker + "]</b> Closing Insight\n" + report.text()).subscribe());
             }
         }

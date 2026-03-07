@@ -70,7 +70,7 @@ public class SimulationEngine {
                 List<TradeOrder> orders = strategy.rebalance(currentDate, portfolio, universe, request);
                 
                 // 주문 실행
-                executeOrders(orders, portfolio, slippageModel, request.getTradingFeeRate(), request.getTaxRate());
+                executeOrders(simulationId, currentDate, orders, portfolio, slippageModel, request.getTradingFeeRate(), request.getTaxRate(), request.getMaxWeightPerStock());
             }
 
             // 일일 성과 계산 (현금 + 주식)
@@ -100,35 +100,61 @@ public class SimulationEngine {
         };
     }
 
-    private void executeOrders(List<TradeOrder> orders, Portfolio portfolio, SlippageModel slippageModel, BigDecimal feeRate, BigDecimal taxRate) {
+    private void executeOrders(Long simulationId, LocalDate date, List<TradeOrder> orders, Portfolio portfolio, SlippageModel slippageModel, BigDecimal feeRate, BigDecimal taxRate, BigDecimal maxWeightPerStock) {
         // 1. 매도 먼저 처리
         orders.stream()
                 .filter(o -> o.getOrderType() == OrderType.SELL)
-                .forEach(o -> processOrder(o, portfolio, slippageModel, feeRate, taxRate));
+                .forEach(o -> processOrder(o, portfolio, slippageModel, feeRate, taxRate, maxWeightPerStock));
 
         // 2. 매수 처리
         orders.stream()
                 .filter(o -> o.getOrderType() == OrderType.BUY)
-                .forEach(o -> processOrder(o, portfolio, slippageModel, feeRate, taxRate));
+                .forEach(o -> processOrder(o, portfolio, slippageModel, feeRate, taxRate, maxWeightPerStock));
     }
 
-    private void processOrder(TradeOrder order, Portfolio portfolio, SlippageModel slippageModel, BigDecimal feeRate, BigDecimal taxRate) {
+    private void processOrder(TradeOrder order, Portfolio portfolio, SlippageModel slippageModel, BigDecimal feeRate, BigDecimal taxRate, BigDecimal maxWeightPerStock) {
         BigDecimal execPrice = slippageModel.calculateExecutionPrice(order.getPrice(), order.getQuantity(), order.getOrderType());
         BigDecimal totalAmount = execPrice.multiply(BigDecimal.valueOf(order.getQuantity()));
         
         if (order.getOrderType() == OrderType.BUY) {
-            BigDecimal fee = totalAmount.multiply(feeRate);
-            BigDecimal totalCost = totalAmount.add(fee);
-            
-            if (portfolio.getCashBalance().compareTo(totalCost) >= 0) {
-                portfolio.setCashBalance(portfolio.getCashBalance().subtract(totalCost));
-                PortfolioHolding holding = portfolio.getHoldings().getOrDefault(order.getStockCode(), new PortfolioHolding());
-                holding.setStockCode(order.getStockCode());
-                holding.setQuantity(holding.getQuantity() + order.getQuantity());
-                holding.setAveragePrice(totalAmount.divide(BigDecimal.valueOf(holding.getQuantity()), 2, RoundingMode.HALF_UP));
-                portfolio.getHoldings().put(order.getStockCode(), holding);
-                portfolio.getTrades().add(order);
+            int targetQuantity = order.getQuantity();
+
+            if (maxWeightPerStock != null && maxWeightPerStock.compareTo(BigDecimal.ZERO) > 0) {
+                BigDecimal maxInvestAmount = portfolio.getTotalValue().multiply(maxWeightPerStock);
+                PortfolioHolding existing = portfolio.getHoldings().get(order.getStockCode());
+                BigDecimal currentInvestAmount = existing != null ? existing.getAveragePrice().multiply(BigDecimal.valueOf(existing.getQuantity())) : BigDecimal.ZERO;
+                
+                BigDecimal remainingCap = maxInvestAmount.subtract(currentInvestAmount);
+                if (remainingCap.compareTo(BigDecimal.ZERO) <= 0) {
+                    targetQuantity = 0;
+                } else {
+                    BigDecimal maxQtyDecimal = remainingCap.divide(execPrice.multiply(BigDecimal.ONE.add(feeRate)), 0, RoundingMode.DOWN);
+                    targetQuantity = Math.min(targetQuantity, maxQtyDecimal.intValue());
+                }
             }
+
+            BigDecimal costPerShare = execPrice.multiply(BigDecimal.ONE.add(feeRate));
+            BigDecimal affordableQtyDecimal = portfolio.getCashBalance().divide(costPerShare, 0, RoundingMode.DOWN);
+            targetQuantity = Math.min(targetQuantity, affordableQtyDecimal.intValue());
+
+            if (targetQuantity <= 0) return;
+
+            BigDecimal totalAmountForExec = execPrice.multiply(BigDecimal.valueOf(targetQuantity));
+            BigDecimal feeForExec = totalAmountForExec.multiply(feeRate);
+            BigDecimal totalCost = totalAmountForExec.add(feeForExec);
+            
+            portfolio.setCashBalance(portfolio.getCashBalance().subtract(totalCost));
+            PortfolioHolding holding = portfolio.getHoldings().getOrDefault(order.getStockCode(), new PortfolioHolding());
+            holding.setStockCode(order.getStockCode());
+            
+            BigDecimal currentTotalCost = holding.getAveragePrice() != null ? holding.getAveragePrice().multiply(BigDecimal.valueOf(holding.getQuantity())) : BigDecimal.ZERO;
+            int newQuantity = holding.getQuantity() + targetQuantity;
+            holding.setAveragePrice(currentTotalCost.add(totalAmountForExec).divide(BigDecimal.valueOf(newQuantity), 2, RoundingMode.HALF_UP));
+            holding.setQuantity(newQuantity);
+            
+            portfolio.getHoldings().put(order.getStockCode(), holding);
+            order.setQuantity(targetQuantity);
+            portfolio.getTrades().add(order);
         } else {
             PortfolioHolding holding = portfolio.getHoldings().get(order.getStockCode());
             if (holding != null && holding.getQuantity() >= order.getQuantity()) {

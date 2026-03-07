@@ -1,6 +1,6 @@
 package com.stock.ai.repository;
 
-import com.stock.ai.domain.UserAlert;
+import com.stock.ai.entity.UserAlert;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 

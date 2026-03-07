@@ -1,4 +1,4 @@
-package com.stock.ai.domain;
+package com.stock.ai.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

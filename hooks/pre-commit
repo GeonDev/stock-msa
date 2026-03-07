@@ -8,8 +8,8 @@ set -e
 
 # [SECURITY CHECK] 환경 변수 및 민감 정보 유출 방지
 STAGED_ALL_FILES=$(git diff --cached --name-only)
-if echo "$STAGED_ALL_FILES" | grep -E "^(.env|env)$" > /dev/null; then
-    echo "\033[0;31m🚨 [SECURITY BLOCK] '.env' 또는 'env' 파일은 커밋할 수 없습니다!\033[0m"
+if echo "$STAGED_ALL_FILES" | grep -E "^(env|\.env|\.env\.local)$" > /dev/null; then
+    echo "\033[0;31m🚨 [SECURITY BLOCK] '.env', 'env', 또는 '.env.local' 파일은 커밋할 수 없습니다!\033[0m"
     echo "이 파일들은 민감한 정보를 포함하고 있으므로 .gitignore에 등록되어야 합니다."
     exit 1
 fi
@@ -17,7 +17,8 @@ fi
 # 파일 내용 내 민감한 패턴 검사 (단, .env.example 파일은 제외)
 STAGED_CONTENT_FILES=$(git diff --cached --name-only | grep -v ".env.example" || true)
 if [ -n "$STAGED_CONTENT_FILES" ]; then
-    if git diff --cached -- $STAGED_CONTENT_FILES | grep -E "BEGIN RSA PRIVATE KEY|SPRING_AI_GEMINI_API_KEY=[^Y]|DART_API_KEY=[^Y]|TELEGRAM_BOT_TOKEN=[^Y]" > /dev/null; then
+    # 파일명 공백 처리 취약점 대응 (xargs 활용)
+    if echo "$STAGED_CONTENT_FILES" | tr '\n' '\0' | xargs -0 git diff --cached -- | grep -E "BEGIN RSA PRIVATE KEY|SPRING_AI_GEMINI_API_KEY=[^Y]|DART_API_KEY=[^Y]|TELEGRAM_BOT_TOKEN=[^Y]" > /dev/null; then
         echo "\033[0;31m🚨 [SECURITY BLOCK] 파일 내용 중에 민감한 API 키나 개인키가 포함되어 있습니다!\033[0m"
         echo "보안을 위해 커밋을 중단합니다. 해당 정보를 제거하거나 환경 변수로 관리하세요."
         exit 1
@@ -40,6 +41,7 @@ fi
 
 REPORT_FILE="$PROJECT_ROOT/GEMINI_REPORT.md"
 TMP_MSG_FILE="$PROJECT_ROOT/.git/GEMINI_MSG_TMP"
+TMP_PROMPT_FILE="$PROJECT_ROOT/.git/GEMINI_PROMPT_TMP"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -50,7 +52,7 @@ echo "${CYAN}============================================${NC}"
 echo "${CYAN}🤖 MSA 아키텍트 제미나이 코드 리뷰 시작${NC}"
 echo "${CYAN}============================================${NC}"
 
-rm -f "$REPORT_FILE" "$TMP_MSG_FILE"
+rm -f "$REPORT_FILE" "$TMP_MSG_FILE" "$TMP_PROMPT_FILE"
 touch "$REPORT_FILE"
 
 # 2. 분석 대상 파일 필터링
@@ -111,9 +113,12 @@ AI_PROMPT="${CLEAN_INPUT}
 - subject: 반드시 **한글**로 명확하게 요약 (50자 이내)
 - 예시: feat(corp): OpenDART 업종 수집 배치 구현"
 
+# Argument list too long 에러 방지를 위해 임시 파일에 프롬프트 저장
+echo "$AI_PROMPT" > "$TMP_PROMPT_FILE"
+
 # 5. AI 호출 및 결과 처리
-# 모델명을 명시하지 않고 기본 모델 사용 (호환성 및 용량 문제 회피)
-AI_RESPONSE=$(gemini -p "$AI_PROMPT" 2>&1 || echo "ERROR: AI_CALL_FAILED")
+# 모델명을 명시하지 않고 기본 모델 사용 (호환성 및 용량 문제 회피). 파이프를 통해 프롬프트 전달.
+AI_RESPONSE=$(cat "$TMP_PROMPT_FILE" | gemini 2>&1 || echo "ERROR: AI_CALL_FAILED")
 
 if [[ "$AI_RESPONSE" == "ERROR: AI_CALL_FAILED" ]]; then
     echo "${RED}❌ [ERROR] Gemini AI 호출 실패${NC}"

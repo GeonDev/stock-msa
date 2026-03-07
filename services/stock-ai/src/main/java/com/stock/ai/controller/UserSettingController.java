@@ -1,6 +1,6 @@
 package com.stock.ai.controller;
 
-import com.stock.ai.domain.UserAlert;
+import com.stock.ai.entity.UserAlert;
 import com.stock.ai.service.UserSettingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;

@@ -1,20 +1,22 @@
 package com.stock.ai.controller;
 
-import lombok.RequiredArgsConstructor;
+import com.stock.ai.service.AiInsightService;
+import com.stock.ai.telegram.TelegramBotService;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/ai")
+@RequestMapping("/api/ai")
 public class AiController {
 
     private final ChatClient chatClient;
+    private final AiInsightService aiInsightService;
+    private final TelegramBotService telegramBotService;
 
-    public AiController(ChatClient.Builder builder) {
+    public AiController(ChatClient.Builder builder, AiInsightService aiInsightService, TelegramBotService telegramBotService) {
         this.chatClient = builder.build();
+        this.aiInsightService = aiInsightService;
+        this.telegramBotService = telegramBotService;
     }
 
     @GetMapping("/chat")
@@ -23,5 +25,26 @@ public class AiController {
                 .user(message)
                 .call()
                 .content();
+    }
+
+    @GetMapping("/gemini")
+    public String geminiInsight(@RequestParam(defaultValue = "Tell me about the stock market in one sentence.") String prompt) {
+        return aiInsightService.generateInsight(prompt);
+    }
+
+    @PostMapping("/telegram")
+    public String sendTelegramMsg(@RequestParam String message) {
+        telegramBotService.sendMessage(message).subscribe();
+        return "Message sent to Telegram!";
+    }
+
+    @GetMapping("/report")
+    public String financialReport(@RequestParam String stockCode) {
+        return aiInsightService.getFinancialReport(stockCode).block();
+    }
+
+    @GetMapping("/rag")
+    public String ragInsight(@RequestParam String query) {
+        return aiInsightService.generateRAGInsight(query);
     }
 }
